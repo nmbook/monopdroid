@@ -474,7 +474,7 @@ public class MonoProtocolHandler {
 		data.clear();
 	}
 
-	@SuppressWarnings("unchecked")
+	@SuppressWarnings({ "unchecked", "rawtypes" })
 	private void handleNodeGameItem(XmlNodeType nodeType, HashMap<String, String> data,
 			MonoProtocolMetaListener mlistener, List list) {
 		// <game id="162" players="1" gametype="city" name="Monopoly" description="Ribose2's game" canbejoined="1"/>
@@ -578,10 +578,6 @@ public class MonoProtocolHandler {
 			HashMap<String, String> data, MonoProtocolGameListener glistener, @SuppressWarnings("rawtypes") List list) {
 		glistener.onConfigUpdate((List<Configurable>) list);
 		data.clear();
-	}
-
-	private <T> List<T> castTo(List<Object> list, Class<Object> endType) {
-		return null;
 	}
 
 	public void disconnect() {
