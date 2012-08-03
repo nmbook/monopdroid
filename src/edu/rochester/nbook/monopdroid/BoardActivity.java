@@ -318,7 +318,7 @@ public class BoardActivity extends Activity {
 		    		case MSG_NICK:
 		    			Log.d("monopd", "net: Received MSG_NICK from BoardActivity");
 		    			String newNick = rState.getString("nick");
-		    			monopd.changeNick(newNick);
+		    			monopd.sendChangeNick(newNick);
 		    			nickSetting = newNick;
 		    			break;
 		    		// stop thread
@@ -348,6 +348,7 @@ public class BoardActivity extends Activity {
 	    			msg.recycle();
 			    }
 			};
+			int gameId = gameItem.getGameId();
 			String host = gameItem.getHost();
 			int port = gameItem.getPort();
 			String type = gameItem.getType();
@@ -463,11 +464,11 @@ public class BoardActivity extends Activity {
 				}
     		}, host, port, client, version);
     		monopd.sendClientHello();
+			monopd.sendChangeNick(nick, false);
     		if (is_join) {
-    			monopd.changeNick(nick);
+    			monopd.sendJoinGame(gameId);
     		} else {
-    			monopd.changeNick(nick, false);
-    			monopd.sendGameType(type);
+    			monopd.sendCreateGame(type);
     		}
     		// do not continuously receive so that we can get messages from
     		// the ui thread to send

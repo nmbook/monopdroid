@@ -180,7 +180,7 @@ public class MonoProtocolHandler {
 	 * @param nick The nick name to use.
 	 * @param doFlush Whether to send this now or buffer it.
 	 */
-	public void changeNick(String nick, boolean doFlush) {
+	public void sendChangeNick(String nick, boolean doFlush) {
 		sendCommand(".n" + nick, doFlush);
 	}
 
@@ -188,16 +188,24 @@ public class MonoProtocolHandler {
 	 * Change nick name.
 	 * @param nick The nick name to use.
 	 */
-	public void changeNick(String nick) {
-		changeNick(nick, true);
+	public void sendChangeNick(String nick) {
+		sendChangeNick(nick, true);
 	}
 
 	/**
-	 * Set game type.
-	 * @param type
+	 * Create game with specified type.
+	 * @param type Game Type.
 	 */
-	public void sendGameType(String type) {
+	public void sendCreateGame(String type) {
 		sendCommand(".gn" + type);
+	}
+
+	/**
+	 * Join game with specified game ID.
+	 * @param gameId Game ID.
+	 */
+	public void sendJoinGame(int gameId) {
+		sendCommand(".gj" + gameId);
 	}
 	
 	/**
