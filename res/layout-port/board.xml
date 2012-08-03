@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical" >
+
+    <LinearLayout
+        android:id="@+id/players"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_weight="1" >
+
+        <TwoLineListItem
+            android:id="@+id/player_item1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+
+        <TwoLineListItem
+            android:id="@+id/player_item2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+
+        <TwoLineListItem
+            android:id="@+id/player_item3"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+
+        <TwoLineListItem
+            android:id="@+id/player_item4"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+    </LinearLayout>
+
+    <edu.rochester.nbook.monopdroid.BoardView
+        android:id="@+id/board_ui"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" >
+    </edu.rochester.nbook.monopdroid.BoardView>
+    <ListView
+        android:id="@+id/chat_contents"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_weight="1" >
+    </ListView>
+    <EditText
+        android:id="@+id/chat_box"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:ems="10"
+        android:inputType="textLongMessage"
+        android:text="@string/empty" >
+    </EditText>
+</LinearLayout>

@@ -1,0 +1,42 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/game_item_layout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="horizontal" >
+	<LinearLayout android:id="@+id/game_item_layout_inner"
+	    android:layout_width="match_parent"
+        android:layout_height="@dimen/list_item_height"
+	    android:orientation="horizontal" >
+
+	    <TextView
+	        android:id="@+id/game_item_name"
+	        android:layout_width="@dimen/list_item_height"
+	        android:layout_height="wrap_content"
+	        android:layout_gravity="center_vertical"
+	        android:layout_weight="3"
+	        android:padding="@dimen/list_item_padding"
+	        android:text="@string/empty"
+	        android:textAppearance="?android:attr/textAppearanceSmall" />
+
+	    <TextView
+	        android:id="@+id/game_item_descr"
+	        android:layout_width="wrap_content"
+	        android:layout_height="wrap_content"
+	        android:layout_gravity="center_vertical|center"
+	        android:layout_weight="2"
+	        android:padding="@dimen/list_item_padding"
+	        android:text="@string/game_list_ready"
+	        android:textAppearance="?android:attr/textAppearanceMedium" />
+
+	    <TextView
+	        android:id="@+id/game_item_players"
+	        android:layout_width="wrap_content"
+	        android:layout_height="wrap_content"
+	        android:layout_gravity="center_vertical"
+	        android:layout_weight="3"
+	        android:padding="@dimen/list_item_padding"
+	        android:text="@string/empty"
+	        android:textAppearance="?android:attr/textAppearanceLarge" />
+
+	</LinearLayout>
+</LinearLayout>

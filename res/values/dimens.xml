@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="list_item_padding">5px</dimen>
+    <dimen name="list_item_height">50dip</dimen>
+    <dimen name="board_size">480dip</dimen>
+</resources>
