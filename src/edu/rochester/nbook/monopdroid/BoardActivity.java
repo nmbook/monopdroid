@@ -8,9 +8,12 @@ import edu.rochester.nbook.monopdroid.BoardView.BoardViewListener;
 import edu.rochester.nbook.monopdroid.BoardView.DrawState;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager.NameNotFoundException;
+import android.database.DataSetObserver;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -20,11 +23,15 @@ import android.util.Log;
 import android.util.SparseArray;
 import android.view.KeyEvent;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.View.OnKeyListener;
+import android.widget.ArrayAdapter;
 import android.widget.EditText;
+import android.widget.ListAdapter;
 import android.widget.ListView;
 
 public class BoardActivity extends Activity {
+
 	private static final int MSG_NETEX = 1;
 	private static final int MSG_NICK = 2;
 	private static final int MSG_CLIENT = 3;
@@ -33,6 +40,7 @@ public class BoardActivity extends Activity {
 	private static final int MSG_RECV = 6;
 	private static final int MSG_COMMAND = 7;
 	private static final int MSG_CONFIGUPDATE = 8;
+	private static final int MSG_MESSAGE = 9;
 	
 	private enum GameStatus {
 		ERROR, CONFIG, INIT, RUN;
@@ -59,6 +67,10 @@ public class BoardActivity extends Activity {
 	 * The chat log. Do not access from networking thread.
 	 */
 	private ListView lv = null;
+	/**
+	 * The chat log adapter. Do not access from networking thread.
+	 */
+	private ArrayAdapter<String> lva = null;
 	/**
 	 * The chat send box. Do not access from networking thread.
 	 */
@@ -198,14 +210,33 @@ public class BoardActivity extends Activity {
 	    				break;
 	    			}
 	    			break;
+	    		// the check boxes have changed
 	    		case MSG_CONFIGUPDATE:
 	    	    	Log.d("monopd", "board: Received MSG_CONFIGUPDATE from NetThread");
 	    			bv.setConfigurables(configurables);
 	    			break;
+	    		// chat, error, or display message
+	    		case MSG_MESSAGE:
+	    	    	Log.d("monopd", "board: Received MSG_MESSAGE from NetThread");
+					final String msgText = rState.getString("text");
+					/*final int msgColor = rState.getInt("color"); ;ignore for now
+					final int msgPlayer = rState.getInt("playerId");
+					final int msgEstate = rState.getInt("estateId");
+					final boolean msgClearBtns = rState.getBoolean("clearButtons");*/
+					runOnUiThread(new Runnable() {
+						@Override
+						public void run() {
+							lva.add(msgText);
+							lva.notifyDataSetChanged();
+						}
+					});
+					break;
 	    		}
 	    		msg.recycle();
 			}
 		};
+		
+		this.
 		
 		netThread = new Thread(new NetThreadStart());
 		netThread.start();
@@ -242,6 +273,9 @@ public class BoardActivity extends Activity {
 				return false;
 			}
 		});
+		
+		lva = new ArrayAdapter<String>(this, R.layout.chat_item);
+		lv.setAdapter(lva);
 		
 		Log.d("monopd", "board: Completed activity set-up");
     }
@@ -461,6 +495,46 @@ public class BoardActivity extends Activity {
 						configurables.add(toAdd);
 						sendToMainThread(MSG_CONFIGUPDATE, null);
 					}
+				}
+
+				@Override
+				public void onChatMessage(int playerId, String author,
+						String text) {
+			    	Log.d("monopd", "net: Received onChatMessage() from MonoProtocolHandler");
+					Bundle state = new Bundle();
+					state.putString("text", "<" + author + "> " + text);
+					state.putInt("color", Color.WHITE);
+					state.putInt("playerId", playerId);
+					state.putInt("estateId", -1); // keep
+					state.putBoolean("clearButtons", false);
+					sendToMainThread(MSG_MESSAGE, state);
+				}
+
+				@Override
+				public void onErrorMessage(String text) {
+			    	Log.d("monopd", "net: Received onErrorMessage() from MonoProtocolHandler");
+					Bundle state = new Bundle();
+					state.putString("text", "ERROR: " + text);
+					state.putInt("color", Color.RED);
+					state.putInt("playerId", -1); // none
+					state.putInt("estateId", -1); // keep
+					state.putBoolean("clearButtons", false);
+					sendToMainThread(MSG_MESSAGE, state);
+				}
+
+				@Override
+				public void onDisplayMessage(int estateId, String text,
+						boolean clearText, boolean clearButtons) {
+			    	Log.d("monopd", "net: Received onDisplayMessage() from MonoProtocolHandler");
+					if (estateId < 0) {
+						estateId = 0; // change -1 to 0 (reset)
+					}
+					Bundle state = new Bundle();
+					state.putString("text", "GAME: " + text);
+					state.putInt("playerId", -1);
+					state.putInt("estateId", estateId);
+					state.putBoolean("clearButtons", clearButtons);
+					sendToMainThread(MSG_MESSAGE, state);
 				}
     		}, host, port, client, version);
     		monopd.sendClientHello();

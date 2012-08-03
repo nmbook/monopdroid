@@ -394,6 +394,8 @@ public class MonoProtocolHandler {
 		case GAMEUPDATE: handleNodeGameUpdate(nodeType, data, glistener); break;
 		case CONFIGUPDATE: handleNodeConfigUpdate(nodeType, data, glistener, currentList); break;
 		case OPTION: handleNodeOption(nodeType, data, glistener, currentList); break;
+		case MSG: handleNodeMessage(nodeType, data, glistener); break;
+		case DISPLAY: handleNodeDisplay(nodeType, data, glistener); break;
 		}
 	}
 
@@ -586,6 +588,28 @@ public class MonoProtocolHandler {
 			HashMap<String, String> data, MonoProtocolGameListener glistener, @SuppressWarnings("rawtypes") List list) {
 		glistener.onConfigUpdate((List<Configurable>) list);
 		data.clear();
+	}
+
+	private void handleNodeMessage(XmlNodeType nodeType,
+			HashMap<String, String> data, MonoProtocolGameListener glistener) {
+		String type = getAttributeAsString(data, "type");
+		int playerId = getAttributeAsInt(data, "playerid");
+		String author = getAttributeAsString(data, "author");
+		String text = getAttributeAsString(data, "value");
+		if (type.equals("chat")) {
+			glistener.onChatMessage(playerId, author, text);
+		} else if (type.equals("error")) {
+			glistener.onErrorMessage(text);
+		}
+	}
+
+	private void handleNodeDisplay(XmlNodeType nodeType,
+			HashMap<String, String> data, MonoProtocolGameListener glistener) {
+		int estateId = getAttributeAsInt(data, "estateid");
+		String text = getAttributeAsString(data, "text");
+		boolean clearText = getAttributeAsBoolean(data, "cleartext");
+		boolean clearButtons = getAttributeAsBoolean(data, "clearbuttons");
+		glistener.onDisplayMessage(estateId, text, clearText, clearButtons);
 	}
 
 	public void disconnect() {

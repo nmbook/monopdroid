@@ -3,12 +3,11 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical" >
-
+
     <LinearLayout
         android:id="@+id/players"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_weight="1" >
+        android:layout_height="wrap_content" >
 
         <TwoLineListItem
             android:id="@+id/player_item1"
@@ -40,7 +39,9 @@
         android:id="@+id/chat_contents"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_weight="1" >
+        android:layout_weight="1"
+        android:transcriptMode="normal"
+        android:stackFromBottom="true" >
     </ListView>
     <EditText
         android:id="@+id/chat_box"
