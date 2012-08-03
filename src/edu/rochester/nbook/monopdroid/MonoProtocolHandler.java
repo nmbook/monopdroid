@@ -481,6 +481,7 @@ public class MonoProtocolHandler {
 				getAttributeAsInt(data, "port"),
 				getAttributeAsString(data, "version"),
 				(List<GameItem>) list);
+		list.clear();
 		data.clear();
 	}
 
@@ -494,6 +495,7 @@ public class MonoProtocolHandler {
 		if (!data.containsKey("canbejoined")) {
 			data.put("canbejoined", "1");
 		}
+		
 		list.add(new GameItem(
 				getAttributeAsInt(data, "id"),
 				getAttributeAsString(data, "host"), 
@@ -504,6 +506,7 @@ public class MonoProtocolHandler {
 				getAttributeAsString(data, "description"),
 				getAttributeAsInt(data, "players"),
 				getAttributeAsBoolean(data, "canbejoined")));
+		
 		data.remove("id");
 		data.remove("gametype");
 		data.remove("name");
@@ -587,6 +590,7 @@ public class MonoProtocolHandler {
 	private void handleNodeConfigUpdate(XmlNodeType nodeType,
 			HashMap<String, String> data, MonoProtocolGameListener glistener, @SuppressWarnings("rawtypes") List list) {
 		glistener.onConfigUpdate((List<Configurable>) list);
+		list.clear();
 		data.clear();
 	}
 

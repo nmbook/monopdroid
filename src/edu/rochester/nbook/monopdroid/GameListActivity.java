@@ -33,20 +33,30 @@ public class GameListActivity extends ListActivity {
         setListAdapter(adapter);
         ListView lv = (ListView) this.findViewById(android.R.id.list);
         lv.setOnItemLongClickListener(new OnItemLongClickListener() {
-
 			@Override
 			public boolean onItemLongClick(AdapterView<?> listView, View item,
 					int position, long id) {
 				Bundle state = new Bundle();
 				GameItem o = adapter.getItem(position);
 				state.putString("name", o.getDescription() + " Server");
+				String hostLine = null;
+				if (o.getServers().size() == 1) {
+					hostLine = "Host: " + o.getServer().getHost() + ":" + o.getServer().getPort();
+				} else {
+					hostLine = "Hosts: ";
+					for (ServerItem server : o.getServers()) {
+						hostLine += server.getHost() + ":" + server.getPort() + ", ";
+					}
+					hostLine = hostLine.substring(0, hostLine.length() - 2);
+				}
 				state.putString("info",
-						"Host: " + o.getHost() + ":" + o.getPort() + "\n" +
-						"Server Version: " + o.getVersion() + "\n" +
+						hostLine + "\n" +
+						"Server Version: " + o.getServer().getVersion() + "\n" +
 						"Type: " + o.getTypeName() + " (" + o.getType() + ")\n" +
-						"Description: " + o.getDescription() + "\n" +
+						"Description: " + o.getDescription() + 
+						(o.getGameId() == -1 ? "" : "\n" +
 						"Players: " + o.getPlayers() + "\n" +
-						"Allowed to " + (o.getGameId() == -1 ? "Create" : "Join") + ": " + o.canJoin());
+						"Allowed to Join: " + o.canJoin()));
 				showDialog(R.id.dialog_server_info, state);
 				return true;
 			}
@@ -63,9 +73,13 @@ public class GameListActivity extends ListActivity {
     	for (int i = 0; i < adapter.getCount(); i++) {
     		GameItem o = adapter.getItem(i);
     		outState.putInt("item_" + i + "_id", o.getGameId());
-    		outState.putString("item_" + i + "_host", o.getHost());
-    		outState.putInt("item_" + i + "_port", o.getPort());
-    		outState.putString("item_" + i + "_version", o.getVersion());
+    		outState.putInt("item_" + i + "_s_count", o.getServers().size());
+    		for (int j = 0; j < o.getServers().size(); j++) {
+    			outState.putString("item_" + i + "_s_" + j + "_host", o.getServers().get(j).getVersion());
+    			outState.putInt("item_" + i + "_s_" + j + "_port", o.getServers().get(j).getPort());
+    			outState.putString("item_" + i + "_s_" + j + "_version", o.getServers().get(j).getVersion());
+    			outState.putInt("item_" + i + "_s_" + j + "_players", o.getServers().get(j).getUsers());
+    		}
     		outState.putString("item_" + i + "_type", o.getType());
     		outState.putString("item_" + i + "_type_name", o.getTypeName());
     		outState.putString("item_" + i + "_descr", o.getDescription());
@@ -81,15 +95,21 @@ public class GameListActivity extends ListActivity {
     	int count = state.getInt("count");
     	for (int i = 0; i < count; i++) {
     		int id = state.getInt("item_" + i + "_id");
-    		String host = state.getString("item_" + i + "_host");
-    		int port = state.getInt("item_" + i + "_port");
-    		String version = state.getString("item_" + i + "_version");
+    		int serverCount = state.getInt("item_" + i + "_s_count");
+    		List<ServerItem> servers = new ArrayList<ServerItem>();
+    		for (int j = 0; j < serverCount; j++) {
+	    		String host = state.getString("item_" + i + "_s_" + j + "_host");
+	    		int port = state.getInt("item_" + i + "_s_" + j + "_port");
+	    		String version = state.getString("item_" + i + "_s_" + j + "_version");
+	    		int players = state.getInt("item_" + i + "_s_" + j + "_players");
+	    		servers.add(new ServerItem(host, port, version, players));
+    		}
     		String type = state.getString("item_" + i + "_type");
     		String type_name = state.getString("item_" + i + "_type_name");
     		String descr = state.getString("item_" + i + "_descr");
     		int players = state.getInt("item_" + i + "_players");
     		boolean can_join = state.getBoolean("item_" + i + "_can_join");
-    		adapter.add(new GameItem(id, host, port, version, type, type_name, descr, players, can_join));
+    		adapter.add(new GameItem(id, servers, type, type_name, descr, players, can_join));
     	}
     	adapter.notifyDataSetChanged();
     }
@@ -174,11 +194,13 @@ public class GameListActivity extends ListActivity {
 			// not joinable, perhaps because this isn't a real game item
 			return;
 		}
+		// remove all servers but one
+		o.chooseServer();
 		Intent i = new Intent(this, BoardActivity.class);
 		i.putExtra("edu.rochester.nbook.game_id",o.getGameId());
-		i.putExtra("edu.rochester.nbook.host", o.getHost());
-		i.putExtra("edu.rochester.nbook.port", o.getPort());
-		i.putExtra("edu.rochester.nbook.version", o.getVersion());
+		i.putExtra("edu.rochester.nbook.host", o.getServer().getHost());
+		i.putExtra("edu.rochester.nbook.port", o.getServer().getPort());
+		i.putExtra("edu.rochester.nbook.version", o.getServer().getVersion());
 		i.putExtra("edu.rochester.nbook.type", o.getType());
 		i.putExtra("edu.rochester.nbook.type_name", o.getTypeName());
 		i.putExtra("edu.rochester.nbook.descr", o.getDescription());

@@ -8,11 +8,9 @@ import edu.rochester.nbook.monopdroid.BoardView.BoardViewListener;
 import edu.rochester.nbook.monopdroid.BoardView.DrawState;
 
 import android.app.Activity;
-import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager.NameNotFoundException;
-import android.database.DataSetObserver;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
@@ -23,11 +21,9 @@ import android.util.Log;
 import android.util.SparseArray;
 import android.view.KeyEvent;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.View.OnKeyListener;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
-import android.widget.ListAdapter;
 import android.widget.ListView;
 
 public class BoardActivity extends Activity {
@@ -383,8 +379,8 @@ public class BoardActivity extends Activity {
 			    }
 			};
 			int gameId = gameItem.getGameId();
-			String host = gameItem.getHost();
-			int port = gameItem.getPort();
+			String host = gameItem.getServer().getHost();
+			int port = gameItem.getServer().getPort();
 			String type = gameItem.getType();
 			boolean is_join = isJoin;
 			String client = clientNameSetting;

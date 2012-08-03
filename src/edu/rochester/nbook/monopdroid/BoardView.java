@@ -229,7 +229,7 @@ public class BoardView extends SurfaceView implements Runnable {
 				}
 				regions.add(new DrawableRegion("check-" + config.getCommand(), new Rect(5, 15 + (index * 55), 40, 55 + (index * 55)), check, textPaint));
 				if (config.isEditable()) {
-					regions.add(new GestureRegion(config.getCommand(), new Rect(5, 10 + (index * 55), 20 + textWidth, 55 + (index * 55)), highlightPaint, new RegionListener() {
+					regions.add(new GestureRegion(config.getCommand(), new Rect(0, 10 + (index * 55), 70 + textWidth, 55 + (index * 55)), highlightPaint, new RegionListener() {
 						@Override
 						public void onRegionLongPress(Region region) {
 							// do nthing on check box long-press
