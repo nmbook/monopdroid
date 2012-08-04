@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <item name="player_text_1" type="id">101</item>
+    <item name="player_text_2" type="id">102</item>
+    
+</resources>
