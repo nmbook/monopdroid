@@ -3,47 +3,89 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical" >
-
     <LinearLayout
         android:id="@+id/players"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content" >
-
-        <TwoLineListItem
+        android:layout_height="wrap_content"
+        android:orientation="horizontal" 
+        android:baselineAligned="false">
+        <LinearLayout
             android:id="@+id/player_item1"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
-
-        <TwoLineListItem
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+            <TextView
+                android:id="@id/player_text_1"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textAppearance="?android:attr/textAppearanceMedium"/>
+            <TextView
+                android:id="@id/player_text_2"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"/>
+        </LinearLayout>
+        <LinearLayout
             android:id="@+id/player_item2"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
-
-        <TwoLineListItem
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+            <TextView
+                android:id="@id/player_text_1"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textAppearance="?android:attr/textAppearanceMedium"/>
+            <TextView
+                android:id="@id/player_text_2"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"/>
+        </LinearLayout>
+        <LinearLayout
             android:id="@+id/player_item3"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
-
-        <TwoLineListItem
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+            <TextView
+                android:id="@id/player_text_1"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textAppearance="?android:attr/textAppearanceMedium"/>
+            <TextView
+                android:id="@id/player_text_2"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"/>
+        </LinearLayout>
+        <LinearLayout
             android:id="@+id/player_item4"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical" >
+            <TextView
+                android:id="@id/player_text_1"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textAppearance="?android:attr/textAppearanceMedium"/>
+            <TextView
+                android:id="@id/player_text_2"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"/>
+        </LinearLayout>
     </LinearLayout>
-
     <edu.rochester.nbook.monopdroid.BoardView
         android:id="@+id/board_ui"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content" >
     </edu.rochester.nbook.monopdroid.BoardView>
-
     <ListView
         android:id="@+id/chat_contents"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="0dip"
         android:layout_weight="1"
         android:stackFromBottom="true"
         android:transcriptMode="alwaysScroll" >
-
     </ListView>
     <EditText
         android:id="@+id/chat_box"

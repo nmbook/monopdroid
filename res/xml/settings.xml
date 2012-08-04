@@ -1,5 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android" >
-    
-
+    <PreferenceCategory
+        android:title="Player settings"
+        android:key="player">
+        <EditTextPreference 
+            android:title="@string/pref_player_nick_title"
+            android:key="player_nick"
+            android:defaultValue="anonymous" android:summary="@string/pref_player_nick_summary" android:dialogTitle="@string/pref_player_nick_dialog_title" android:dialogMessage="@string/pref_player_nick_summary"/>
+    </PreferenceCategory>
+    <PreferenceCategory
+        android:title="Game list settings"
+        android:key="gamelist">
+        <EditTextPreference
+            android:title="@string/pref_gamelist_server_title"
+            android:key="gamelist_server"
+            android:defaultValue="monopd.gradator.net" android:dialogTitle="@string/pref_gamelist_server_dialog_title" android:dialogMessage="@string/pref_gamelist_server_summary" android:summary="@string/pref_gamelist_server_summary"/>
+        <EditTextPreference
+            android:title="@string/pref_gamelist_port_title"
+            android:key="gamelist_port"
+            android:defaultValue="1240"
+            android:numeric="integer" android:summary="@string/pref_gamelist_port_summary" android:dialogTitle="@string/pref_gamelist_port_dialog_title" android:dialogMessage="@string/pref_gamelist_port_summary"/>
+        <CheckBoxPreference
+            android:key="gamelist_auto"
+            android:title="@string/pref_gamelist_auto_title"
+            android:defaultValue="false" android:summary="@string/pref_gamelist_auto_summary"/>
+    </PreferenceCategory>
 </PreferenceScreen>
