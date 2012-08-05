@@ -1,7 +1,6 @@
 package edu.rochester.nbook.monopdroid;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
 import android.app.Activity;
@@ -19,37 +18,18 @@ import android.util.SparseArray;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.View.OnKeyListener;
-import android.widget.ArrayAdapter;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemClickListener;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 
-import edu.rochester.nbook.monopdroid.BoardView.BoardViewListener;
-import edu.rochester.nbook.monopdroid.BoardView.DrawState;
-
 public class BoardActivity extends Activity {
-
     private static final int MSG_NICK = 2;
     private static final int MSG_STOP = 5;
     private static final int MSG_RECV = 6;
     private static final int MSG_COMMAND = 7;
-
-    private enum GameStatus {
-        ERROR, CONFIG, INIT, RUN;
-
-        public static GameStatus fromString(String strStatus) {
-            if (strStatus.equals("config")) {
-                return CONFIG;
-            } else if (strStatus.equals("init")) {
-                return INIT;
-            } else if (strStatus.equals("run")) {
-                return RUN;
-            } else {
-                return ERROR;
-            }
-        }
-    }
 
     /**
      * The Board UI. Do not access from networking thread.
@@ -62,7 +42,7 @@ public class BoardActivity extends Activity {
     /**
      * The chat log adapter. Do not access from networking thread.
      */
-    private ArrayAdapter<String> chatListAdapter = null;
+    private ChatListAdapter chatListAdapter = null;
     /**
      * The chat send box. Do not access from networking thread.
      */
@@ -102,7 +82,7 @@ public class BoardActivity extends Activity {
     /**
      * List of estates.
      */
-    private volatile HashMap<String, Estate> estates = new HashMap<String, Estate>();
+    private volatile SparseArray<Estate> estates = new SparseArray<Estate>();
     /**
      * List of options.
      */
@@ -114,7 +94,7 @@ public class BoardActivity extends Activity {
     /**
      * Current player cookie.
      */
-    private volatile String cookie = null;
+    //private volatile String cookie = null;
     /**
      * Game status.
      */
@@ -137,6 +117,10 @@ public class BoardActivity extends Activity {
      * The monopd protocol handler.
      */
     private MonoProtocolHandler monopd = null;
+    /**
+     * Whether we can contiunue reading (still connected).
+     */
+    private boolean continueReceive = true;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -172,19 +156,12 @@ public class BoardActivity extends Activity {
         }
         this.nickSetting = shPrefs.getString("player_nick", "anonymous");
 
-        this.netThread = new Thread(new NetThreadStart());
+        this.netThread = new Thread(new NetGameThread());
         this.netThread.start();
 
         this.setTitle(String.format(this.getString(R.string.title_activity_board), descr));
 
         this.boardView = (BoardView) this.findViewById(R.id.board_ui);
-        this.chatSendBox = (EditText) this.findViewById(R.id.chat_box);
-        this.chatList = (ListView) this.findViewById(R.id.chat_contents);
-        this.playerView[0] = (LinearLayout) this.findViewById(R.id.player_item1);
-        this.playerView[1] = (LinearLayout) this.findViewById(R.id.player_item2);
-        this.playerView[2] = (LinearLayout) this.findViewById(R.id.player_item3);
-        this.playerView[3] = (LinearLayout) this.findViewById(R.id.player_item4);
-
         this.boardView.setBoardViewListener(new BoardViewListener() {
             @Override
             public void onConfigChange(String command, String value) {
@@ -196,13 +173,13 @@ public class BoardActivity extends Activity {
                 BoardActivity.this.sendCommand(".gs");
             }
         });
-
         if (is_join) {
-            this.boardView.setState(DrawState.WAIT_JOIN);
+            this.boardView.setStatus(GameStatus.WAIT_JOIN);
         } else {
-            this.boardView.setState(DrawState.WAIT_CREATE);
+            this.boardView.setStatus(GameStatus.WAIT_CREATE);
         }
-
+        
+        this.chatSendBox = (EditText) this.findViewById(R.id.chat_box);
         this.chatSendBox.setOnKeyListener(new OnKeyListener() {
             @Override
             public boolean onKey(View v, int keyCode, KeyEvent event) {
@@ -217,8 +194,26 @@ public class BoardActivity extends Activity {
             }
         });
 
-        this.chatListAdapter = new ArrayAdapter<String>(this, R.layout.chat_item);
+        this.chatListAdapter = new ChatListAdapter(this, R.layout.chat_item);
+        
+        this.chatList = (ListView) this.findViewById(R.id.chat_contents);
         this.chatList.setAdapter(this.chatListAdapter);
+        this.chatList.setOnItemClickListener(new OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> listView, View itemView, int position, long id) {
+                ChatItem item = chatListAdapter.getItem(position);
+                if (item.getPlayerId() > 0) {
+                    boardView.overlayPlayerInfo(BoardActivity.this.players.get(item.getPlayerId()));
+                } else if (item.getEstateId() > 0) {
+                    boardView.overlayEstateInfo(BoardActivity.this.estates.get(item.getEstateId()));
+                }
+            }
+        });
+
+        this.playerView[0] = (LinearLayout) this.findViewById(R.id.player_item1);
+        this.playerView[1] = (LinearLayout) this.findViewById(R.id.player_item2);
+        this.playerView[2] = (LinearLayout) this.findViewById(R.id.player_item3);
+        this.playerView[3] = (LinearLayout) this.findViewById(R.id.player_item4);
 
         Log.d("monopd", "board: Completed activity set-up");
     }
@@ -262,25 +257,23 @@ public class BoardActivity extends Activity {
         netHandler.dispatchMessage(msg);
     }
 
-    private class NetThreadStart implements Runnable {
-        private boolean continueReceive = true;
-
+    private class NetGameThread implements Runnable {
         @Override
         public void run() {
             Log.d("monopd", "net: Network thread start.");
-
+    
             /**
              * An object to call to cause a monopd.doReceive() after 250ms.
              */
             final Runnable doDelayedReceive = new Runnable() {
                 @Override
                 public void run() {
-                    if (NetThreadStart.this.continueReceive) {
+                    if (BoardActivity.this.continueReceive) {
                         BoardActivity.this.sendToNetThread(MSG_RECV, null);
                     }
                 }
             };
-
+    
             Looper.prepare();
             netHandler = new Handler() {
                 /**
@@ -300,14 +293,14 @@ public class BoardActivity extends Activity {
                     // stop thread
                     case MSG_STOP:
                         Log.d("monopd", "net: Received MSG_STOP from BoardActivity");
-                        NetThreadStart.this.continueReceive = false;
+                        BoardActivity.this.continueReceive = false;
                         BoardActivity.this.monopd.disconnect();
                         netHandler.getLooper().quit();
                         break;
                     // receive message callback
                     case MSG_RECV:
                         Log.v("monopd", "net: Received MSG_RECV from BoardActivity");
-                        if (NetThreadStart.this.continueReceive) {
+                        if (BoardActivity.this.continueReceive) {
                             // receive if there is data
                             BoardActivity.this.monopd.doReceive();
                             // the only place we message ourself:
@@ -332,7 +325,7 @@ public class BoardActivity extends Activity {
             String client = BoardActivity.this.clientNameSetting;
             String version = BoardActivity.this.versionSetting;
             String nick = BoardActivity.this.nickSetting;
-
+    
             BoardActivity.this.monopd = new MonoProtocolHandler(new MonoProtocolGameListener() {
                 @Override
                 public void onException(String description, Exception ex) {
@@ -341,23 +334,23 @@ public class BoardActivity extends Activity {
                     state.putString("descr", description);
                     state.putString("ex", ex.getMessage());
                 }
-
+    
                 @Override
                 public void onClose() {
                 }
-
+    
                 @Override
                 public void onServer(String version) {
                     Log.v("monopd", "net: Received onServer() from MonoProtocolHandler");
                 }
-
+    
                 @Override
                 public void onClient(int playerId, String cookie) {
                     Log.v("monopd", "net: Received onClient() from MonoProtocolHandler");
                     BoardActivity.this.playerId = playerId;
-                    BoardActivity.this.cookie = cookie;
+                    //BoardActivity.this.cookie = cookie;
                 }
-
+    
                 @Override
                 public void onPlayerUpdate(final int playerId, String key, Object value) {
                     Log.v("monopd", "net: Received onPlayerUpdate() from MonoProtocolHandler");
@@ -415,7 +408,7 @@ public class BoardActivity extends Activity {
                         }
                     });
                 }
-
+    
                 @Override
                 public void onGameUpdate(int gameId, final String status) {
                     Log.v("monopd", "net: Received onGameUpdate() from MonoProtocolHandler");
@@ -423,21 +416,11 @@ public class BoardActivity extends Activity {
                         @Override
                         public void run() {
                             BoardActivity.this.status = GameStatus.fromString(status);
-                            switch (BoardActivity.this.status) {
-                            case CONFIG:
-                                BoardActivity.this.boardView.setState(DrawState.CONFIG);
-                                break;
-                            case INIT:
-                                BoardActivity.this.boardView.setState(DrawState.INIT);
-                                break;
-                            case RUN:
-                                BoardActivity.this.boardView.setState(DrawState.RUN);
-                                break;
-                            }
+                            BoardActivity.this.boardView.setStatus(BoardActivity.this.status);
                         }
                     });
                 }
-
+    
                 @Override
                 public void onConfigUpdate(final List<Configurable> configList) {
                     Log.v("monopd", "net: Received onConfigUpdate() from MonoProtocolHandler");
@@ -468,7 +451,7 @@ public class BoardActivity extends Activity {
                         }
                     });
                 }
-
+    
                 @Override
                 public void onChatMessage(final int playerId, final String author, final String text) {
                     Log.v("monopd", "net: Received onChatMessage() from MonoProtocolHandler");
@@ -479,12 +462,7 @@ public class BoardActivity extends Activity {
                         }
                     });
                 }
-
-                private void writeMessage(String msgText, int color, int playerId, int estateId, boolean clearButtons) {
-                    BoardActivity.this.chatListAdapter.add(msgText);
-                    BoardActivity.this.chatListAdapter.notifyDataSetChanged();
-                }
-
+    
                 @Override
                 public void onErrorMessage(final String text) {
                     Log.v("monopd", "net: Received onErrorMessage() from MonoProtocolHandler");
@@ -495,7 +473,7 @@ public class BoardActivity extends Activity {
                         }
                     });
                 }
-
+    
                 @Override
                 public void onDisplayMessage(final int estateId, final String text, final boolean clearText,
                                 final boolean clearButtons) {
@@ -508,24 +486,68 @@ public class BoardActivity extends Activity {
                         }
                     });
                 }
-
+    
                 @Override
                 public void onPlayerListUpdate(String type, List<Player> list) {
                     Log.v("monopd", "net: Received onPlayerListUpdate() from MonoProtocolHandler");
                     if (type.equals("full")) {
                         Log.d("monopd", "players: Full list update");
-                        final int[] playerIds = new int[4];
+                        final int[] newPlayerIds = new int[4];
                         for (int i = 0; i < list.size() && i < 4; i++) {
-                            playerIds[i] = list.get(i).getPlayerId();
-                            BoardActivity.this.runOnUiThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    setPlayerView(playerIds);
-                                }
-                            });
+                            newPlayerIds[i] = list.get(i).getPlayerId();
                         }
+                        BoardActivity.this.runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                setPlayerView(newPlayerIds);
+                            }
+                        });
                     } else if (type.equals("edit")) {
-                        Log.d("monopd", "players: Edit " + list.get(0).getNick());
+                        //Log.d("monopd", "players: Edit " + list.get(0).getNick());
+                        BoardActivity.this.runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                updatePlayerView();
+                            }
+                        });
+                    } else if (type.equals("add")) {
+                        //Log.d("monopd", "players: Add " + list.get(0).getNick());
+                        final int[] newPlayerIds = playerIds;
+                        for (int i = 0; i < list.size(); i++) {
+                            for (int j = 0; j < 4; j++) {
+                                int playerId = list.get(i).getPlayerId();
+                                if (newPlayerIds[j] == 0 || newPlayerIds[j] == playerId) {
+                                    newPlayerIds[j] = playerId;
+                                    break;
+                                }
+                            }
+                        }
+                        BoardActivity.this.runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                setPlayerView(newPlayerIds);
+                            }
+                        });
+                    } else if (type.equals("del")) {
+                        Log.d("monopd", "players: Delete " + players.get(list.get(0).getPlayerId()).getNick());
+                        final int[] newPlayerIds = playerIds;
+                        for (int i = 0; i < list.size(); i++) {
+                            boolean moveBack = false;
+                            for (int j = 0; j < 4; j++) {
+                                if (!moveBack && newPlayerIds[j] == list.get(i).getPlayerId()) {
+                                    moveBack = true;
+                                }
+                                if (moveBack) {
+                                    newPlayerIds[j] = j < 3 ? newPlayerIds[j + 1] : 0;
+                                }
+                            }
+                        }
+                        BoardActivity.this.runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                setPlayerView(newPlayerIds);
+                            }
+                        });
                     } else {
                         Log.w("monopd", "players: " + type + " " + list.get(0).getNick());
                     }
@@ -546,6 +568,20 @@ public class BoardActivity extends Activity {
             // await messages on network thread
             Looper.loop();
         }
+    }
+    
+    /**
+     * Write a message to the chat list.
+     * The chat item will be tappable if either playerId or estateId is positive.
+     * @param msgText The text.
+     * @param color The color.
+     * @param playerId A player ID associated with this message. Set to 0 or negative to ignore.
+     * @param estateId An estate ID associated with this message. Set to 0 or negative to ignore.
+     * @param clearButtons Whether the buttons should be cleared, if any. TODO: move to anotehr function.
+     */
+    private void writeMessage(String msgText, int color, int playerId, int estateId, boolean clearButtons) {
+        BoardActivity.this.chatListAdapter.add(new ChatItem(msgText, color, playerId, estateId, clearButtons));
+        BoardActivity.this.chatListAdapter.notifyDataSetChanged();
     }
 
     /**

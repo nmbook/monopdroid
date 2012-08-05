@@ -10,14 +10,12 @@ import android.widget.ArrayAdapter;
 import android.widget.TextView;
 
 public class GameListAdapter extends ArrayAdapter<GameItem> {
-    private List<GameItem> list = null;
     private Context context = null;
     private int layout = 0;
 
     public GameListAdapter(Context context, int resource, List<GameItem> objects) {
         super(context, resource, objects);
         this.context = context;
-        this.list = objects;
         this.layout = resource;
     }
 
@@ -28,7 +26,7 @@ public class GameListAdapter extends ArrayAdapter<GameItem> {
             LayoutInflater vi = (LayoutInflater) this.context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
             v = vi.inflate(this.layout, null);
         }
-        GameItem o = this.list.get(position);
+        GameItem o = this.getItem(position);
         if (o != null) {
             TextView nameText = (TextView) v.findViewById(R.id.game_item_name);
             TextView descrText = (TextView) v.findViewById(R.id.game_item_descr);
@@ -68,7 +66,7 @@ public class GameListAdapter extends ArrayAdapter<GameItem> {
 
     @Override
     public long getItemId(int position) {
-        GameItem o = this.list.get(position);
+        GameItem o = this.getItem(position);
         return o.getGameId();
     }
 }

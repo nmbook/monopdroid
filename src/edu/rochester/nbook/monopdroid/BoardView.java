@@ -11,11 +11,8 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Paint.Style;
 import android.graphics.Rect;
-import android.graphics.RectF;
 import android.graphics.drawable.NinePatchDrawable;
 import android.text.Layout.Alignment;
-import android.text.StaticLayout;
-import android.text.TextPaint;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.GestureDetector;
@@ -26,134 +23,6 @@ import android.view.SurfaceView;
 import android.view.View;
 
 public class BoardView extends SurfaceView implements Runnable {
-    public enum DrawState {
-        WAIT_JOIN, WAIT_CREATE, CONFIG, INIT, RUN, END
-    }
-
-    public interface BoardViewListener {
-        public void onConfigChange(String command, String value);
-
-        public void onStartGame();
-    }
-
-    private interface RegionListener {
-        public void onRegionClick(Region region);
-
-        public void onRegionLongPress(Region region);
-    }
-
-    private abstract class Region {
-        private String tag;
-        private Rect bounds;
-
-        public Region(String tag, Rect bounds) {
-            this.tag = tag;
-            this.bounds = bounds;
-        }
-
-        public String getTag() {
-            return this.tag;
-        }
-
-        public Rect getBounds() {
-            return this.bounds;
-        }
-
-        public abstract void draw(Canvas canvas);
-    }
-
-    private class TextRegion extends Region {
-        private StaticLayout layout;
-
-        public TextRegion(String text, Rect bounds, Paint textPaint, Alignment align) {
-            super(text, bounds);
-            this.layout = new StaticLayout(text, new TextPaint(textPaint), this.getBounds().right
-                            - this.getBounds().left, align, 1f, 0f, false);
-            super.bounds.top = super.bounds.top - this.layout.getHeight() / 2;
-            super.bounds.bottom = super.bounds.top + this.layout.getHeight();
-        }
-
-        @Override
-        public void draw(Canvas canvas) {
-            canvas.save();
-            canvas.translate(this.getBounds().left, this.getBounds().top);
-            this.layout.draw(canvas);
-            canvas.restore();
-            // canvas.drawText(this.getTag(), this.getBounds().left,
-            // this.getBounds().top + 30, this.textPaint);
-        }
-    }
-
-    private class DrawableRegion extends Region {
-        private Paint imgPaint;
-        private Bitmap bmp;
-
-        public DrawableRegion(String tag, Rect bounds, Bitmap bitmap, Paint imgPaint) {
-            super(tag, bounds);
-            this.bmp = bitmap;
-            this.imgPaint = imgPaint;
-        }
-
-        public void setBitmap(Bitmap bmp) {
-            this.bmp = bmp;
-        }
-
-        @Override
-        public void draw(Canvas canvas) {
-            canvas.drawBitmap(this.bmp, null, this.getBounds(), this.imgPaint);
-        }
-    }
-
-    private class NinePatchDrawableRegion extends Region {
-        private NinePatchDrawable npd;
-
-        public NinePatchDrawableRegion(String tag, Rect bounds, NinePatchDrawable npd) {
-            super(tag, bounds);
-            this.npd = npd;
-            this.npd.setBounds(super.bounds);
-        }
-
-        @Override
-        public void draw(Canvas canvas) {
-            this.npd.draw(canvas);
-        }
-    }
-
-    private class GestureRegion extends Region {
-        private RegionListener listener;
-        private boolean isPressed;
-        private Paint bgPaint;
-
-        public GestureRegion(String tag, Rect bounds, Paint paint, RegionListener listener) {
-            super(tag, bounds);
-            this.listener = listener;
-            this.bgPaint = paint;
-        }
-
-        @Override
-        public void draw(Canvas canvas) {
-            if (this.isPressed) {
-                canvas.drawRoundRect(new RectF(this.getBounds()), 4f, 4f, this.bgPaint);
-            }
-        }
-
-        public void onDown() {
-            this.isPressed = true;
-        }
-
-        public void onUp() {
-            this.isPressed = false;
-        }
-
-        public void invokeClick() {
-            this.listener.onRegionClick(this);
-        }
-
-        public void invokeLongPress() {
-            this.listener.onRegionLongPress(this);
-        }
-    }
-
     // ui thread exclusives
     private Thread surfaceThread = null;
     private SurfaceHolder surfaceHolder = null;
@@ -164,8 +33,6 @@ public class BoardView extends SurfaceView implements Runnable {
     // draw thread cached images
     private static Bitmap checkIconChecked = null;
     private static Bitmap checkIconUnchecked = null;
-    private static Bitmap checkIconCheckedFocused = null;
-    private static Bitmap checkIconUncheckedFocused = null;
     private static Bitmap checkIconCheckedDisabled = null;
     private static Bitmap checkIconUncheckedDisabled = null;
     private static NinePatchDrawable buttonEnabled = null;
@@ -179,18 +46,18 @@ public class BoardView extends SurfaceView implements Runnable {
 
     // used to store draw state across threads
     private volatile boolean running = false;
-    private volatile DrawState state = DrawState.WAIT_CREATE;
-    private volatile List<Region> regions = new ArrayList<BoardView.Region>();
-    private volatile List<Estate> estates = new ArrayList<Estate>();
-    private volatile List<Configurable> config = new ArrayList<Configurable>();
-    private volatile List<Player> player = new ArrayList<Player>();
+    private volatile GameStatus status = GameStatus.WAIT_CREATE;
+    private volatile List<Region> regions = new ArrayList<Region>();
+    private volatile List<Region> overlayRegions = new ArrayList<Region>();
     private volatile float offsetX = 0f;
     private volatile float offsetY = 0f;
     private volatile float scale = 1f;
+    private volatile Rect offsetBounds = new Rect();
+    private volatile boolean overlay = false;
 
     // used by gesture objects to enable/disable scaling/translation
-    private float maxScale = 1f;
-    private float minScale = 1f;
+    //private float maxScale = 1f;
+    //private float minScale = 1f;
     private boolean enableTranslate = false;
     private boolean enableScale = false;
 
@@ -198,20 +65,20 @@ public class BoardView extends SurfaceView implements Runnable {
         this.thisListener = listener;
     }
 
-    public DrawState getState() {
-        return this.state;
+    public GameStatus getStatus() {
+        return this.status;
     }
 
-    public void setState(DrawState state) {
-        this.state = state;
-        Log.d("monopd", "surface: state = " + state.toString());
+    public void setStatus(GameStatus status) {
+        this.status = status;
+        Log.d("monopd", "surface: state = " + status.toString());
         synchronized (this.regions) {
             this.regions.clear();
             this.offsetX = this.offsetY = 0f;
             this.scale = 1f;
             this.enableTranslate = false;
             this.enableScale = false;
-            switch (state) {
+            switch (status) {
             case WAIT_CREATE:
                 this.regions.add(new TextRegion("Creating game...", new Rect(this.getWidth() / 3, this.getHeight() / 2,
                                 this.getWidth(), this.getHeight()), this.textPaint, Alignment.ALIGN_NORMAL));
@@ -221,8 +88,8 @@ public class BoardView extends SurfaceView implements Runnable {
                                 this.getWidth(), this.getHeight()), this.textPaint, Alignment.ALIGN_NORMAL));
                 break;
             case CONFIG:
-                this.enableTranslate = false;
-                this.enableScale = false;
+                this.enableTranslate = true;
+                this.enableScale = true;
                 break;
             case INIT:
                 this.regions.add(new TextRegion("Starting game...", new Rect(this.getWidth() / 3, this.getHeight() / 2,
@@ -232,17 +99,11 @@ public class BoardView extends SurfaceView implements Runnable {
                 this.enableTranslate = true;
                 this.enableScale = true;
                 break;
-            case END:
-                this.enableTranslate = true;
-                this.enableScale = true;
-                break;
             }
         }
     }
 
-    public void setConfigurables(List<Configurable> configurables, boolean isMaster) {
-        this.config = configurables;
-
+    public void setConfigurables(final List<Configurable> configurables, boolean isMaster) {
         synchronized (this.regions) {
             this.regions.clear();
             this.addStartButtonRegions(isMaster);
@@ -256,7 +117,7 @@ public class BoardView extends SurfaceView implements Runnable {
                         check = checkIconChecked;
                     }
                     this.regions.add(new GestureRegion(config.getCommand(), new Rect(0, 5 + (index * 55), this
-                                    .getWidth(), 60 + (index * 55)), this.highlightPaint, new RegionListener() {
+                                    .getWidth(), 60 + (index * 55)), this.highlightPaint, new GestureRegionListener() {
                         @Override
                         public void onRegionLongPress(Region region) {
                             // do nthing on check box long-press
@@ -265,7 +126,7 @@ public class BoardView extends SurfaceView implements Runnable {
                         @Override
                         public void onRegionClick(Region region) {
                             if (BoardView.this.thisListener != null) {
-                                for (Configurable currentConfigurable : BoardView.this.config) {
+                                for (Configurable currentConfigurable : configurables) {
                                     if (currentConfigurable.getCommand().equals(region.getTag())) {
                                         BoardView.this.thisListener.onConfigChange(currentConfigurable.getCommand(),
                                                         currentConfigurable.getValue().equals("0") ? "1" : "0");
@@ -301,7 +162,7 @@ public class BoardView extends SurfaceView implements Runnable {
         this.regions.add(new TextRegion("Start Game", textBounds, isMaster ? this.textNegativePaint : this.textPaint,
                         Alignment.ALIGN_CENTER));
         if (isMaster) {
-            this.regions.add(new GestureRegion(null, bounds, this.highlightPaint, new RegionListener() {
+            this.regions.add(new GestureRegion(null, bounds, this.highlightPaint, new GestureRegionListener() {
                 @Override
                 public void onRegionLongPress(Region region) {
                 }
@@ -368,7 +229,19 @@ public class BoardView extends SurfaceView implements Runnable {
             public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
                 if (BoardView.this.enableTranslate) {
                     BoardView.this.offsetX -= distanceX;
+                    if (offsetX < offsetBounds.left) {
+                        offsetX = offsetBounds.left;
+                    }
+                    if (offsetX > offsetBounds.right) {
+                        offsetX = offsetBounds.right;
+                    }
                     BoardView.this.offsetY -= distanceY;
+                    if (offsetY < offsetBounds.top) {
+                        offsetY = offsetBounds.top;
+                    }
+                    if (offsetY < offsetBounds.bottom) {
+                        offsetY = offsetBounds.bottom;
+                    }
                     return true;
                 } else {
                     return false;
@@ -403,10 +276,29 @@ public class BoardView extends SurfaceView implements Runnable {
                 return true;
             }
         });
+        
+        this.scaleDetector = new ScaleGestureDetector(getContext(), new ScaleGestureDetector.OnScaleGestureListener() {
+            @Override
+            public void onScaleEnd(ScaleGestureDetector detector) { }
+            
+            @Override
+            public boolean onScaleBegin(ScaleGestureDetector detector) {
+                return enableScale;
+            }
+            
+            @Override
+            public boolean onScale(ScaleGestureDetector detector) {
+                scale *= detector.getScaleFactor();
+                return true;
+            }
+        });
     }
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
+        if (this.scaleDetector.onTouchEvent(event)) {
+            return true;
+        }
         return this.scrollDetector.onTouchEvent(event);
     }
 
@@ -459,9 +351,6 @@ public class BoardView extends SurfaceView implements Runnable {
         checkIconCheckedDisabled = BitmapFactory.decodeResource(this.getResources(), R.drawable.btn_check_on_disable);
         checkIconUncheckedDisabled = BitmapFactory
                         .decodeResource(this.getResources(), R.drawable.btn_check_off_disable);
-        checkIconCheckedFocused = BitmapFactory.decodeResource(this.getResources(), R.drawable.btn_check_on_selected);
-        checkIconUncheckedFocused = BitmapFactory
-                        .decodeResource(this.getResources(), R.drawable.btn_check_off_selected);
         buttonEnabled = (NinePatchDrawable) this.getResources().getDrawable(R.drawable.btn_default_normal);
         buttonDisabled = (NinePatchDrawable) this.getResources().getDrawable(R.drawable.btn_default_normal_disable);
 
@@ -474,6 +363,7 @@ public class BoardView extends SurfaceView implements Runnable {
             if (this.surfaceHolder.getSurface().isValid()) {
                 Canvas canvas = this.surfaceHolder.lockCanvas();
                 canvas.drawRect(new Rect(0, 0, canvas.getWidth(), canvas.getHeight()), this.bgPaint);
+                canvas.save();
                 canvas.scale(this.scale, this.scale);
                 canvas.translate(this.offsetX, this.offsetY);
                 synchronized (this.regions) {
@@ -482,8 +372,27 @@ public class BoardView extends SurfaceView implements Runnable {
                         region.draw(canvas);
                     }
                 }
+                canvas.restore();
+                if (overlay) {
+                    synchronized (this.overlayRegions) {
+                        for (Region region : this.overlayRegions) {
+                            // canvas.drawRect(region.getBounds(), oPaint);
+                            region.draw(canvas);
+                        }
+                    }
+                }
                 this.surfaceHolder.unlockCanvasAndPost(canvas);
             }
         }
+    }
+
+    public void overlayPlayerInfo(Player player) {
+        // TODO Auto-generated method stub
+        
+    }
+
+    public void overlayEstateInfo(Estate estate) {
+        // TODO Auto-generated method stub
+        
     }
 }
