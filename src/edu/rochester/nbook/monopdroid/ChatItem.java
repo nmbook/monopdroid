@@ -7,7 +7,7 @@ public class ChatItem {
     private int estateId;
     private boolean underline;
     private boolean clickable;
-    
+
     public ChatItem(String text, int color, int playerId, int estateId, boolean clearButtons) {
         this.text = text;
         this.color = color;
@@ -18,26 +18,26 @@ public class ChatItem {
     }
 
     public String getText() {
-        return text;
+        return this.text;
     }
 
     public int getColor() {
-        return color;
+        return this.color;
     }
 
     public int getPlayerId() {
-        return playerId;
+        return this.playerId;
     }
 
     public int getEstateId() {
-        return estateId;
+        return this.estateId;
     }
 
     public boolean isUnderline() {
-        return underline;
+        return this.underline;
     }
 
     public boolean isClickable() {
-        return clickable;
+        return this.clickable;
     }
 }

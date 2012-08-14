@@ -3,6 +3,7 @@ package edu.rochester.nbook.monopdroid;
 import java.util.List;
 
 import android.content.Context;
+import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -32,32 +33,70 @@ public class GameListAdapter extends ArrayAdapter<GameItem> {
             TextView descrText = (TextView) v.findViewById(R.id.game_item_descr);
             TextView playersText = (TextView) v.findViewById(R.id.game_item_players);
             if (nameText != null) {
-                if (o.getGameId() <= 0 && o.getGameId() != -1) {
+                switch (o.getItemType()) {
+                case RECONNECT:
+                    nameText.setText(o.getTypeName() + " (" + o.getType() + "): you may be able to rejoin this game");
+                    break;
+                case CREATE:
+                case JOIN:
+                    nameText.setText(o.getTypeName() + " (" + o.getType() + ")");
+                    break;
+                default:
+                case LOADING:
+                case ERROR:
+                case EMPTY:
+                case READY:
                     nameText.setText(this.context.getString(R.string.empty));
-                } else {
-                    nameText.setText("Game type: " + o.getTypeName() + " (" + o.getType() + ")");
+                    break;
                 }
             }
             if (descrText != null) {
-                if (o.getGameId() == 0) { // tap to refresh
+                switch (o.getItemType()) {
+                case READY:
+                    descrText.setTextColor(Color.LTGRAY);
                     descrText.setText(this.context.getString(R.string.game_list_ready));
-                } else if (o.getGameId() == -1) { // tap to create
+                    break;
+                case CREATE:
+                    descrText.setTextColor(Color.LTGRAY);
                     descrText.setText(this.context.getString(R.string.game_list_create));
-                } else if (o.getGameId() == -2) { // loading
+                    break;
+                case LOADING:
+                    descrText.setTextColor(Color.LTGRAY);
                     descrText.setText(this.context.getString(R.string.game_list_loading));
-                } else if (o.getGameId() == -3) { // empty, tap to refresh
+                    break;
+                case EMPTY:
+                    descrText.setTextColor(Color.LTGRAY);
                     descrText.setText(this.context.getString(R.string.game_list_empty));
-                } else if (o.getGameId() == -4) { // error, tap to retry
+                    break;
+                case ERROR:
+                    descrText.setTextColor(Color.RED);
                     descrText.setText(this.context.getString(R.string.game_list_error));
-                } else {
+                    break;
+                case RECONNECT:
+                    descrText.setTextColor(Color.GREEN);
                     descrText.setText(o.getDescription());
+                    break;
+                default:
+                case JOIN:
+                    descrText.setTextColor(Color.WHITE);
+                    descrText.setText(o.getDescription());
+                    break;
                 }
             }
             if (playersText != null) {
-                if (o.getGameId() <= 0) {
-                    playersText.setText(this.context.getString(R.string.empty));
-                } else {
+                switch (o.getItemType()) {
+                case JOIN:
+                case RECONNECT:
                     playersText.setText(Integer.toString(o.getPlayers()));
+                    break;
+                default:
+                case CREATE:
+                case EMPTY:
+                case ERROR:
+                case LOADING:
+                case READY:
+                    playersText.setText(this.context.getString(R.string.empty));
+                    break;
                 }
             }
         }

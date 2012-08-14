@@ -20,7 +20,7 @@
             android:baselineAligned="false">
 	        <LinearLayout
 	            android:id="@+id/player_item1"
-	            android:layout_width="wrap_content"
+	            android:layout_width="0dip"
 	            android:layout_height="wrap_content"
 	            android:layout_weight="1"
 	            android:orientation="vertical">
@@ -28,15 +28,19 @@
 	                android:id="@id/player_text_1"
 	                android:layout_width="wrap_content"
 	                android:layout_height="wrap_content"
-                    android:textAppearance="?android:attr/textAppearanceMedium"/>
+                    android:textAppearance="?android:attr/textAppearanceMedium"
+	                android:singleLine="true"
+	                android:ellipsize="end" />
 	            <TextView
 	                android:id="@id/player_text_2"
 	                android:layout_width="wrap_content"
-	                android:layout_height="wrap_content"/>
+	                android:layout_height="wrap_content"
+	                android:singleLine="true"
+	                android:ellipsize="end" />
 	        </LinearLayout>
 	        <LinearLayout
 	            android:id="@+id/player_item2"
-	            android:layout_width="wrap_content"
+	            android:layout_width="0dip"
 	            android:layout_height="wrap_content"
 	            android:layout_weight="1"
 	            android:orientation="vertical">
@@ -44,15 +48,19 @@
                     android:id="@id/player_text_1"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textAppearance="?android:attr/textAppearanceMedium"/>
+                    android:textAppearance="?android:attr/textAppearanceMedium"
+	                android:singleLine="true"
+	                android:ellipsize="end" />
                 <TextView
                     android:id="@id/player_text_2"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"/>
+                    android:layout_height="wrap_content"
+	                android:singleLine="true"
+	                android:ellipsize="end" />
 	        </LinearLayout>
 	        <LinearLayout
 	            android:id="@+id/player_item3"
-	            android:layout_width="wrap_content"
+	            android:layout_width="0dip"
 	            android:layout_height="wrap_content"
 	            android:layout_weight="1"
 	            android:orientation="vertical">
@@ -60,15 +68,19 @@
                     android:id="@id/player_text_1"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textAppearance="?android:attr/textAppearanceMedium"/>
+                    android:textAppearance="?android:attr/textAppearanceMedium"
+	                android:singleLine="true"
+	                android:ellipsize="end" />
                 <TextView
                     android:id="@id/player_text_2"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"/>
+                    android:layout_height="wrap_content"
+	                android:singleLine="true"
+	                android:ellipsize="end" />
 	        </LinearLayout>
 	        <LinearLayout
 	            android:id="@+id/player_item4"
-	            android:layout_width="wrap_content"
+	            android:layout_width="0dip"
 	            android:layout_height="wrap_content"
 	            android:layout_weight="1"
 	            android:orientation="vertical" >
@@ -76,11 +88,15 @@
                     android:id="@id/player_text_1"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textAppearance="?android:attr/textAppearanceMedium"/>
+                    android:textAppearance="?android:attr/textAppearanceMedium"
+	                android:singleLine="true"
+	                android:ellipsize="end" />
                 <TextView
                     android:id="@id/player_text_2"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"/>
+                    android:layout_height="wrap_content"
+	                android:singleLine="true"
+	                android:ellipsize="end" />
 	        </LinearLayout>
 	    </LinearLayout>
         <ListView

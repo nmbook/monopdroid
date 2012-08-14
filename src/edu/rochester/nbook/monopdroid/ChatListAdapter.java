@@ -1,5 +1,10 @@
 package edu.rochester.nbook.monopdroid;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import edu.rochester.nbook.monopdroid.BoardActivity.BoardActivityState;
+
 import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -32,5 +37,20 @@ public class ChatListAdapter extends ArrayAdapter<ChatItem> {
             chat.setTextColor(o.getColor());
         }
         return v;
+    }
+    
+    public List<ChatItem> saveState() {
+        List<ChatItem> items = new ArrayList<ChatItem>();
+        for (int i = 0; i < this.getCount(); i++) {
+            items.add(this.getItem(i));
+        }
+        return items;
+    }
+
+    public void restoreState(BoardActivityState state) {
+        List<ChatItem> items = state.chat;
+        for (ChatItem item : items) {
+            add(item);
+        }
     }
 }

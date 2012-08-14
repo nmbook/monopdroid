@@ -2,20 +2,26 @@ package edu.rochester.nbook.monopdroid;
 
 import android.graphics.Canvas;
 import android.graphics.Paint;
-import android.graphics.Rect;
+import android.graphics.RectF;
+import android.text.Layout.Alignment;
 import android.text.StaticLayout;
 import android.text.TextPaint;
-import android.text.Layout.Alignment;
 
 public class TextRegion extends Region {
     private StaticLayout layout;
+    private String text;
 
-    public TextRegion(String text, Rect bounds, Paint textPaint, Alignment align) {
-        super(text, bounds);
-        this.layout = new StaticLayout(text, new TextPaint(textPaint), this.getBounds().right
-                        - this.getBounds().left, align, 1f, 0f, false);
+    public TextRegion(RectF rectF, int tag, String text, Paint textPaint, Alignment align) {
+        super(rectF, tag);
+        this.text = text;
+        this.layout = new StaticLayout(text, new TextPaint(textPaint), (int)(this.getBounds().right - this.getBounds().left),
+                align, 1f, 0f, false);
         super.bounds.top = super.bounds.top - this.layout.getHeight() / 2;
         super.bounds.bottom = super.bounds.top + this.layout.getHeight();
+    }
+    
+    public String getText() {
+        return text;
     }
 
     @Override

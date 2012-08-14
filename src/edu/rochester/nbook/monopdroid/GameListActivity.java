@@ -12,7 +12,6 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -30,52 +29,79 @@ public class GameListActivity extends ListActivity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         ArrayList<GameItem> gameList = new ArrayList<GameItem>();
-        gameList.add(new GameItem(0, null, 0, null, null, null, null, 0, false));
         this.adapter = new GameListAdapter(this, R.layout.game_item, gameList);
+        addSavedGame();
+        adapter.add(new GameItem(GameItemType.READY));
         this.setListAdapter(this.adapter);
         ListView lv = (ListView) this.findViewById(android.R.id.list);
         lv.setOnItemLongClickListener(new OnItemLongClickListener() {
+
             @Override
             public boolean onItemLongClick(AdapterView<?> listView, View item, int position, long id) {
                 Bundle state = new Bundle();
                 GameItem o = GameListActivity.this.adapter.getItem(position);
-                state.putString("name", o.getDescription());
-                String hostLine = null;
-                if (o.getServers().size() == 1) {
-                    hostLine = "Host: " + o.getServer().getHost() + ":" + o.getServer().getPort();
-                } else {
-                    hostLine = "Hosts: ";
-                    for (ServerItem server : o.getServers()) {
-                        hostLine += server.getHost() + ":" + server.getPort() + ", ";
+                switch (o.getItemType()) {
+                case CREATE:
+                case JOIN:
+                case RECONNECT:
+                    state.putString("name", o.getDescription());
+                    String hostLine = null;
+                    if (o.getServers().size() == 1) {
+                        hostLine = "Host: " + o.getServer().getHost() + ":" + o.getServer().getPort();
+                    } else {
+                        hostLine = "Hosts: ";
+                        for (ServerItem server : o.getServers()) {
+                            hostLine += server.getHost() + ":" + server.getPort() + ", ";
+                        }
+                        hostLine = hostLine.substring(0, hostLine.length() - 2);
                     }
-                    hostLine = hostLine.substring(0, hostLine.length() - 2);
+                    state.putString(
+                            "info",
+                            hostLine
+                                    + "\n"
+                                    + "Server Version: "
+                                    + o.getServer().getVersion()
+                                    + "\n"
+                                    + "Type: "
+                                    + o.getTypeName()
+                                    + " ("
+                                    + o.getType()
+                                    + ")\n"
+                                    + "Description: "
+                                    + o.getDescription()
+                                    + (o.getItemType() == GameItemType.CREATE ? "" : "\n" + "Players: " + o.getPlayers() + "\n"
+                                            + "Allowed to Join: " + o.canJoin()));
+                    GameListActivity.this.showDialog(R.id.dialog_server_info, state);
+                    return true;
                 }
-                state.putString("info",
-                                hostLine
-                                                + "\n"
-                                                + "Server Version: "
-                                                + o.getServer().getVersion()
-                                                + "\n"
-                                                + "Type: "
-                                                + o.getTypeName()
-                                                + " ("
-                                                + o.getType()
-                                                + ")\n"
-                                                + "Description: "
-                                                + o.getDescription()
-                                                + (o.getGameId() == -1 ? "" : "\n" + "Players: " + o.getPlayers()
-                                                                + "\n" + "Allowed to Join: " + o.canJoin()));
-                GameListActivity.this.showDialog(R.id.dialog_server_info, state);
-                return true;
+                return false;
             }
         });
+    }
+
+    private void addSavedGame() {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+        
+        int gameId = prefs.getInt("saved_game_id", 0);
+        String server = prefs.getString("saved_server", null);
+        int port = prefs.getInt("saved_port", 0);
+        String version = prefs.getString("saved_version", null);
+        String type = prefs.getString("saved_type", null);
+        String type_name = prefs.getString("saved_type_name", null);
+        String descr = prefs.getString("saved_descr", null);
+        int players = prefs.getInt("saved_players", 0);
+        
+        if (gameId > 0) {
+            adapter.add(new GameItem(gameId, server, port, version, type, type_name, descr, players));
+        }
     }
 
     @Override
     protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
         if (this.gettingGameList) {
-            Log.e("monopd", "Error! Bad things can happen! We are fetching while rotating!");
+            fetcher.cancel(true);
+            this.gettingGameList = false;
         }
         outState.putInt("count", this.adapter.getCount());
         for (int i = 0; i < this.adapter.getCount(); i++) {
@@ -83,7 +109,7 @@ public class GameListActivity extends ListActivity {
             outState.putInt("item_" + i + "_id", o.getGameId());
             outState.putInt("item_" + i + "_s_count", o.getServers().size());
             for (int j = 0; j < o.getServers().size(); j++) {
-                outState.putString("item_" + i + "_s_" + j + "_host", o.getServers().get(j).getVersion());
+                outState.putString("item_" + i + "_s_" + j + "_host", o.getServers().get(j).getHost());
                 outState.putInt("item_" + i + "_s_" + j + "_port", o.getServers().get(j).getPort());
                 outState.putString("item_" + i + "_s_" + j + "_version", o.getServers().get(j).getVersion());
                 outState.putInt("item_" + i + "_s_" + j + "_players", o.getServers().get(j).getUsers());
@@ -93,6 +119,7 @@ public class GameListActivity extends ListActivity {
             outState.putString("item_" + i + "_descr", o.getDescription());
             outState.putInt("item_" + i + "_players", o.getPlayers());
             outState.putBoolean("item_" + i + "_can_join", o.canJoin());
+            outState.putInt("item_" + i + "_item_type", o.getItemType().getIndex());
         }
     }
 
@@ -111,6 +138,7 @@ public class GameListActivity extends ListActivity {
     protected void onRestoreInstanceState(Bundle state) {
         super.onRestoreInstanceState(state);
         this.adapter.clear();
+        addSavedGame();
         int count = state.getInt("count");
         for (int i = 0; i < count; i++) {
             int id = state.getInt("item_" + i + "_id");
@@ -128,7 +156,8 @@ public class GameListActivity extends ListActivity {
             String descr = state.getString("item_" + i + "_descr");
             int players = state.getInt("item_" + i + "_players");
             boolean can_join = state.getBoolean("item_" + i + "_can_join");
-            this.adapter.add(new GameItem(id, servers, type, type_name, descr, players, can_join));
+            GameItemType item_type = GameItemType.fromInt(state.getInt("item_" + i + "_item_type"));
+            this.adapter.add(new GameItem(item_type, id, servers, type, type_name, descr, players, can_join));
         }
         this.adapter.notifyDataSetChanged();
     }
@@ -136,25 +165,25 @@ public class GameListActivity extends ListActivity {
     @Override
     protected void onListItemClick(ListView l, View v, int position, long id) {
         super.onListItemClick(l, v, position, id);
-        // ids:
-        // positive: tap to join
-        // 0: tap to refresh
-        // -1: tap to create
-        // -2: loading... no action available
-        // -3: empty, tap to refresh
-        // -4: error, tap to retry
-        if (id == 0 || id <= -3) {
+        GameItem item = adapter.getItem(position);
+        GameItemType type = item.getItemType();
+        switch (type) {
+        case ERROR:
+        case READY:
+        case EMPTY:
             this.getGameList();
-        } else if (id == -1) {
-            this.joinGame(position, false);
-        } else {
-            this.joinGame(position, true);
+            break;
+        case JOIN:
+        case CREATE:
+        case RECONNECT:
+            this.joinGame(position);
+            break;
         }
     }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        this.getMenuInflater().inflate(R.menu.activity_server_list, menu);
+        this.getMenuInflater().inflate(R.menu.game_list_activity, menu);
         return true;
     }
 
@@ -176,6 +205,7 @@ public class GameListActivity extends ListActivity {
     protected Dialog onCreateDialog(int id) {
         AlertDialog.Builder bldr = new AlertDialog.Builder(this);
         OnClickListener doClose = new OnClickListener() {
+
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 dialog.dismiss();
@@ -214,7 +244,7 @@ public class GameListActivity extends ListActivity {
         }
     }
 
-    private void joinGame(int position, boolean is_join) {
+    private void joinGame(int position) {
         GameItem o = this.adapter.getItem(position);
         if (!o.canJoin()) {
             // not joinable, perhaps because this isn't a real game item
@@ -232,7 +262,7 @@ public class GameListActivity extends ListActivity {
         i.putExtra("edu.rochester.nbook.descr", o.getDescription());
         i.putExtra("edu.rochester.nbook.players", o.getPlayers());
         i.putExtra("edu.rochester.nbook.can_join", o.canJoin());
-        i.putExtra("edu.rochester.nbook.act_is_join", is_join);
+        i.putExtra("edu.rochester.nbook.act_type", o.getItemType().getIndex());
         this.startActivity(i);
     }
 
@@ -241,22 +271,25 @@ public class GameListActivity extends ListActivity {
             return;
         }
         this.gettingGameList = true;
-        this.fetcher = new GameListFetcher(new GameListFetcherListener() {
+        this.fetcher = new GameListFetcher(this, new GameListFetcherListener() {
+
             @Override
             public void onGameListFetching() {
                 GameListActivity.this.adapter.clear();
-                GameListActivity.this.adapter.add(new GameItem(-2, null, 0, null, null, null, null, 0, false));
+                addSavedGame();
+                GameListActivity.this.adapter.add(new GameItem(GameItemType.LOADING));
                 GameListActivity.this.adapter.notifyDataSetChanged();
             }
 
             @Override
             public void onGameListFetched(List<GameItem> result) {
                 GameListActivity.this.adapter.clear();
+                addSavedGame();
                 for (GameItem item : result) {
                     GameListActivity.this.adapter.add(item);
                 }
                 if (result.size() == 0) {
-                    GameListActivity.this.adapter.add(new GameItem(-3, null, 0, null, null, null, null, 0, false));
+                    GameListActivity.this.adapter.add(new GameItem(GameItemType.EMPTY));
                 }
                 GameListActivity.this.adapter.notifyDataSetChanged();
                 GameListActivity.this.gettingGameList = false;
@@ -265,12 +298,14 @@ public class GameListActivity extends ListActivity {
             @Override
             public void onException(final String description, final Exception ex) {
                 GameListActivity.this.runOnUiThread(new Runnable() {
+
                     @Override
                     public void run() {
                         Bundle state = new Bundle();
                         GameListActivity.this.gettingGameList = false;
                         GameListActivity.this.adapter.clear();
-                        GameListActivity.this.adapter.add(new GameItem(-4, null, 0, null, null, null, null, 0, false));
+                        addSavedGame();
+                        GameListActivity.this.adapter.add(new GameItem(GameItemType.ERROR));
                         GameListActivity.this.adapter.notifyDataSetChanged();
                         state.putString("error", description + ": " + ex.getMessage());
                         GameListActivity.this.showDialog(R.id.dialog_list_error, state);

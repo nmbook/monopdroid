@@ -4,12 +4,16 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+import android.app.Activity;
+import android.content.SharedPreferences;
+import android.content.pm.PackageManager.NameNotFoundException;
 import android.os.AsyncTask;
 
 public final class GameListFetcher extends AsyncTask<Void, Void, List<GameItem>> {
     private GameListFetcherListener callback = null;
     private ArrayList<GameItem> list = new ArrayList<GameItem>();
     private boolean continueReading = true;
+    private Activity act = null;
 
     @Override
     protected void onPreExecute() {
@@ -25,20 +29,30 @@ public final class GameListFetcher extends AsyncTask<Void, Void, List<GameItem>>
         }
     }
 
-    public GameListFetcher(GameListFetcherListener callback) {
+    public GameListFetcher(Activity act, GameListFetcherListener callback) {
+        this.act = act;
         this.callback = callback;
     }
 
     @Override
     protected List<GameItem> doInBackground(Void... params) {
+        SharedPreferences prefs = act.getPreferences(Activity.MODE_PRIVATE);
+        String server = prefs.getString("gamelist_server", "monopd.gradator.net");
+        int port = prefs.getInt("gamelist_port", 1240);
+        String clientName = "monopdroid";
+        String clientVersion = "0.0.0";
+        try {
+            clientVersion = act.getPackageManager().getPackageInfo(act.getPackageName(), 0).versionName;
+        } catch (NameNotFoundException e) { }
         MonoProtocolHandler monopd = new MonoProtocolHandler(new MonoProtocolMetaListener() {
+
             @Override
             public void onException(String description, Exception ex) {
                 GameListFetcher.this.callback.onException("Unable to get list: " + description, ex);
             }
 
             @Override
-            public void onClose() {
+            public void onClose(boolean remote) {
             }
 
             @Override
@@ -60,10 +74,10 @@ public final class GameListFetcher extends AsyncTask<Void, Void, List<GameItem>>
             @Override
             public void onServerList(List<ServerItem> servers) {
             }
-        }, "monopd.gradator.net", 1240, "gtkatlantic", "0.4.1");
+        }, server, port, clientName, clientVersion);
 
         monopd.sendMetaListGames();
-        while (this.continueReading) {
+        while (this.continueReading && !isCancelled()) {
             monopd.doReceive();
         }
 

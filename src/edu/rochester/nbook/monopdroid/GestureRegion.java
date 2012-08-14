@@ -2,18 +2,19 @@ package edu.rochester.nbook.monopdroid;
 
 import android.graphics.Canvas;
 import android.graphics.Paint;
-import android.graphics.Rect;
 import android.graphics.RectF;
 
 public class GestureRegion extends Region {
     private GestureRegionListener listener;
     private boolean isPressed;
     private Paint bgPaint;
+    private boolean enabled;
 
-    public GestureRegion(String tag, Rect bounds, Paint paint, GestureRegionListener listener) {
-        super(tag, bounds);
+    public GestureRegion(RectF bounds, int tag, Paint paint, GestureRegionListener listener) {
+        super(bounds, tag);
         this.listener = listener;
         this.bgPaint = paint;
+        this.enabled = true;
     }
 
     @Override
@@ -24,18 +25,35 @@ public class GestureRegion extends Region {
     }
 
     public void onDown() {
-        this.isPressed = true;
+        if (this.enabled) {
+            this.isPressed = true;
+        }
     }
 
     public void onUp() {
-        this.isPressed = false;
+        if (this.enabled) {
+            this.isPressed = false;
+        }
     }
 
     public void invokeClick() {
-        this.listener.onRegionClick(this);
+        if (this.enabled) {
+            this.listener.onRegionClick(this);
+        }
     }
 
     public void invokeLongPress() {
-        this.listener.onRegionLongPress(this);
+        if (this.enabled) {
+            this.listener.onRegionLongPress(this);
+        }
+    }
+
+    public boolean isEnabled() {
+        return this.enabled;
+    }
+
+    public void setEnabled(boolean enabled) {
+        this.enabled = enabled;
+        this.isPressed = enabled && this.isPressed;
     }
 }

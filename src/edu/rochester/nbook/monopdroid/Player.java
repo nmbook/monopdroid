@@ -1,6 +1,7 @@
 package edu.rochester.nbook.monopdroid;
 
 public class Player {
+    // player data
     private String nick;
     private String host;
     private String cookie;
@@ -9,6 +10,7 @@ public class Player {
     private int doubleCount;
     private int jailCount;
     private int location;
+    private int lastLocation;
     private boolean master;
     private boolean bankrupt;
     private boolean jailed;
@@ -21,6 +23,10 @@ public class Player {
     private boolean hasDebt;
     private boolean canUseCard;
     private boolean directMove;
+    
+    // non-attribute data
+    private int drawColor;
+    private int drawLocation;
 
     public Player(int playerId) {
         this.playerId = playerId;
@@ -171,6 +177,7 @@ public class Player {
     }
 
     public void setLocation(int location) {
+        this.lastLocation = this.location;
         this.location = location;
     }
 
@@ -180,5 +187,30 @@ public class Player {
 
     public void setDirectMove(boolean directMove) {
         this.directMove = directMove;
+    }
+
+    public int getDrawColor() {
+        return drawColor;
+    }
+
+    public void setDrawColor(int color) {
+        this.drawColor = color;
+    }
+
+    public int getDrawLocation() {
+        return drawLocation;
+    }
+
+    public void setDrawLocation(int location) {
+        this.drawLocation = location;
+    }
+    
+    @Override
+    public String toString() {
+        return this.nick + " (id: " + this.playerId + ")";
+    }
+
+    public int getLastLocation() {
+        return lastLocation;
     }
 }

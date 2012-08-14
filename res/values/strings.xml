@@ -1,22 +1,27 @@
 <resources>
 
-    <string name="app_name">Monopoly GtkAtlantic</string>
+    <string name="app_name">MONOPDroid</string>
     <string name="title_activity_server_list">Monopoly</string>
     <string name="title_activity_settings">Settings</string>
     <string name="title_activity_board">%s</string>
-    <string name="menu_settings">Settings</string>
     <string name="menu_refresh">Refresh List</string>
+    <string name="menu_bankrupt">Declare Bankrupcy</string>
+    <string name="menu_settings">Settings</string>
+    <string name="menu_quit">Quit</string>
     <string name="game_list_ready">Tap to get game list</string>
     <string name="game_list_create">Tap to create new game</string>
-    <string name="game_list_loading">Fetching list...</string>
+    <string name="game_list_loading">Fetching list&#8230;</string>
     <string name="game_list_empty">Nothing listed (tap to retry)</string>
     <string name="game_list_error">Error occured (tap to retry)</string>
-    <string name="dialog_list_error">Error fetching list</string>
     <string name="dialog_server_info">Information for %s</string>
+    <string name="dialog_list_error">Error fetching list</string>
+    <string name="dialog_conn_error">Connection error</string>
     <string name="pref_player_nick_title">Nickname</string>
     <string name="pref_player_nick_summary">Change the nick name that other users will see you as.</string>
     <string name="pref_player_nick_dialog_title">Change nickname</string>
     <string name="empty"></string>
+    <string name="reconnect">Reconnect</string>
+    <string name="quit">Quit</string>
     <string name="pref_gamelist_server_title">List server</string>
     <string name="pref_gamelist_server_summary">The server the retrieve the game list from</string>
     <string name="pref_gamelist_server_dialog_title">Set list server</string>

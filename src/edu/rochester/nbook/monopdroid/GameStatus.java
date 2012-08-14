@@ -1,7 +1,7 @@
 package edu.rochester.nbook.monopdroid;
 
 public enum GameStatus {
-    ERROR, WAIT_JOIN, WAIT_CREATE, CONFIG, INIT, RUN;
+    ERROR, JOIN, CREATE, RECONNECT, CONFIG, INIT, RUN;
 
     public static GameStatus fromString(String strStatus) {
         if (strStatus.equals("config")) {

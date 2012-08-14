@@ -1,23 +1,22 @@
 package edu.rochester.nbook.monopdroid;
 
 import android.graphics.Canvas;
-import android.graphics.Rect;
+import android.graphics.RectF;
 
 public abstract class Region {
-    protected String tag;
-    protected Rect bounds;
+    protected RectF bounds;
+    protected int tag;
 
-    public Region(String tag, Rect bounds) {
-        this.tag = tag;
+    public Region(RectF bounds, int tag) {
         this.bounds = bounds;
     }
 
-    public String getTag() {
-        return this.tag;
-    }
-
-    public Rect getBounds() {
+    public RectF getBounds() {
         return this.bounds;
+    }
+    
+    public int getTag() {
+        return tag;
     }
 
     public abstract void draw(Canvas canvas);

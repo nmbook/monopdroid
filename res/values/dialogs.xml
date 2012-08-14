@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <item type="id" name="dialog_list_error">64</item>
-    <item name="dialog_server_info" type="id">128</item>
-    
+    <item name="dialog_server_info" type="id">10</item>
+    <item name="dialog_list_error" type="id">20</item>
+    <item name="dialog_conn_error" type="id">21</item>
 </resources>
