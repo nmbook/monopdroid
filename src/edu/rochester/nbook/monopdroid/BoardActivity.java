@@ -562,10 +562,10 @@ public class BoardActivity extends Activity {
                             break;
                         case INIT:
                             writeMessage("Starting game...", Color.YELLOW, -1, -1, false);
-                            initPlayerColors();
                             saveCookie();
                             break;
                         case RUN:
+                            initPlayerColors();
                             break;
                         }
                     }
