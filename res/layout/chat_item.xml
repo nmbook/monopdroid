@@ -4,4 +4,7 @@
      android:layout_width="fill_parent"
      android:layout_height="wrap_content"
      android:text="@string/empty"
-     android:textAppearance="?android:attr/textAppearanceMedium" />
+     android:textAppearance="?android:attr/textAppearanceMedium"
+     android:maxLines="256"
+     android:scrollHorizontally="false"
+     android:ellipsize="none" />

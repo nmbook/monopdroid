@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/players"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal" 
+    android:baselineAligned="false">
+    <LinearLayout
+        android:id="@id/board_player_item_1"
+        android:layout_width="0dip"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:onClick="onPlayer1Click"
+        android:background="@android:drawable/list_selector_background"
+        android:focusable="true"
+        
+        android:nextFocusUp="@null"
+        android:nextFocusDown="@id/board_ui"
+        android:nextFocusLeft="@id/board_ui"
+        android:nextFocusRight="@id/board_player_item_2"
+        android:nextFocusForward="@id/board_player_item_2">
+        <TextView
+            android:id="@id/player_text_1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textAppearance="?android:attr/textAppearanceMedium"
+            android:singleLine="true"
+            android:ellipsize="end" />
+        <TextView
+            android:id="@id/player_text_2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:singleLine="true"
+            android:ellipsize="marquee" />
+    </LinearLayout>
+    <LinearLayout
+        android:id="@id/board_player_item_2"
+        android:layout_width="0dip"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:onClick="onPlayer2Click"
+        android:background="@android:drawable/list_selector_background"
+        android:focusable="true"
+        android:visibility="gone"
+        
+        android:nextFocusUp="@null"
+        android:nextFocusDown="@id/board_ui"
+        android:nextFocusLeft="@id/board_player_item_1"
+        android:nextFocusRight="@id/board_player_item_3"
+        android:nextFocusForward="@id/board_player_item_3">
+           <TextView
+               android:id="@id/player_text_1"
+               android:layout_width="wrap_content"
+               android:layout_height="wrap_content"
+               android:textAppearance="?android:attr/textAppearanceMedium"
+               android:singleLine="true"
+               android:ellipsize="end" />
+           <TextView
+               android:id="@id/player_text_2"
+               android:layout_width="wrap_content"
+               android:layout_height="wrap_content"
+               android:singleLine="true"
+               android:ellipsize="marquee" />
+    </LinearLayout>
+    <LinearLayout
+        android:id="@id/board_player_item_3"
+        android:layout_width="0dip"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:onClick="onPlayer3Click"
+        android:background="@android:drawable/list_selector_background"
+        android:focusable="true"
+        android:visibility="gone"
+        
+        android:nextFocusUp="@null"
+        android:nextFocusDown="@id/board_ui"
+        android:nextFocusLeft="@id/board_player_item_2"
+        android:nextFocusRight="@id/board_player_item_4"
+        android:nextFocusForward="@id/board_player_item_4">
+           <TextView
+               android:id="@id/player_text_1"
+               android:layout_width="wrap_content"
+               android:layout_height="wrap_content"
+               android:textAppearance="?android:attr/textAppearanceMedium"
+               android:singleLine="true"
+               android:ellipsize="end" />
+           <TextView
+               android:id="@id/player_text_2"
+               android:layout_width="wrap_content"
+               android:layout_height="wrap_content"
+               android:singleLine="true"
+               android:ellipsize="marquee" />
+    </LinearLayout>
+    <LinearLayout
+        android:id="@id/board_player_item_4"
+        android:layout_width="0dip"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:onClick="onPlayer4Click" 
+        android:background="@android:drawable/list_selector_background"
+        android:focusable="true"
+        android:visibility="gone"
+        
+        android:nextFocusUp="@null"
+        android:nextFocusDown="@id/board_ui"
+        android:nextFocusLeft="@id/board_ui"
+        android:nextFocusRight="@id/board_player_item_3"
+        android:nextFocusForward="@id/board_ui">
+           <TextView
+               android:id="@id/player_text_1"
+               android:layout_width="wrap_content"
+               android:layout_height="wrap_content"
+               android:textAppearance="?android:attr/textAppearanceMedium"
+               android:singleLine="true"
+               android:ellipsize="end" />
+           <TextView
+               android:id="@id/player_text_2"
+               android:layout_width="wrap_content"
+               android:layout_height="wrap_content"
+               android:singleLine="true"
+               android:ellipsize="marquee" />
+    </LinearLayout>
+</LinearLayout>

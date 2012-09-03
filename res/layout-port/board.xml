@@ -3,108 +3,23 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical" >
-    <LinearLayout
-        android:id="@+id/players"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal" 
-        android:baselineAligned="false">
-        <LinearLayout
-            android:id="@+id/player_item1"
-            android:layout_width="0dip"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="vertical">
-            <TextView
-                android:id="@id/player_text_1"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textAppearance="?android:attr/textAppearanceMedium"
-                android:singleLine="true"
-                android:ellipsize="end" />
-            <TextView
-                android:id="@id/player_text_2"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:singleLine="true"
-                android:ellipsize="end" />
-        </LinearLayout>
-        <LinearLayout
-            android:id="@+id/player_item2"
-            android:layout_width="0dip"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="vertical">
-            <TextView
-                android:id="@id/player_text_1"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textAppearance="?android:attr/textAppearanceMedium"
-                android:singleLine="true"
-                android:ellipsize="end" />
-            <TextView
-                android:id="@id/player_text_2"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:singleLine="true"
-                android:ellipsize="end" />
-        </LinearLayout>
-        <LinearLayout
-            android:id="@+id/player_item3"
-            android:layout_width="0dip"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="vertical">
-            <TextView
-                android:id="@id/player_text_1"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textAppearance="?android:attr/textAppearanceMedium"
-                android:singleLine="true"
-                android:ellipsize="end" />
-            <TextView
-                android:id="@id/player_text_2"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:singleLine="true"
-                android:ellipsize="end" />
-        </LinearLayout>
-        <LinearLayout
-            android:id="@+id/player_item4"
-            android:layout_width="0dip"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="vertical" >
-            <TextView
-                android:id="@id/player_text_1"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textAppearance="?android:attr/textAppearanceMedium"
-                android:singleLine="true"
-                android:ellipsize="end" />
-            <TextView
-                android:id="@id/player_text_2"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:singleLine="true"
-                android:ellipsize="end" />
-        </LinearLayout>
-    </LinearLayout>
-    <edu.rochester.nbook.monopdroid.BoardView
-        android:id="@+id/board_ui"
+    <include layout="@layout/players" />
+    <edu.rochester.nbook.monopdroid.board.surface.BoardView
+        android:id="@id/board_ui"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content" >
-    </edu.rochester.nbook.monopdroid.BoardView>
+    </edu.rochester.nbook.monopdroid.board.surface.BoardView>
     <ListView
-        android:id="@+id/chat_contents"
-        android:layout_width="match_parent"
+        android:id="@id/board_chat_list"
+        android:layout_width="fill_parent"
         android:layout_height="0dip"
         android:layout_weight="1"
         android:stackFromBottom="true"
-        android:transcriptMode="alwaysScroll" >
+        android:transcriptMode="alwaysScroll"
+ 		android:divider="@null" >
     </ListView>
     <EditText
-        android:id="@+id/chat_box"
+        android:id="@id/board_chat_box"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:ems="10"

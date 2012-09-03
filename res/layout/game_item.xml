@@ -16,25 +16,27 @@
             android:layout_width="0dip"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:padding="@dimen/list_item_padding"
             android:text="@string/game_list_ready"
-            android:textAppearance="?android:attr/textAppearanceMedium" />
+            android:textAppearance="?android:attr/textAppearanceMedium"
+            android:singleLine="true"
+            android:ellipsize="end" />
 
         <TextView
             android:id="@+id/game_item_players"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center_vertical"
-            android:padding="@dimen/list_item_padding"
             android:text="@string/empty"
-            android:textAppearance="?android:attr/textAppearanceLarge" />
+            android:textAppearance="?android:attr/textAppearanceLarge"
+            android:singleLine="true"
+            android:ellipsize="none" />
     </LinearLayout>
     <TextView
         android:id="@+id/game_item_name"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="@dimen/list_item_padding"
         android:text="@string/empty"
-        android:textAppearance="?android:attr/textAppearanceSmall" />
-
+        android:textAppearance="?android:attr/textAppearanceSmall"
+     	android:scrollHorizontally="false"
+	    android:maxLines="2"/>
 </LinearLayout>
