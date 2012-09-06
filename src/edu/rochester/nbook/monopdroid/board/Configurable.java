@@ -85,4 +85,9 @@ public class Configurable {
     public String getCommand() {
         return this.command;
     }
+    
+    @Override
+    public String toString() {
+        return title + " (" + command + ")";
+    }
 }

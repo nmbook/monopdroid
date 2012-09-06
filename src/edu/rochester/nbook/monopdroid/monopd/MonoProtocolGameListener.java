@@ -1,8 +1,9 @@
 package edu.rochester.nbook.monopdroid.monopd;
 
+import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 
+import edu.rochester.nbook.monopdroid.board.Button;
 import edu.rochester.nbook.monopdroid.board.Configurable;
 import edu.rochester.nbook.monopdroid.board.Player;
 import edu.rochester.nbook.monopdroid.gamelist.GameItem;
@@ -16,7 +17,7 @@ public interface MonoProtocolGameListener extends MonoProtocolListener {
 
     public void onInfoMessage(String text);
 
-    public void onDisplayMessage(int estateId, String text, boolean clearText, boolean clearButtons);
+    public void onDisplayMessage(int estateId, String text, boolean clearText, boolean clearButtons, ArrayList<Button> newButtons);
 
     public void onServer(String version);
 
@@ -26,9 +27,9 @@ public interface MonoProtocolGameListener extends MonoProtocolListener {
 
     public void onGameUpdate(int gameId, String status);
 
-    public void onConfigUpdate(List<Configurable> configList);
+    public void onConfigUpdate(ArrayList<Configurable> configList);
 
-    public void onPlayerListUpdate(String type, List<Player> list);
+    public void onPlayerListUpdate(String type, ArrayList<Player> list);
 
     public void onEstateUpdate(int estateId, HashMap<String, String> data);
 

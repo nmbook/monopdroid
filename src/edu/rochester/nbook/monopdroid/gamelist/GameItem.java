@@ -1,14 +1,13 @@
 package edu.rochester.nbook.monopdroid.gamelist;
 
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Random;
 
 public class GameItem {
     private static Random rng = new Random();
 
     private int gameId;
-    private List<ServerItem> servers;
+    private ArrayList<ServerItem> servers;
     private String type;
     private String type_name;
     private String descr;
@@ -137,7 +136,7 @@ public class GameItem {
      * @param players The player count.
      * @param can_join Whether we can join this game.
      */
-    public GameItem(GameItemType item_type, int id, List<ServerItem> servers, String type, String type_name,
+    public GameItem(GameItemType item_type, int id, ArrayList<ServerItem> servers, String type, String type_name,
             String descr, int players, boolean can_join) {
         this.item_type = item_type;
         this.gameId = id;
@@ -172,7 +171,7 @@ public class GameItem {
         this.gameId = gameId;
     }
 
-    public List<ServerItem> getServers() {
+    public ArrayList<ServerItem> getServers() {
         return this.servers;
     }
 

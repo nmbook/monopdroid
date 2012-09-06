@@ -3,7 +3,6 @@ package edu.rochester.nbook.monopdroid.board;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.List;
 import java.text.DateFormat;
 
 import edu.rochester.nbook.monopdroid.R;
@@ -199,7 +198,11 @@ public class BoardActivity extends FragmentActivity {
     /**
      * List of options.
      */
-    private List<Configurable> configurables = new ArrayList<Configurable>();
+    private ArrayList<Configurable> configurables = new ArrayList<Configurable>();
+    /**
+     * List of buttons.
+     */
+    private ArrayList<Button> buttons = new ArrayList<Button>();
     /**
      * Current player ID.
      */
@@ -290,7 +293,7 @@ public class BoardActivity extends FragmentActivity {
                 // success
                 break;
             }
-            List<ServerItem> servers = new ArrayList<ServerItem>();
+            ArrayList<ServerItem> servers = new ArrayList<ServerItem>();
             servers.add(new ServerItem(host, port, version, playerCount));
             this.gameItem = new GameItem(item_type, game_id, servers, type, type_name, descr, playerCount, can_join);
             this.isMaster = gameItem.getItemType() == GameItemType.CREATE;
@@ -352,13 +355,13 @@ public class BoardActivity extends FragmentActivity {
     public class BoardActivityState {
         public BoardViewSurfaceThread surfaceRunner;
         
-        public List<ChatItem> chat;
+        public ArrayList<ChatItem> chat;
         public int[] playerIds = new int[4];
         public BoardActivityNetworkThread netRunnable;
         public GameItem gameItem;
         public SparseArray<Player> players;
         public ArrayList<Estate> estates;
-        public List<Configurable> configurables;
+        public ArrayList<Configurable> configurables;
         public int playerId;
         public String cookie;
         public GameStatus status;
@@ -425,21 +428,6 @@ public class BoardActivity extends FragmentActivity {
             }
 
             @Override
-            public void onBuyEstate() {
-                sendToNetThread(BoardNetworkAction.MSG_ESTATE_BUY, null);
-            }
-
-            @Override
-            public void onAuctionEstate() {
-                sendToNetThread(BoardNetworkAction.MSG_ESTATE_AUCTION, null);
-            }
-
-            @Override
-            public void onEndTurn() {
-                sendToNetThread(BoardNetworkAction.MSG_ESTATE_NOACTION, null);
-            }
-
-            @Override
             public void onResize(int width, int height) {
                 Log.d("monopd", "BoardView resized to " + width + "," + height);
                 if (firstInit) {
@@ -448,17 +436,17 @@ public class BoardActivity extends FragmentActivity {
                     case JOIN:
                         status = GameStatus.JOIN;
                         boardView.setStatus(GameStatus.JOIN);
-                        writeMessage("Joining " + gameItem.getDescription() + "...", Color.YELLOW, -1, -1, false);
+                        writeMessage("Joining " + gameItem.getDescription() + "...", Color.YELLOW, -1, -1);
                         break;
                     case CREATE:
                         status = GameStatus.CREATE;
                         boardView.setStatus(GameStatus.CREATE);
-                        writeMessage("Creating " + gameItem.getTypeName() + " game...", Color.YELLOW, -1, -1, false);
+                        writeMessage("Creating " + gameItem.getTypeName() + " game...", Color.YELLOW, -1, -1);
                         break;
                     case RECONNECT:
                         status = GameStatus.RECONNECT;
                         boardView.setStatus(GameStatus.RECONNECT);
-                        writeMessage("Reconnecting to " + gameItem.getDescription(), Color.YELLOW, -1, -1, false);
+                        writeMessage("Reconnecting to " + gameItem.getDescription(), Color.YELLOW, -1, -1);
                         break;
                     default:
                         break;
@@ -477,7 +465,7 @@ public class BoardActivity extends FragmentActivity {
 
             @Override
             public void onEstateClick(int estateId) {
-                BoardActivity.this.boardView.overlayEstateInfo(BoardActivity.this.estates.get(estateId));
+                BoardActivity.this.boardView.overlayEstateInfo(estateId);
             }
 
             @Override
@@ -486,30 +474,64 @@ public class BoardActivity extends FragmentActivity {
             }
 
             @Override
-            public void onOpenTradeWindow(Player player) {
+            public void onOpenTradeWindow(int playerId) {
                 // TODO: implement trade
             }
 
             @Override
-            public void onPlayerCommandPing(Player player) {
-                sendCommand("!ping " + player.getName());
+            public void onPlayerCommandPing(int playerId) {
+                sendCommand("!ping " + players.get(playerId).getName());
             }
 
             @Override
-            public void onPlayerCommandDate(Player player) {
-                sendCommand("!date " + player.getName());
+            public void onPlayerCommandDate(int playerId) {
+                sendCommand("!date " + players.get(playerId).getName());
             }
 
             @Override
-            public void onPlayerCommandVersion(Player player) {
-                sendCommand("!version " + player.getName());
+            public void onPlayerCommandVersion(int playerId) {
+                sendCommand("!version " + players.get(playerId).getName());
             }
 
             @Override
-            public String getPlayerBodyText(Player player) {
-                player = players.get(player.getPlayerId());
+            public void onToggleMortgage(int estateId) {
+                Bundle args = new Bundle();
+                args.putInt("estateId", estateId);
+                sendToNetThread(BoardNetworkAction.MSG_ESTATE_MORTGAGE, args);
+            }
+
+            @Override
+            public void onBuyHouse(int estateId) {
+                Bundle args = new Bundle();
+                args.putInt("estateId", estateId);
+                sendToNetThread(BoardNetworkAction.MSG_ESTATE_BUYHOUSE, args);
+            }
+
+            @Override
+            public void onSellHouse(int estateId) {
+                Bundle args = new Bundle();
+                args.putInt("estateId", estateId);
+                sendToNetThread(BoardNetworkAction.MSG_ESTATE_SELLHOUSE, args);
+            }
+
+            @Override
+            public void onBid(int auctionId, int raise) {
+                if (raise > 0) {
+                    int amount = auction.getHighBid() + raise;
+                    Bundle args = new Bundle();
+                    args.putInt("auctionId", auctionId);
+                    args.putInt("bid", amount);
+                    sendToNetThread(BoardNetworkAction.MSG_AUCTION_BID, args);
+                } else {
+                    // "+" command: prompt for amount
+                }
+            }
+
+            @Override
+            public String getPlayerBodyText(int playerId) {
+                Player player = players.get(playerId);
                 StringBuilder sb = new StringBuilder();
-                BoardViewPiece playerPiece = BoardViewPiece.getPiece(player.getPlayerId());
+                BoardViewPiece playerPiece = BoardViewPiece.getPiece(playerId);
                 int playerPieceColor = Color.WHITE;
                 if (playerPiece != null) {
                     playerPieceColor = playerPiece.getColor();
@@ -527,7 +549,7 @@ public class BoardActivity extends FragmentActivity {
                 }
                 if (status == GameStatus.RUN) {
                     sb.append("<b>Money:</b> $" + player.getMoney() + "<br>");
-                    sb.append("<b>On Estate:</b> " + estates.get(player.getLocation()).getName() + "<br>");
+                    sb.append("<b>On estate:</b> " + estates.get(player.getLocation()).getName() + "<br>");
                     int owned = 0;
                     int mortgaged = 0;
                     int houses = 0;
@@ -564,20 +586,24 @@ public class BoardActivity extends FragmentActivity {
                             }
                         }
                     }
-                    sb.append("<b>Owned Estates:</b> " + owned + "<br>");
-                    sb.append("<b>Owned Estates Mortgaged:</b> " + mortgaged + "<br>");
-                    sb.append("<b>Complete Estate Sets:</b> " + completeGroups + "<br>");
-                    sb.append("<b>Owned Houses:</b> " + houses + "<br>");
-                    sb.append("<b>Owned Hotels:</b> " + hotels + "<br>");
+                    sb.append("<b>Owned estates:</b> " + owned + "<br>");
+                    sb.append("<b>Owned estates mortgaged:</b> " + mortgaged + "<br>");
+                    sb.append("<b>Complete estate sets:</b> " + completeGroups + "<br>");
+                    sb.append("<b>Owned houses:</b> " + houses + "<br>");
+                    sb.append("<b>Owned hotels:</b> " + hotels + "<br>");
                 }
                 return sb.toString();
             }
 
             @Override
-            public String getEstateBodyText(Estate estate) {
-                estate = estates.get(estate.getEstateId());
+            public String getEstateBodyText(int estateId) {
+                Estate estate = estates.get(estateId);
                 StringBuilder sb = new StringBuilder();
-                sb.append("<b><u><font color=\"#" + getHtmlColor(estate.getColor()) + "\">" + estate.getName() + "</font></u></b><br>");
+                int estateColor = Color.WHITE;
+                if (estate.getColor() != 0) {
+                    estateColor = estate.getColor();
+                }
+                sb.append("<b><u><font color=\"#" + getHtmlColor(estateColor) + "\">" + estate.getName() + "</font></u></b><br>");
                 //sb.append("Estate ID: " + estate.getEstateId() + "\n");
                 //EstateGroup group = estateGroups.get(estate.getEstateGroup());
                 if (estate.canBeOwned()) {
@@ -615,6 +641,41 @@ public class BoardActivity extends FragmentActivity {
                 }
                 return sb.toString();
             }
+
+            @Override
+            public String getAuctionBodyText(int auctionId) {
+                StringBuilder sb = new StringBuilder();
+                Estate estate = estates.get(auction.getEstateId());
+                sb.append("<b><u>Auction of " + estate.getName() + "</u></b><br>");
+                switch (auction.getStatus()) {
+                case 0:
+                    break;
+                case 1:
+                    sb.append("<font color=\"#ffff00\"><b>GOING ONCE</b></font><br>");
+                    break;
+                case 2:
+                    sb.append("<font color=\"#ff8800\"><b>GOING TWICE</b></font><br>");
+                    break;
+                case 3:
+                    sb.append("<font color=\"#ff0000\"><b>SOLD</b></font><br>");
+                    break;
+                }
+                sb.append("<b>Auctioned by:</b> " + players.get(auction.getActorId()).getName() + "<br>");
+                if (auction.getHighBidder() == 0) {
+                    sb.append("<b>Current bid:</b> <i>none yet</i><br>");
+                } else {
+                    sb.append("<b>Current bid:</b> $" + auction.getHighBid() + "<br>");
+                    sb.append("<b>Bid by:</b> " + players.get(auction.getHighBidder()).getName() + "<br>");
+                }
+                return sb.toString();
+            }
+
+            @Override
+            public void onButtonCommand(String command) {
+                Bundle args = new Bundle();
+                args.putString("command", command);
+                sendToNetThread(BoardNetworkAction.MSG_BUTTON_COMMAND, args);
+            }
         });
         this.chatSendBox.setOnKeyListener(new OnKeyListener() {
 
@@ -636,9 +697,9 @@ public class BoardActivity extends FragmentActivity {
             public void onItemClick(AdapterView<?> listView, View itemView, int position, long id) {
                 ChatItem item = BoardActivity.this.chatListAdapter.getItem(position);
                 if (item.getPlayerId() > 0) {
-                    BoardActivity.this.boardView.overlayPlayerInfo(BoardActivity.this.players.get(item.getPlayerId()));
+                    BoardActivity.this.boardView.overlayPlayerInfo(item.getPlayerId());
                 } else if (item.getEstateId() > 0) {
-                    BoardActivity.this.boardView.overlayEstateInfo(BoardActivity.this.estates.get(item.getEstateId()));
+                    BoardActivity.this.boardView.overlayEstateInfo(item.getEstateId());
                 }
             }
         });
@@ -758,7 +819,7 @@ public class BoardActivity extends FragmentActivity {
                         // update player view
                         updatePlayerView();
                         // redraw for possible new colors
-                        boardView.drawActionRegions(estates, playerIds, players);
+                        boardView.drawActionRegions(estates, playerIds, players, buttons);
                         // redraw overlay for possible new data
                         boardView.redrawOverlay();
                         // join message
@@ -767,18 +828,18 @@ public class BoardActivity extends FragmentActivity {
                             if (estates.size() == 0) {
                                 // indicate master
                                 if (player.isMaster()) {
-                                    writeMessage(player.getName() + " is in the game as game master.", Color.GRAY, playerId, -1, false);
+                                    writeMessage(player.getName() + " is in the game as game master.", Color.GRAY, playerId, -1);
                                     wasMaster = true;
                                 } else {
-                                    writeMessage(player.getName() + " is in the game.", Color.GRAY, playerId, -1, false);
+                                    writeMessage(player.getName() + " is in the game.", Color.GRAY, playerId, -1);
                                 }
                             } else {
                                 // normal join
-                                writeMessage(player.getName() + " joined the game.", Color.GRAY, playerId, -1, false);
+                                writeMessage(player.getName() + " joined the game.", Color.GRAY, playerId, -1);
                             }
                         } else if (oldNick != null) {
                             // nick changed
-                            writeMessage(oldNick + " is now known as " + player.getName() + ".", Color.GRAY, playerId, -1, false);
+                            writeMessage(oldNick + " is now known as " + player.getName() + ".", Color.GRAY, playerId, -1);
                         }
                         if (changingLocation) {
                             animateMove(player);
@@ -792,13 +853,13 @@ public class BoardActivity extends FragmentActivity {
                             }
                             if (player.isMaster() && !wasMaster) {
                                 if (playerLeavingNick != null) {
-                                    writeMessage(playerLeavingNick + " left the game giving game master to " + player.getName() + ".", Color.GRAY, playerId, -1, false);
+                                    writeMessage(playerLeavingNick + " left the game giving game master to " + player.getName() + ".", Color.GRAY, playerId, -1);
                                     playerLeavingNick = null;
                                 } else {
                                     if (master > 0) {
                                         playerLeavingNick = player.getName();
                                     } else {
-                                        writeMessage(player.getName() + " is game master.", Color.GRAY, playerId, -1, false);
+                                        writeMessage(player.getName() + " is game master.", Color.GRAY, playerId, -1);
                                     }
                                 }
                             }
@@ -846,10 +907,10 @@ public class BoardActivity extends FragmentActivity {
                                     master = 0;
                                 } else {
                                     if (playerLeavingNick != null) {
-                                        writeMessage(players.get(playerId).getName() + " left the game giving game master to " + playerLeavingNick + ".", Color.GRAY, playerId, -1, false);
+                                        writeMessage(players.get(playerId).getName() + " left the game giving game master to " + playerLeavingNick + ".", Color.GRAY, playerId, -1);
                                         playerLeavingNick = null;
                                     } else {
-                                        writeMessage(players.get(playerId).getName() + " left the game.", Color.GRAY, playerId, -1, false);
+                                        writeMessage(players.get(playerId).getName() + " left the game.", Color.GRAY, playerId, -1);
                                     }
                                 }
                             }
@@ -895,7 +956,7 @@ public class BoardActivity extends FragmentActivity {
                             estates.set(estateId, estate);
                         }
                         boardView.drawBoardRegions(estates, players);
-                        boardView.drawActionRegions(estates, playerIds, players);
+                        boardView.drawActionRegions(estates, playerIds, players, buttons);
                         boardView.drawPieces(estates, playerIds, players);
                         boardView.redrawOverlay();
                     }
@@ -919,11 +980,11 @@ public class BoardActivity extends FragmentActivity {
                         
                         switch (BoardActivity.this.status) {
                         case CONFIG:
-                            writeMessage("Entered lobby. The game master may choose game configuration and start the game.", Color.YELLOW, -1, -1, false);
+                            writeMessage("Entered lobby. The game master may choose game configuration and start the game.", Color.YELLOW, -1, -1);
                             clearCookie();
                             break;
                         case INIT:
-                            writeMessage("Starting game...", Color.YELLOW, -1, -1, false);
+                            writeMessage("Starting game...", Color.YELLOW, -1, -1);
                             saveCookie();
                             break;
                         case RUN:
@@ -938,9 +999,9 @@ public class BoardActivity extends FragmentActivity {
             }
 
             @Override
-            public void onConfigUpdate(List<Configurable> configList) {
+            public void onConfigUpdate(ArrayList<Configurable> configList) {
                 Log.v("monopd", "net: Received onConfigUpdate() from MonoProtocolHandler");
-                final List<Configurable> configurables = new ArrayList<Configurable>(configList);
+                final ArrayList<Configurable> configurables = new ArrayList<Configurable>(configList);
                 BoardActivity.this.runOnUiThread(new Runnable() {
 
                     @Override
@@ -1007,15 +1068,39 @@ public class BoardActivity extends FragmentActivity {
                             Log.w("monopd", "auction.auctionid was not 0. Value = " + auctionId);
                             return;
                         }
+                        boolean isNew = false;
+                        int orange = Color.rgb(255, 128, 0);
                         for (String key : map.keySet()) {
                             String value = map.get(key);
                             XmlAttribute attr = BoardActivity.auctionAttributes.get(key);
                             if (attr == null) {
                                 Log.w("monopd", "auction." + key + " was unknown. Value = " + value);
                             } else {
+                                if (key.equals("estateid")) {
+                                    isNew = true;
+                                }
                                 attr.set(auction, value);
                             }
                         }
+                        if (isNew) {
+                            writeMessage("AUCTION: " + players.get(auction.getActorId()) + " is auctioning off " + estates.get(auction.getEstateId()).getName() + " (price: $" + estates.get(auction.getEstateId()).getPrice() + ").", orange, -1, auction.getEstateId());
+                        } else {
+                            switch (auction.getStatus()) {
+                            case 0: // new bid
+                                writeMessage("AUCTION: " + players.get(auction.getHighBidder()).getName() + " bid $" + auction.getHighBid() + ".", orange, auction.getHighBidder(), -1);
+                                break;
+                            case 1: // going once
+                                writeMessage("AUCTION: Going once!", orange, auction.getHighBidder(), -1);
+                                break;
+                            case 2: // going twice
+                                writeMessage("AUCTION: Going twice!", orange, auction.getHighBidder(), -1);
+                                break;
+                            case 3: // sold
+                                writeMessage("AUCTION: Sold " + estates.get(auction.getEstateId()).getName() + " to " + players.get(auction.getHighBidder()).getName() + " for $" + auction.getHighBid() + ".", orange, auction.getHighBidder(), -1);
+                                break;
+                            }
+                        }
+                        boardView.overlayAuctionInfo(auction.getAuctionId());
                         boardView.redrawOverlay();
                     }
                 });
@@ -1029,7 +1114,7 @@ public class BoardActivity extends FragmentActivity {
                     @Override
                     public void run() {
                         if (author.length() > 0) {
-                            writeMessage("<" + author + "> " + text, Color.WHITE, playerId, -1, false);
+                            writeMessage("<" + author + "> " + text, Color.WHITE, playerId, -1);
                             // handle !ping, !date, !version
                             if (text.startsWith("!")) {
                                 boolean doCommand = false;
@@ -1066,7 +1151,7 @@ public class BoardActivity extends FragmentActivity {
 
                     @Override
                     public void run() {
-                        writeMessage("ERROR: " + text, Color.RED, -1, -1, false);
+                        writeMessage("ERROR: " + text, Color.RED, -1, -1);
                     }
                 });
             }
@@ -1078,29 +1163,41 @@ public class BoardActivity extends FragmentActivity {
 
                     @Override
                     public void run() {
-                        writeMessage("INFO: " + text, Color.LTGRAY, -1, -1, false);
+                        writeMessage("INFO: " + text, Color.LTGRAY, -1, -1);
                     }
                 });
             }
 
             @Override
-            public void onDisplayMessage(final int estateId, final String text, final boolean clearText,
-                    final boolean clearButtons) {
+            public void onDisplayMessage(final int estateId, final String text, boolean clearText,
+                    final boolean clearButtons, ArrayList<Button> newButtons) {
                 Log.v("monopd", "net: Received onDisplayMessage() from MonoProtocolHandler");
-                if (text.length() == 0) {
+                boolean redrawButtons = false;
+                if (clearButtons) {
+                    buttons.clear();
+                    redrawButtons = true;
+                }
+                if (newButtons.size() > 0) {
+                    buttons.addAll(newButtons);
+                    redrawButtons = true;
+                }
+                if (redrawButtons) {
+                    boardView.drawActionRegions(estates, playerIds, players, buttons);
+                }
+                if (text == null || text.length() == 0) {
                     return;
                 }
                 BoardActivity.this.runOnUiThread(new Runnable() {
 
                     @Override
                     public void run() {
-                        writeMessage("GAME: " + text, Color.CYAN, -1, ((estateId == -1) ? 0 : estateId), clearButtons);
+                        writeMessage("GAME: " + text, Color.CYAN, -1, ((estateId == -1) ? 0 : estateId));
                     }
                 });
             }
 
             @Override
-            public void onPlayerListUpdate(String type, List<Player> list) {
+            public void onPlayerListUpdate(String type, ArrayList<Player> list) {
                 Log.v("monopd", "net: Received onPlayerListUpdate() from MonoProtocolHandler");
                 /*if (type.equals("full")) {
                     //Log.d("monopd", "players: Full list update");
@@ -1239,19 +1336,19 @@ public class BoardActivity extends FragmentActivity {
     }
 
     public void onPlayer1Click(View v) {
-        this.boardView.overlayPlayerInfo(this.players.get(playerIds[0]));
+        this.boardView.overlayPlayerInfo(playerIds[0]);
     }
     
     public void onPlayer2Click(View v) {
-        this.boardView.overlayPlayerInfo(this.players.get(playerIds[1]));
+        this.boardView.overlayPlayerInfo(playerIds[1]);
     }
     
     public void onPlayer3Click(View v) {
-        this.boardView.overlayPlayerInfo(this.players.get(playerIds[2]));
+        this.boardView.overlayPlayerInfo(playerIds[2]);
     }
     
     public void onPlayer4Click(View v) {
-        this.boardView.overlayPlayerInfo(this.players.get(playerIds[3]));
+        this.boardView.overlayPlayerInfo(playerIds[3]);
     }
 
     @Override
@@ -1330,7 +1427,7 @@ public class BoardActivity extends FragmentActivity {
         case RUN:
             boardView.calculateBoardRegions();
             boardView.drawBoardRegions(estates, players);
-            boardView.drawActionRegions(estates, playerIds, players);
+            boardView.drawActionRegions(estates, playerIds, players, buttons);
             boardView.drawPieces(estates, playerIds, players);
             break;
         }
@@ -1439,8 +1536,8 @@ public class BoardActivity extends FragmentActivity {
      * @param clearButtons
      *            Whether the buttons should be cleared, if any. TODO: move to anotehr function.
      */
-    private void writeMessage(String msgText, int color, int playerId, int estateId, boolean clearButtons) {
-        BoardActivity.this.chatListAdapter.add(new ChatItem(msgText, color, playerId, estateId, clearButtons));
+    private void writeMessage(String msgText, int color, int playerId, int estateId) {
+        BoardActivity.this.chatListAdapter.add(new ChatItem(msgText, color, playerId, estateId));
         BoardActivity.this.chatListAdapter.notifyDataSetChanged();
     }
 
@@ -1601,7 +1698,7 @@ public class BoardActivity extends FragmentActivity {
                     editText.setInputType(EditorInfo.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
                     return new AlertDialog.Builder(BoardActivity.this)
                     .setView(editText)
-                    .setIcon(android.R.drawable.ic_dialog_email)
+                    .setIcon(android.R.drawable.ic_dialog_info)
                     .setTitle(R.string.pref_player_nick_dialog_title)
                     .setMessage(R.string.pref_player_nick_summary)
                     .setNegativeButton(android.R.string.cancel, new OnClickListener() {

@@ -37,6 +37,8 @@ public final class R {
         public static final int ic_launcher=0x7f020014;
         public static final int ic_menu_preferences=0x7f020015;
         public static final int ic_menu_refresh=0x7f020016;
+        public static final int railroad=0x7f020017;
+        public static final int tax=0x7f020018;
     }
     public static final class id {
         public static final int board_chat_box=0x7f05000b;

@@ -10,12 +10,12 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
 import org.xmlpull.v1.XmlPullParserFactory;
 
+import edu.rochester.nbook.monopdroid.board.Button;
 import edu.rochester.nbook.monopdroid.board.Configurable;
 import edu.rochester.nbook.monopdroid.board.Player;
 import edu.rochester.nbook.monopdroid.gamelist.GameItem;
@@ -226,7 +226,7 @@ public class MonoProtocolHandler {
         XmlNodeType prevReadNodeType = XmlNodeType.NONE;
         String attr, val;
         HashMap<String, String> data = new HashMap<String, String>();
-        List<Object> l = new ArrayList<Object>();
+        ArrayList<Object> l = new ArrayList<Object>();
 
         try {
             eventType = this.parser.getEventType();
@@ -303,7 +303,7 @@ public class MonoProtocolHandler {
      *            listener and the data is no longer needed.
      */
     private void handleNode(XmlNodeType nodeType, XmlNodeType prevReadNodeType, HashMap<String, String> data,
-            List<Object> currentList) {
+            ArrayList<Object> currentList) {
         MonoProtocolGameListener glistener = null;
         MonoProtocolMetaListener mlistener = null;
         if (this.type == MonoProtocolType.META) {
@@ -364,7 +364,10 @@ public class MonoProtocolHandler {
             this.handleNodeMessage(nodeType, data, glistener);
             break;
         case DISPLAY:
-            this.handleNodeDisplay(nodeType, data, glistener);
+            this.handleNodeDisplay(nodeType, data, glistener, currentList);
+            break;
+        case BUTTON:
+            this.handleNodeButton(nodeType, data, glistener, currentList);
             break;
         case PLAYER:
             this.handleNodePlayer(nodeType, data, glistener, currentList);
@@ -456,7 +459,7 @@ public class MonoProtocolHandler {
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
     private void handleNodeMetaAtlantic(XmlNodeType nodeType, XmlNodeType prevReadNodeType,
-            HashMap<String, String> data, MonoProtocolMetaListener mlistener, List list) {
+            HashMap<String, String> data, MonoProtocolMetaListener mlistener, ArrayList list) {
         if (prevReadNodeType == XmlNodeType.SERVERGAMELIST) {
             mlistener.onServerGameListEnd();
         } else if (prevReadNodeType == XmlNodeType.SERVERGAMELIST) {
@@ -487,7 +490,7 @@ public class MonoProtocolHandler {
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
     private void handleNodeServerGameList(XmlNodeType nodeType, HashMap<String, String> data,
-            MonoProtocolMetaListener mlistener, List list) {
+            MonoProtocolMetaListener mlistener, ArrayList list) {
         // <servergamelist host="monopd.gradator.net" port="#"
         // version="#.#.#"><game>[...]</servergamelist>
         mlistener.onServerGameList(this.getAttributeAsString(data, "host"), this.getAttributeAsInt(data, "port"),
@@ -498,7 +501,7 @@ public class MonoProtocolHandler {
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
     private void handleNodeGameItem(XmlNodeType nodeType, HashMap<String, String> data,
-            MonoProtocolMetaListener mlistener, List list) {
+            MonoProtocolMetaListener mlistener, ArrayList list) {
         // <game id="162" players="1" gametype="city" name="Monopoly"
         // description="Ribose2's game" canbejoined="1"/>
         if (!data.containsKey("players")) {
@@ -519,7 +522,7 @@ public class MonoProtocolHandler {
         boolean can_be_joined = getAttributeAsBoolean(data, "canbejoined");
         
         if (id < 0) {
-            List<ServerItem> servers = new ArrayList<ServerItem>();
+            ArrayList<ServerItem> servers = new ArrayList<ServerItem>();
             servers.add(new ServerItem(host, port, version, players));
             list.add(new GameItem(host, port, version, type, type_name, descr));
         } else {
@@ -536,7 +539,7 @@ public class MonoProtocolHandler {
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
     private void handleNodeServerItem(XmlNodeType nodeType, HashMap<String, String> data,
-            MonoProtocolMetaListener mlistener, List list) {
+            MonoProtocolMetaListener mlistener, ArrayList list) {
         // <meta_server><server>[]</meta_server>
         // <server host="monopd.gradator.net" port="1230" version="0.8.3"
         // users="0" />
@@ -585,7 +588,7 @@ public class MonoProtocolHandler {
     }
 
     private void handleNodeOption(XmlNodeType nodeType, HashMap<String, String> data,
-            MonoProtocolGameListener glistener, List<Object> list) {
+            MonoProtocolGameListener glistener, ArrayList<Object> list) {
         String title = this.getAttributeAsString(data, "title");
         String type = this.getAttributeAsString(data, "type");
         String command = this.getAttributeAsString(data, "command");
@@ -601,9 +604,9 @@ public class MonoProtocolHandler {
         data.remove("editable");
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     private void handleNodeConfigUpdate(XmlNodeType nodeType, HashMap<String, String> data,
-            MonoProtocolGameListener glistener, @SuppressWarnings("rawtypes") List list) {
+            MonoProtocolGameListener glistener, ArrayList list) {
         glistener.onConfigUpdate(list);
         list.clear();
         data.clear();
@@ -626,18 +629,21 @@ public class MonoProtocolHandler {
         }
     }
 
+    @SuppressWarnings({ "rawtypes", "unchecked" })
     private void handleNodeDisplay(XmlNodeType nodeType, HashMap<String, String> data,
-            MonoProtocolGameListener glistener) {
+            MonoProtocolGameListener glistener, ArrayList list) {
         int estateId = this.getAttributeAsInt(data, "estateid");
         String text = this.getAttributeAsString(data, "text");
         boolean clearText = this.getAttributeAsBoolean(data, "cleartext");
         boolean clearButtons = this.getAttributeAsBoolean(data, "clearbuttons");
-        glistener.onDisplayMessage(estateId, text, clearText, clearButtons);
+        glistener.onDisplayMessage(estateId, text, clearText, clearButtons, list);
+        list.clear();
+        data.clear();
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
     private void handleNodeUpdatePlayerList(XmlNodeType nodeType, HashMap<String, String> data,
-            MonoProtocolGameListener glistener, List list) {
+            MonoProtocolGameListener glistener, ArrayList list) {
         String type = this.getAttributeAsString(data, "type");
         glistener.onPlayerListUpdate(type, list);
         list.clear();
@@ -646,7 +652,7 @@ public class MonoProtocolHandler {
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
     private void handleNodePlayer(XmlNodeType nodeType, HashMap<String, String> data,
-            MonoProtocolGameListener glistener, List list) {
+            MonoProtocolGameListener glistener, ArrayList list) {
         // <player playerid="680" name="Ribose"
         // host="dynamic-addr-90-116.resnet.rochester.edu" master="1" />
         int playerId = this.getAttributeAsInt(data, "playerid");
@@ -702,6 +708,14 @@ public class MonoProtocolHandler {
         data.remove("auctionid");
         glistener.onAuctionUpdate(auctionId, data);
         data.clear();
+    }
+    
+    private void handleNodeButton(XmlNodeType nodeType, HashMap<String, String> data,
+            MonoProtocolGameListener glistener, ArrayList<Object> list) {
+        String caption = this.getAttributeAsString(data, "caption");
+        String command = this.getAttributeAsString(data, "command");
+        boolean enabled = this.getAttributeAsBoolean(data, "enabled");
+        list.add(new Button(caption, command, enabled));
     }
 
     public void disconnect() {
@@ -793,18 +807,6 @@ public class MonoProtocolHandler {
     public void sendJoinGame(int gameId) {
         this.sendCommand(".gj" + gameId);
     }
-    
-    public void sendEstateBuy() {
-        this.sendCommand(".eb");
-    }
-    
-    public void sendEstateAuction() {
-        this.sendCommand(".ea");
-    }
-    
-    public void sendEstateEndTurn() {
-        this.sendCommand(".E");
-    }
 
     public void sendToggleMortgage(int estateId) {
         this.sendCommand(".em" + estateId);
@@ -813,24 +815,16 @@ public class MonoProtocolHandler {
     public void sendButtonCommand(String command) {
         this.sendCommand(command);
     }
-    
-    public void sendTaxPay200() {
-        this.sendCommand(".");
-    }
-    
-    public void sendTaxPay10Percent() {
-        this.sendCommand(".");
-    }
 
     public void sendBuyHouse(int estateId) {
-        this.sendCommand(".");
+        this.sendCommand(".hb" + estateId);
     }
 
     public void sendSellHouse(int estateId) {
-        this.sendCommand(".");
+        this.sendCommand(".hs" + estateId);
     }
 
-    public void sendAuctionBid(int bid) {
-        this.sendCommand(".ab0:" + bid);
+    public void sendAuctionBid(int auctionId, int bid) {
+        this.sendCommand(".ab" + auctionId + ":" + bid);
     }
 }

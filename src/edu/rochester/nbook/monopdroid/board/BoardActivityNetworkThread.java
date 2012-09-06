@@ -169,39 +169,25 @@ public class BoardActivityNetworkThread implements Runnable {
                 case MSG_GAME_QUIT:
                     monopd.sendQuitGame();
                     break;
-                case MSG_ESTATE_NOACTION:
-                    monopd.sendEstateEndTurn();
-                    break;
-                case MSG_ESTATE_BUY:
-                    monopd.sendEstateBuy();
-                    break;
-                case MSG_ESTATE_AUCTION:
-                    monopd.sendEstateAuction();
-                    break;
                 case MSG_BUTTON_COMMAND:
                     monopd.sendButtonCommand(
                             rState.getString("command"));
                     break;
-                case MSG_TAX_200:
-                    monopd.sendTaxPay200();
-                    break;
-                case MSG_TAX_10P:
-                    monopd.sendTaxPay10Percent();
-                    break;
-                case MSG_MYESTATE_MORTGAGE:
+                case MSG_ESTATE_MORTGAGE:
                     monopd.sendToggleMortgage(
                             rState.getInt("estateId"));
                     break;
-                case MSG_MYESTATE_BUYHOUSE:
+                case MSG_ESTATE_BUYHOUSE:
                     monopd.sendBuyHouse(
                             rState.getInt("estateId"));
                     break;
-                case MSG_MYESTATE_SELLHOUSE:
+                case MSG_ESTATE_SELLHOUSE:
                     monopd.sendSellHouse(
                             rState.getInt("estateId"));
                     break;
                 case MSG_AUCTION_BID:
                     monopd.sendAuctionBid(
+                            rState.getInt("auctionId"),
                             rState.getInt("bid"));
                     break;
                 }

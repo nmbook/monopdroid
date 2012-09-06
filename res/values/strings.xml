@@ -5,7 +5,7 @@
     <string name="title_activity_settings">Settings</string>
     <string name="title_activity_board">%s</string>
     <string name="menu_refresh">Refresh List</string>
-    <string name="menu_bankrupt">Declare Bankrupcy</string>
+    <string name="menu_bankrupt">Declare Bankruptcy</string>
     <string name="menu_name">Set Name</string>
     <string name="menu_settings">Settings</string>
     <string name="menu_quit">Quit</string>

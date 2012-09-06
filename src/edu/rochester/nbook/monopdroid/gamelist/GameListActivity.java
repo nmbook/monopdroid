@@ -1,7 +1,6 @@
 package edu.rochester.nbook.monopdroid.gamelist;
 
 import java.util.ArrayList;
-import java.util.List;
 
 import edu.rochester.nbook.monopdroid.R;
 import edu.rochester.nbook.monopdroid.SettingsActivity;
@@ -148,7 +147,7 @@ public class GameListActivity extends ListActivity {
         for (int i = 0; i < count; i++) {
             int id = state.getInt("item_" + i + "_id");
             int serverCount = state.getInt("item_" + i + "_s_count");
-            List<ServerItem> servers = new ArrayList<ServerItem>();
+            ArrayList<ServerItem> servers = new ArrayList<ServerItem>();
             for (int j = 0; j < serverCount; j++) {
                 String host = state.getString("item_" + i + "_s_" + j + "_host");
                 int port = state.getInt("item_" + i + "_s_" + j + "_port");
@@ -289,7 +288,7 @@ public class GameListActivity extends ListActivity {
             }
 
             @Override
-            public void onGameListFetched(List<GameItem> result) {
+            public void onGameListFetched(ArrayList<GameItem> result) {
                 GameListActivity.this.adapter.clear();
                 addSavedGame();
                 for (GameItem item : result) {

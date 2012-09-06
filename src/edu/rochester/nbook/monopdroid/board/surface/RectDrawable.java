@@ -37,7 +37,7 @@ public class RectDrawable extends Drawable implements OnButtonStateChangedHandle
     @Override
     public void draw(Canvas canvas) {
         Rect bounds = getBounds();
-        canvas.save();
+        int saveCount = canvas.save();
         canvas.clipRect(bounds);
         if (pressedDraw != null &&
                 (state == ButtonState.PRESSED || state == ButtonState.CHECKED_PRESSED ||
@@ -46,7 +46,7 @@ public class RectDrawable extends Drawable implements OnButtonStateChangedHandle
         } else {
             draw.draw(canvas);
         }
-        canvas.restore();
+        canvas.restoreToCount(saveCount);
         if (borderPaint != null) {
             canvas.drawRect(bounds, borderPaint);
         }

@@ -1,7 +1,6 @@
 package edu.rochester.nbook.monopdroid.board;
 
 import java.util.ArrayList;
-import java.util.List;
 
 import edu.rochester.nbook.monopdroid.R;
 import edu.rochester.nbook.monopdroid.board.BoardActivity.BoardActivityState;
@@ -42,8 +41,8 @@ public class ChatListAdapter extends ArrayAdapter<ChatItem> {
         return v;
     }
     
-    public List<ChatItem> saveState() {
-        List<ChatItem> items = new ArrayList<ChatItem>();
+    public ArrayList<ChatItem> saveState() {
+        ArrayList<ChatItem> items = new ArrayList<ChatItem>();
         for (int i = 0; i < this.getCount(); i++) {
             items.add(this.getItem(i));
         }
@@ -51,7 +50,7 @@ public class ChatListAdapter extends ArrayAdapter<ChatItem> {
     }
 
     public void restoreState(BoardActivityState state) {
-        List<ChatItem> items = state.chat;
+        ArrayList<ChatItem> items = state.chat;
         for (ChatItem item : items) {
             add(item);
         }

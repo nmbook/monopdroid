@@ -1,6 +1,6 @@
 package edu.rochester.nbook.monopdroid.gamelist;
 
-import java.util.List;
+import java.util.ArrayList;
 
 import edu.rochester.nbook.monopdroid.R;
 
@@ -16,7 +16,7 @@ public class GameListAdapter extends ArrayAdapter<GameItem> {
     private Context context = null;
     private int layout = 0;
 
-    public GameListAdapter(Context context, int resource, List<GameItem> objects) {
+    public GameListAdapter(Context context, int resource, ArrayList<GameItem> objects) {
         super(context, resource, objects);
         this.context = context;
         this.layout = resource;

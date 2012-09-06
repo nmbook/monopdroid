@@ -1,8 +1,9 @@
 package edu.rochester.nbook.monopdroid.board.surface;
 
 import java.util.ArrayList;
-import java.util.List;
 
+import edu.rochester.nbook.monopdroid.R;
+import edu.rochester.nbook.monopdroid.board.Button;
 import edu.rochester.nbook.monopdroid.board.Configurable;
 import edu.rochester.nbook.monopdroid.board.Estate;
 import edu.rochester.nbook.monopdroid.board.GameStatus;
@@ -67,13 +68,14 @@ public class BoardViewSurfaceThread implements Runnable {
     
     private static final int DRAW_POINT_TEXT_COUNT = 0;
     private static final int DRAW_POINT_CONFIG_COUNT = 0;
-    private static final int DRAW_POINT_BOARD_ESTATE_PIECE_POSITION = 0;
-    private static final int DRAW_POINT_BOARD_ESTATE_PIECE_OFFSET = 40;
-    private static final int DRAW_POINT_BOARD_ESTATE_HOUSE_POSITION = 80;
-    private static final int DRAW_POINT_BOARD_ESTATE_HOUSE_OFFSET = 120;
+    private static final int DRAW_POINT_BOARD_ESTATE_DIRECTION_OFFSET = 0;
+    private static final int DRAW_POINT_BOARD_ESTATE_PIECE_POSITION = 40;
+    private static final int DRAW_POINT_BOARD_ESTATE_ICON_POSITION = 80;
+    private static final int DRAW_POINT_BOARD_ESTATE_HOUSE_POSITION = 120;
     private static final int DRAW_POINT_BOARD_ESTATE_PIECE_RADIUS = 160;
-    private static final int DRAW_POINT_BOARD_ESTATE_HOUSE_RADIUS = 161;
-    private static final int DRAW_POINT_BOARD_COUNT = 162;
+    private static final int DRAW_POINT_BOARD_ESTATE_ICON_RADIUS = 161;
+    private static final int DRAW_POINT_BOARD_ESTATE_HOUSE_RADIUS = 162;
+    private static final int DRAW_POINT_BOARD_COUNT = 163;
 
     /**
      * Approximation of mathematical constant PHI.
@@ -110,7 +112,7 @@ public class BoardViewSurfaceThread implements Runnable {
     
     private OverlayState overlay = OverlayState.NONE;
     private TextDrawable overlayBody = null;
-    private Object overlayObject = null;
+    private int overlayObjectIndex = 0;
     private GestureRegion currentEstateRegion = null;
     
     // draw thread paints
@@ -130,7 +132,7 @@ public class BoardViewSurfaceThread implements Runnable {
     // game status
     private GameStatus status = GameStatus.CREATE;
     // layers init
-    private List<DrawLayer> layers = new ArrayList<DrawLayer>() {
+    private ArrayList<DrawLayer> layers = new ArrayList<DrawLayer>() {
         private static final long serialVersionUID = 7072660638043030076L;
 
         {
@@ -158,14 +160,14 @@ public class BoardViewSurfaceThread implements Runnable {
     public static final int animationSteps = 10;
     
     private SurfaceHolder surfaceHolder = null;
-    private BoardViewListener thisListener = null;
+    private BoardViewListener listener = null;
     
     public void setListener(BoardViewListener listener) {
-        thisListener = listener;
+        this.listener = listener;
     }
 
     public BoardViewListener getListener() {
-        return thisListener;
+        return listener;
     }
     
     public void setHolder(SurfaceHolder holder) {
@@ -551,7 +553,7 @@ public class BoardViewSurfaceThread implements Runnable {
             this.width = width;
             this.height = height;
             
-            thisListener.onResize(this.getWidth(), this.getHeight());
+            listener.onResize(this.getWidth(), this.getHeight());
         }
     }
 
@@ -563,7 +565,7 @@ public class BoardViewSurfaceThread implements Runnable {
         return height;
     }
 
-    public List<DrawLayer> getRegions() {
+    public ArrayList<DrawLayer> getRegions() {
         return this.layers;
     }
     
@@ -606,7 +608,7 @@ public class BoardViewSurfaceThread implements Runnable {
                 //new Rect((int)(2f * phi * part), (int)(2f * phi * part), (int)(width - 2f * phi * part), (int)(height - 2f * phi * part));
     }
 
-    private boolean range(int value, int min, int max) {
+    private static boolean range(int value, int min, int max) {
         return (value >= min && value <= max);
     }
     
@@ -703,16 +705,18 @@ public class BoardViewSurfaceThread implements Runnable {
                     new Rect((int)estateX, (int)estateY, (int)(estateX + estateW), (int)(estateY + estateH));
             drawRegions[DRAW_REGION_BOARD_ESTATE_GRAD_BOUNDS + index] =
                     new Rect((int)gradX, (int)gradY, (int)(gradX + gradW), (int)(gradY + gradH));
+            drawPoints[DRAW_POINT_BOARD_ESTATE_DIRECTION_OFFSET + index] =
+                    new Point((int)pieceDeltaX, (int)pieceDeltaY);
             drawPoints[DRAW_POINT_BOARD_ESTATE_PIECE_POSITION + index] =
                     new Point((int)pieceX, (int)pieceY);
-            drawPoints[DRAW_POINT_BOARD_ESTATE_PIECE_OFFSET + index] =
-                    new Point((int)pieceDeltaX, (int)pieceDeltaY);
             drawPoints[DRAW_POINT_BOARD_ESTATE_HOUSE_POSITION + index] =
                     new Point((int)pieceX, (int)pieceY);
-            drawPoints[DRAW_POINT_BOARD_ESTATE_HOUSE_OFFSET + index] =
-                    new Point((int)pieceDeltaX, (int)pieceDeltaY);
+            drawPoints[DRAW_POINT_BOARD_ESTATE_ICON_POSITION + index] =
+                    new Point((int)iconX, (int)iconY);
         }
         drawPoints[DRAW_POINT_BOARD_ESTATE_HOUSE_RADIUS] =
+                new Point((int)radius, (int)radius);
+        drawPoints[DRAW_POINT_BOARD_ESTATE_ICON_RADIUS] =
                 new Point((int)radius, (int)radius);
         drawPoints[DRAW_POINT_BOARD_ESTATE_PIECE_RADIUS] =
                 new Point((int)radius, (int)radius);
@@ -740,7 +744,7 @@ public class BoardViewSurfaceThread implements Runnable {
         layers.get(LAYER_BACKGROUND).addDrawable(text);
     }
     
-    public void addConfigurableRegions(final List<Configurable> configurables) {
+    public void addConfigurableRegions(final ArrayList<Configurable> configurables) {
         if (drawState == DrawState.NOTREADY) {
             return;
         }
@@ -770,10 +774,10 @@ public class BoardViewSurfaceThread implements Runnable {
     
                         @Override
                         public void onGestureRegionClick(GestureRegion region) {
-                            if (thisListener != null) {
+                            if (listener != null) {
                                 for (Configurable currentConfigurable : configurables) {
                                     if (currentConfigurable.getCommand().equals(config.getCommand())) {
-                                        thisListener.onConfigChange(currentConfigurable.getCommand(),
+                                        listener.onConfigChange(currentConfigurable.getCommand(),
                                                 currentConfigurable.getValue().equals("0") ? "1" : "0");
                                     }
                                 }
@@ -799,7 +803,7 @@ public class BoardViewSurfaceThread implements Runnable {
         }
     }
 
-    public void updateConfigurableRegions(List<Configurable> configurables) {
+    public void updateConfigurableRegions(ArrayList<Configurable> configurables) {
         for (Configurable config : configurables) {
             int configIndex = configIndexMap.indexOf(config.getCommand());
             if (configIndex >= 0) {
@@ -840,7 +844,7 @@ public class BoardViewSurfaceThread implements Runnable {
         
                     @Override
                     public void onGestureRegionClick(GestureRegion region) {
-                        thisListener.onStartGame();
+                        listener.onStartGame();
                     }
                 });
         button.setBounds(drawRegions[DRAW_REGION_CONFIG_BUTTON_BOUNDS]);
@@ -866,12 +870,75 @@ public class BoardViewSurfaceThread implements Runnable {
             region.disable();
         }
     }
+    
+    /**
+     * Specifies the side or corner of the board of this estate.
+     * Has methods to 
+     * @author Nate
+     *
+     */
+    private enum EstateDirection {
+        BOTTOM_RIGHT(315), BOTTOM(0),
+        BOTTOM_LEFT(45), LEFT(90),
+        TOP_LEFT(135), TOP(180),
+        TOP_RIGHT(225), RIGHT(270);
+        
+        private int degrees;
+        
+        private EstateDirection(int degrees) {
+            this.degrees = degrees;
+        }
+        
+        /**
+         * Gets the degrees to rotate a Drawable on an estate on this side of the board.
+         * @return The degrees.  
+         */
+        public int getRotateDegrees() {
+            return degrees;
+        }
+        
+        /**
+         * Calculates and returns the Orientation that a gradient should be if LEFT_RIGHT on TOP.
+         * @return The calculated Orientation value.
+         */
+        public Orientation getGradientOrientation() {
+            int oDegrees = degrees / 45 - 4;
+            if (oDegrees < 0) {
+                oDegrees += 8;
+            }
+            return Orientation.values()[oDegrees];
+        }
+
+        public static EstateDirection fromIndex(int index) {
+            if (index == 0) {
+                return BOTTOM_RIGHT;
+            } else if (index == 10) {
+                return BOTTOM_LEFT;
+            } else if (index == 20) {
+                return TOP_LEFT;
+            } else if (index == 30) {
+                return TOP_RIGHT;
+            } else if (range(index, 1, 9)) {
+                return BOTTOM;
+            } else if (range(index, 11, 19)) {
+                return LEFT;
+            } else if (range(index, 21, 29)) {
+                return TOP;
+            } else if (range(index, 31, 39)) {
+                return RIGHT;
+            } else {
+                return BOTTOM;
+            }
+        }
+    };
 
     public void addEstateRegions(ArrayList<Estate> estates, SparseArray<Player> players) {
         if (drawState == DrawState.NOTREADY) {
             return;
         }
         for (int index = 0; index < 40; index++) {
+            EstateDirection direction = EstateDirection.fromIndex(index);
+            
             final int estateId = index;
             Estate estate = estates.get(index);
             Rect bounds = new Rect(drawRegions[DRAW_REGION_BOARD_ESTATE_BOUNDS + index]);
@@ -886,7 +953,7 @@ public class BoardViewSurfaceThread implements Runnable {
                         
                         @Override
                         public void onGestureRegionClick(GestureRegion gestureRegion) {
-                            thisListener.onEstateClick(estateId);
+                            listener.onEstateClick(estateId);
                         }
                     });
             RectDrawable estateDraw = new RectDrawable(estate.getBgColor(), darken(estate.getBgColor()), Color.BLACK, 2);
@@ -897,21 +964,7 @@ public class BoardViewSurfaceThread implements Runnable {
             layers.get(LAYER_BACKGROUND).addDrawable(estateDraw);
             
             if (estate.getColor() != 0) {
-                Orientation gradOrient = Orientation.LEFT_RIGHT;
-                Point pieceOffset = drawPoints[DRAW_POINT_BOARD_ESTATE_PIECE_OFFSET + index];
-                if (pieceOffset.x > 0 && pieceOffset.y == 0) {
-                    // 0 to 10
-                    gradOrient = Orientation.RIGHT_LEFT;
-                } else if (pieceOffset.x == 0 && pieceOffset.y > 0) {
-                    // 10 to 20
-                    gradOrient = Orientation.BOTTOM_TOP;
-                } else if (pieceOffset.x < 0 && pieceOffset.y == 0) {
-                    // 20 to 30
-                    gradOrient = Orientation.LEFT_RIGHT;
-                } else {
-                    // 30 to 40
-                    gradOrient = Orientation.TOP_BOTTOM;
-                }
+                Orientation gradOrient = direction.getGradientOrientation();
                 GradientDrawable grad = createEstateGradient(estate.getColor(), gradOrient);
                 RectDrawable estateGradientDraw = new RectDrawable(grad, Color.BLACK, 2);
                 estateGradientDraw.setBounds(drawRegions[DRAW_REGION_BOARD_ESTATE_GRAD_BOUNDS + index]);
@@ -922,7 +975,7 @@ public class BoardViewSurfaceThread implements Runnable {
                     houseCount = 1;
                     color = Color.RED;
                 }
-                Point offset = drawPoints[DRAW_POINT_BOARD_ESTATE_HOUSE_OFFSET + index];
+                Point offset = drawPoints[DRAW_POINT_BOARD_ESTATE_DIRECTION_OFFSET + index];
                 float radius = drawPoints[DRAW_POINT_BOARD_ESTATE_HOUSE_RADIUS].x;
                 for (int i = 0; i < houseCount; i++) {
                     Point location = new Point(drawPoints[DRAW_POINT_BOARD_ESTATE_PIECE_POSITION + index]);
@@ -934,6 +987,72 @@ public class BoardViewSurfaceThread implements Runnable {
                     house.setBounds(houseBounds);
                     layers.get(LAYER_BACKGROUND).addDrawable(house);
                 }
+            }
+            
+            if (estate.getIcon() == null) {
+                // force defaults on null icons!
+                // the protocol appears unfinished for icons
+                // so I set defaults if the icon attribute is not set on an estate.
+                // it is backwards compatible with the two icons I've seen "dollar.png" and "qmark-red.png".
+                // otherwise the icon is chosen based on estate ID assuming "Go" is estate ID 0.
+                
+                switch (estate.getEstateId()) {
+                case 2: // COMMUNITY CHEST 1
+                case 17: // COMMUNITY CHEST 2
+                case 33: // COMMUNITY CHEST 3
+                    estate.setIcon("c_chest.png");
+                    break;
+                case 4: // INCOME TAX
+                case 38: // LUXURY TAX
+                    estate.setIcon("tax.png");
+                    break;
+                case 5: // RAILROAD 1
+                case 15: // RAILROAD 2
+                case 25: // RAILROAD 3
+                case 35: // RAILROAD 4
+                    estate.setIcon("railroad.png");
+                    break;
+                case 7: // CHANCE 1
+                case 22: // CHANCE 2
+                case 36: // CHANCE 3
+                    estate.setIcon("chance.png");
+                    break;
+                case 12: // ELECTRIC COMPANY
+                    estate.setIcon("electric_co.png");
+                    break;
+                case 28: // WATER WORKS
+                    estate.setIcon("water_wks.png");
+                    break;
+                default: // BLANK
+                    estate.setIcon("");
+                    break;
+                }
+            }
+            
+            int iconResource = 0;
+            if (estate.getIcon().equals("")) { // blank
+                iconResource = 0;
+            } else if (estate.getIcon().equals("qmark-red.png") || estate.getIcon().equals("chance.png")) { // chance
+                iconResource = 0; // R.drawable.qmark_red
+            } else if (estate.getIcon().equals("dollar.png") || estate.getIcon().equals("tax.png")) { // tax
+                iconResource = R.drawable.tax;
+            } else if (estate.getIcon().equals("c_chest.png")) { // community chest
+                iconResource = 0; // R.drawable.c_chest
+            } else if (estate.getIcon().equals("railroad.png")) { // railroad
+                iconResource = R.drawable.railroad;
+            } else if (estate.getIcon().equals("electric_co.png")) { // elco
+                iconResource = 0; //R.drawable.electric_co;
+            } else if (estate.getIcon().equals("water_wks.png")) { // wawks
+                iconResource = 0; //R.drawable.water_wks;
+            }
+            if (iconResource != 0) {
+                Point iconCenter = drawPoints[DRAW_POINT_BOARD_ESTATE_ICON_POSITION + index];
+                Drawable iconBitmap = context.getResources().getDrawable(iconResource).mutate();
+                RotateDrawable iconBitmapRotator = new RotateDrawable(iconBitmap, direction.getRotateDegrees());
+                float radius = drawPoints[DRAW_POINT_BOARD_ESTATE_PIECE_RADIUS].x;
+                Rect iconBounds = new Rect((int)iconCenter.x - (int)radius, (int)iconCenter.y - (int)radius, (int)iconCenter.x + (int)radius, (int)iconCenter.y + (int)radius);
+                iconBitmapRotator.setBounds(iconBounds);
+                layers.get(LAYER_BACKGROUND).addDrawable(iconBitmapRotator);
             }
             
             if (estate.getOwner() > 0) {
@@ -1016,7 +1135,7 @@ public class BoardViewSurfaceThread implements Runnable {
                         }
                     }
                 }
-                Point offsetP = drawPoints[DRAW_POINT_BOARD_ESTATE_PIECE_OFFSET + progressEstate];
+                Point offsetP = drawPoints[DRAW_POINT_BOARD_ESTATE_DIRECTION_OFFSET + progressEstate];
                 float radius = drawPoints[DRAW_POINT_BOARD_ESTATE_PIECE_RADIUS].x;
                 float offsetScale = sameEstateIndex - (sameEstate) / 2f;
                 Point locationP = new Point(drawPoints[DRAW_POINT_BOARD_ESTATE_PIECE_POSITION + progressEstate]);
@@ -1035,6 +1154,21 @@ public class BoardViewSurfaceThread implements Runnable {
                 draw.setBounds(rect);
                 layers.get(LAYER_PIECES).addDrawable(draw);
             }
+        }
+    }
+
+    public boolean isOverlayOpen() {
+        return overlay != OverlayState.NONE;
+    }
+
+    public void closeOverlay() {
+        overlay = OverlayState.NONE;
+        layers.get(LAYER_OVERLAY).clearRegions();
+        layers.get(LAYER_OVERLAY).clearGestureRegions();
+        layers.get(LAYER_OVERLAY).setVisible(false);
+        if (currentEstateRegion != null) {
+            currentEstateRegion.unfocus();
+            currentEstateRegion = null;
         }
     }
 
@@ -1070,13 +1204,7 @@ public class BoardViewSurfaceThread implements Runnable {
                     
                     @Override
                     public void onGestureRegionClick(GestureRegion gestureRegion) {
-                        thisListener.onCloseOverlay();
-                        overlay = OverlayState.NONE;
-                        layers.get(LAYER_OVERLAY).setVisible(false);
-                        if (currentEstateRegion != null) {
-                            currentEstateRegion.unfocus();
-                            currentEstateRegion = null;
-                        }
+                        listener.onCloseOverlay();
                     }
                 });
        layers.get(LAYER_OVERLAY).addGestureRegion(region);
@@ -1096,12 +1224,13 @@ public class BoardViewSurfaceThread implements Runnable {
         case NONE:
             return;
         case OVERLAY_PLAYER:
-            Player player = (Player) overlayObject;
-            bodyText = thisListener.getPlayerBodyText(player);
+            bodyText = listener.getPlayerBodyText(overlayObjectIndex);
             break;
         case OVERLAY_ESTATE:
-            Estate estate = (Estate) overlayObject;
-            bodyText = thisListener.getEstateBodyText(estate);
+            bodyText = listener.getEstateBodyText(overlayObjectIndex);
+            break;
+        case OVERLAY_AUCTION:
+            bodyText = listener.getAuctionBodyText(overlayObjectIndex);
             break;
         }
         overlayBody = new TextDrawable(
@@ -1115,12 +1244,12 @@ public class BoardViewSurfaceThread implements Runnable {
         overlayBody.invalidateSelf();
     }
 
-    public void addPlayerOverlayRegions(final Player player) {
+    public void addPlayerOverlayRegions(final int playerId) {
         if (drawState == DrawState.NOTREADY) {
             return;
         }
         overlay = OverlayState.OVERLAY_PLAYER;
-        overlayObject = player;
+        overlayObjectIndex = playerId;
         updateOverlay();
         layers.get(LAYER_OVERLAY).addDrawable(overlayBody);
 
@@ -1135,7 +1264,7 @@ public class BoardViewSurfaceThread implements Runnable {
             
             @Override
             public void onGestureRegionClick(GestureRegion gestureRegion) {
-                thisListener.onOpenTradeWindow(player);
+                listener.onOpenTradeWindow(playerId);
             }
         });
         
@@ -1146,7 +1275,7 @@ public class BoardViewSurfaceThread implements Runnable {
             
             @Override
             public void onGestureRegionClick(GestureRegion gestureRegion) {
-                thisListener.onPlayerCommandPing(player);
+                listener.onPlayerCommandPing(playerId);
             }
         });
         
@@ -1157,7 +1286,7 @@ public class BoardViewSurfaceThread implements Runnable {
             
             @Override
             public void onGestureRegionClick(GestureRegion gestureRegion) {
-                thisListener.onPlayerCommandDate(player);
+                listener.onPlayerCommandDate(playerId);
             }
         });
         
@@ -1168,9 +1297,294 @@ public class BoardViewSurfaceThread implements Runnable {
             
             @Override
             public void onGestureRegionClick(GestureRegion gestureRegion) {
-                thisListener.onPlayerCommandVersion(player);
+                listener.onPlayerCommandVersion(playerId);
             }
         });
+    }
+
+    public void addEstateOverlayRegions(final int estateId) {
+        if (drawState == DrawState.NOTREADY) {
+            return;
+        }
+        currentEstateRegion = layers.get(LAYER_BACKGROUND).getGestureRegion(TAG_ESTATE + estateId);
+        currentEstateRegion.focus();
+        overlay = OverlayState.OVERLAY_ESTATE;
+        overlayObjectIndex = estateId;
+        updateOverlay();
+        layers.get(LAYER_OVERLAY).addDrawable(overlayBody);
+
+        Rect bounds = new Rect(drawRegions[DRAW_REGION_CENTER_BOUNDS]);
+        bounds.inset(12, 12);
+        bounds.top = bounds.bottom - 75;
+        
+        Rect mortgageBounds = new Rect(bounds.left, bounds.top, bounds.left + bounds.width() / 3, bounds.bottom);
+        addButton(LAYER_OVERLAY, mortgageBounds, "Mortgage", status == GameStatus.RUN, TAG_OVERLAY_BUTTON_1, new GestureRegionListener() {
+            @Override
+            public void onGestureRegionLongPress(GestureRegion region) {}
+            
+            @Override
+            public void onGestureRegionClick(GestureRegion gestureRegion) {
+                listener.onToggleMortgage(estateId);
+            }
+        });
+        
+        Rect buyBounds = new Rect(bounds.left + bounds.width() / 3, bounds.top, bounds.right - bounds.width() / 3, bounds.bottom);
+        addButton(LAYER_OVERLAY, buyBounds, "Buy House", status == GameStatus.RUN, TAG_OVERLAY_BUTTON_2, new GestureRegionListener() {
+            @Override
+            public void onGestureRegionLongPress(GestureRegion region) {}
+            
+            @Override
+            public void onGestureRegionClick(GestureRegion gestureRegion) {
+                listener.onBuyHouse(estateId);
+            }
+        });
+        
+        Rect sellBounds = new Rect(bounds.right - bounds.width() / 3, bounds.top, bounds.right, bounds.bottom);
+        addButton(LAYER_OVERLAY, sellBounds, "Sell House", status == GameStatus.RUN, TAG_OVERLAY_BUTTON_3, new GestureRegionListener() {
+            @Override
+            public void onGestureRegionLongPress(GestureRegion region) {}
+            
+            @Override
+            public void onGestureRegionClick(GestureRegion gestureRegion) {
+                listener.onSellHouse(estateId);
+            }
+        });
+    }
+
+    public void addAuctionOverlayRegions(final int auctionId) {
+        if (drawState == DrawState.NOTREADY) {
+            return;
+        }
+        overlay = OverlayState.OVERLAY_AUCTION;
+        overlayObjectIndex = auctionId;
+        updateOverlay();
+        layers.get(LAYER_OVERLAY).addDrawable(overlayBody);
+
+        Rect bounds = new Rect(drawRegions[DRAW_REGION_CENTER_BOUNDS]);
+        bounds.inset(12, 12);
+        bounds.top = bounds.bottom - 75;
+        
+        Rect bidP1 = new Rect(bounds.left, bounds.top, bounds.left + bounds.width() / 6, bounds.bottom);
+        addButton(LAYER_OVERLAY, bidP1, "+ $1", status == GameStatus.RUN, TAG_OVERLAY_BUTTON_1, new GestureRegionListener() {
+            @Override
+            public void onGestureRegionLongPress(GestureRegion region) {}
+            
+            @Override
+            public void onGestureRegionClick(GestureRegion gestureRegion) {
+                listener.onBid(auctionId, 1);
+            }
+        });
+        
+        Rect bidP10 = new Rect(bounds.left + bounds.width() / 6, bounds.top, bounds.left + bounds.width() / 3, bounds.bottom);
+        addButton(LAYER_OVERLAY, bidP10, "+ 10", status == GameStatus.RUN, TAG_OVERLAY_BUTTON_2, new GestureRegionListener() {
+            @Override
+            public void onGestureRegionLongPress(GestureRegion region) {}
+            
+            @Override
+            public void onGestureRegionClick(GestureRegion gestureRegion) {
+                listener.onBid(auctionId, 10);
+            }
+        });
+        
+        Rect bidP50 = new Rect(bounds.left + bounds.width() / 3, bounds.top, bounds.left + bounds.width() / 2, bounds.bottom);
+        addButton(LAYER_OVERLAY, bidP50, "+ 50", status == GameStatus.RUN, TAG_OVERLAY_BUTTON_3, new GestureRegionListener() {
+            @Override
+            public void onGestureRegionLongPress(GestureRegion region) {}
+            
+            @Override
+            public void onGestureRegionClick(GestureRegion gestureRegion) {
+                listener.onBid(auctionId, 50);
+            }
+        });
+        
+        Rect bidP100 = new Rect(bounds.left + bounds.width() / 2, bounds.top, bounds.right - bounds.width() / 3, bounds.bottom);
+        addButton(LAYER_OVERLAY, bidP100, "+100", status == GameStatus.RUN, TAG_OVERLAY_BUTTON_4, new GestureRegionListener() {
+            @Override
+            public void onGestureRegionLongPress(GestureRegion region) {}
+            
+            @Override
+            public void onGestureRegionClick(GestureRegion gestureRegion) {
+                listener.onBid(auctionId, 100);
+            }
+        });
+        
+        Rect bidP500 = new Rect(bounds.right - bounds.width() / 3, bounds.top, bounds.right - bounds.width() / 6, bounds.bottom);
+        addButton(LAYER_OVERLAY, bidP500, "+500", status == GameStatus.RUN, TAG_OVERLAY_BUTTON_5, new GestureRegionListener() {
+            @Override
+            public void onGestureRegionLongPress(GestureRegion region) {}
+            
+            @Override
+            public void onGestureRegionClick(GestureRegion gestureRegion) {
+                listener.onBid(auctionId, 500);
+            }
+        });
+        
+        Rect bidPAny = new Rect(bounds.right - bounds.width() / 6, bounds.top, bounds.right, bounds.bottom);
+        addButton(LAYER_OVERLAY, bidPAny, "+", status == GameStatus.RUN, TAG_OVERLAY_BUTTON_6, new GestureRegionListener() {
+            @Override
+            public void onGestureRegionLongPress(GestureRegion region) {}
+            
+            @Override
+            public void onGestureRegionClick(GestureRegion gestureRegion) {
+                listener.onBid(auctionId, -1);
+            }
+        });
+    }
+
+    public void addTurnRegions(ArrayList<Estate> estates, int[] playerIds, SparseArray<Player> players, ArrayList<Button> buttons) {
+        if (drawState == DrawState.NOTREADY) {
+            return;
+        }
+        for (int playerId : playerIds) {
+            if (playerId > 0) {
+                final Player player = players.get(playerId);
+                Rect bounds = new Rect(drawRegions[DRAW_REGION_CENTER_BOUNDS]);
+                bounds.inset(width / 16 + 6, height / 16 + 6);
+                Rect textBounds = new Rect(bounds.left, bounds.top, bounds.right, bounds.top + 90);
+                Rect btn1Bounds = new Rect(bounds.left, bounds.top + 90, bounds.right, bounds.top + 165);
+                Rect btn2Bounds = new Rect(bounds.left, bounds.top + 165, bounds.right, bounds.top + 235);
+                Rect btn3Bounds = new Rect(bounds.left, bounds.top + 235, bounds.right, bounds.top + 310); 
+                if (player.isTurn()) {
+                    String location = "On " + estates.get(player.getLocation()).getName();
+                    if (player.isJailed()) {
+                        location = "In Jail";
+                    }
+                    String actionText = "<b>Turn goes to " + player.getName() + "</b><br>" + location + ".<br>";
+                    if (player.canRoll()) {
+                        actionText += "Roll the dice:";
+                    } else if (player.canBuyEstate()) {
+                        actionText += "Buy estate for $" + estates.get(player.getLocation()).getPrice() + "?:";
+                    } else if (buttons.size() > 0) {
+                        actionText += "Choose an action:";
+                    } else if (player.isInDebt()) {
+                        actionText += player.getName() + " is in debt.";
+                    } else if (player.canRollAgain()) {
+                        actionText += player.getName() + " can roll again.";
+                    }
+                    TextDrawable turnHeader = new TextDrawable(
+                            actionText,
+                            Color.WHITE, Color.WHITE,
+                            Alignment.ALIGN_NORMAL,
+                            VerticalAlignment.VALIGN_TOP);
+                    turnHeader.setBounds(textBounds);
+                    layers.get(LAYER_TURN).addDrawable(turnHeader);
+
+                    int index = 0;
+                    for (final Button btn : buttons) {
+                        Rect btnBounds = null;
+                        int tag = 0;
+                        switch (index) {
+                        case 0:
+                            btnBounds = btn1Bounds;
+                            tag = TAG_TURN_BUTTON_1;
+                            break;
+                        case 1:
+                            btnBounds = btn2Bounds;
+                            tag = TAG_TURN_BUTTON_2;
+                            break;
+                        case 2:
+                            btnBounds = btn3Bounds;
+                            tag = TAG_TURN_BUTTON_3;
+                            break;
+                        default:
+                            return;
+                        }
+
+                        addButton(
+                                LAYER_TURN,
+                                btnBounds,
+                                btn.getCaption(),
+                                btn.isEnabled(),
+                                tag,
+                                new GestureRegionListener() {
+                                    
+                                    @Override
+                                    public void onGestureRegionLongPress(GestureRegion region) { }
+                                    
+                                    @Override
+                                    public void onGestureRegionClick(GestureRegion gestureRegion) {
+                                        listener.onButtonCommand(btn.getCommand());
+                                    }
+                                });
+                        
+                        index++;
+                    }
+                    if (player.canRoll()) {
+                        addButton(
+                                LAYER_TURN,
+                                btn1Bounds,
+                                "Roll",
+                                true,
+                                TAG_TURN_BUTTON_1,
+                                new GestureRegionListener() {
+                                    
+                                    @Override
+                                    public void onGestureRegionLongPress(GestureRegion region) { }
+                                    
+                                    @Override
+                                    public void onGestureRegionClick(GestureRegion gestureRegion) {
+                                        listener.onRoll();
+                                    }
+                                });
+                    }
+                    
+                    /*else if (player.canBuyEstate()) {
+                        boolean auctionButtonEnabled = player.canAuction();
+                        
+                        addButton(
+                                LAYER_TURN,
+                                btn1Bounds,
+                                "Buy Estate",
+                                true,
+                                TAG_TURN_BUTTON_1,
+                                new GestureRegionListener() {
+                                    
+                                    @Override
+                                    public void onGestureRegionLongPress(GestureRegion region) { }
+                                    
+                                    @Override
+                                    public void onGestureRegionClick(GestureRegion gestureRegion) {
+                                        thisListener.onBuyEstate();
+                                    }
+                                });
+                        
+                        addButton(
+                                LAYER_TURN,
+                                btn2Bounds,
+                                "Auction Estate",
+                                auctionButtonEnabled,
+                                TAG_TURN_BUTTON_2,
+                                new GestureRegionListener() {
+                                    
+                                    @Override
+                                    public void onGestureRegionLongPress(GestureRegion region) { }
+                                    
+                                    @Override
+                                    public void onGestureRegionClick(GestureRegion gestureRegion) {
+                                        thisListener.onAuctionEstate();
+                                    }
+                                });
+                        
+                        addButton(
+                                LAYER_TURN,
+                                btn3Bounds,
+                                "End Turn",
+                                !auctionButtonEnabled,
+                                TAG_TURN_BUTTON_3,
+                                new GestureRegionListener() {
+                                    
+                                    @Override
+                                    public void onGestureRegionLongPress(GestureRegion region) { }
+                                    
+                                    @Override
+                                    public void onGestureRegionClick(GestureRegion gestureRegion) {
+                                        thisListener.onEndTurn();
+                                    }
+                                });
+                    }*/
+                }
+            }
+        }
     }
 
     private void addButton(int layerId, Rect bounds, String buttonText, boolean buttonEnabled, int gestureRegionTag,
@@ -1194,132 +1608,6 @@ public class BoardViewSurfaceThread implements Runnable {
         layers.get(layerId).addDrawable(button);
         layers.get(layerId).addDrawable(text);
         layers.get(layerId).addGestureRegion(region);
-    }
-
-    public void addEstateOverlayRegions(Estate estate) {
-        if (drawState == DrawState.NOTREADY) {
-            return;
-        }
-        currentEstateRegion = layers.get(LAYER_BACKGROUND).getGestureRegion(TAG_ESTATE + estate.getEstateId());
-        currentEstateRegion.focus();
-        overlay = OverlayState.OVERLAY_ESTATE;
-        overlayObject = estate;
-        updateOverlay();
-        layers.get(LAYER_OVERLAY).addDrawable(overlayBody);
-    }
-
-    public void addTurnRegions(ArrayList<Estate> estates, int[] playerIds, SparseArray<Player> players) {
-        if (drawState == DrawState.NOTREADY) {
-            return;
-        }
-        for (int playerId : playerIds) {
-            if (playerId > 0) {
-                final Player player = players.get(playerId);
-                Rect bounds = new Rect(drawRegions[DRAW_REGION_CENTER_BOUNDS]);
-                bounds.inset(width / 16 + 6, height / 16 + 6);
-                Rect textBounds = new Rect(bounds.left, bounds.top, bounds.right, bounds.top + 35);
-                Rect textLn2Bounds = new Rect(bounds.left, bounds.top + 35, bounds.right, bounds.top + 70);
-                Rect btn1Bounds = new Rect(bounds.left, bounds.top + 70, bounds.right, bounds.top + 145);
-                Rect btn2Bounds = new Rect(bounds.left, bounds.top + 150, bounds.right, bounds.top + 225);
-                Rect btn3Bounds = new Rect(bounds.left, bounds.top + 230, bounds.right, bounds.top + 305); 
-                if (player.isTurn()) {
-                    TextDrawable turnHeader = new TextDrawable(
-                            "<b>It is " + player.getName() + "'s turn.</b>",
-                            Color.WHITE, Color.WHITE,
-                            Alignment.ALIGN_NORMAL,
-                            VerticalAlignment.VALIGN_TOP, true);
-                    turnHeader.setBounds(textBounds);
-                    layers.get(LAYER_TURN).addDrawable(turnHeader);
-                }
-                if (player.canRoll()) {
-                    TextDrawable actionHeader = new TextDrawable(
-                            "Roll the dice:",
-                            Color.LTGRAY, Color.LTGRAY,
-                            Alignment.ALIGN_NORMAL,
-                            VerticalAlignment.VALIGN_TOP, true);
-                    actionHeader.setBounds(textLn2Bounds);
-                    layers.get(LAYER_TURN).addDrawable(actionHeader);
-                    
-                    addButton(
-                            LAYER_TURN,
-                            btn1Bounds,
-                            "Roll",
-                            true,
-                            TAG_TURN_BUTTON_1,
-                            new GestureRegionListener() {
-                                
-                                @Override
-                                public void onGestureRegionLongPress(GestureRegion region) { }
-                                
-                                @Override
-                                public void onGestureRegionClick(GestureRegion gestureRegion) {
-                                    thisListener.onRoll();
-                                }
-                            });
-                } else if (player.canBuyEstate()) {
-                    TextDrawable actionHeader = new TextDrawable(
-                            "Buy " + estates.get(player.getLocation()).getName() + " for " + estates.get(player.getLocation()).getPrice() + "?:",
-                            Color.LTGRAY, Color.LTGRAY,
-                            Alignment.ALIGN_NORMAL,
-                            VerticalAlignment.VALIGN_TOP, true);
-                    actionHeader.setBounds(textLn2Bounds);
-                    layers.get(LAYER_TURN).addDrawable(actionHeader);
-                    
-                    boolean auctionButtonEnabled = player.canAuction();
-                    
-                    addButton(
-                            LAYER_TURN,
-                            btn1Bounds,
-                            "Buy Estate",
-                            true,
-                            TAG_TURN_BUTTON_1,
-                            new GestureRegionListener() {
-                                
-                                @Override
-                                public void onGestureRegionLongPress(GestureRegion region) { }
-                                
-                                @Override
-                                public void onGestureRegionClick(GestureRegion gestureRegion) {
-                                    thisListener.onBuyEstate();
-                                }
-                            });
-                    
-                    addButton(
-                            LAYER_TURN,
-                            btn2Bounds,
-                            "Auction Estate",
-                            auctionButtonEnabled,
-                            TAG_TURN_BUTTON_2,
-                            new GestureRegionListener() {
-                                
-                                @Override
-                                public void onGestureRegionLongPress(GestureRegion region) { }
-                                
-                                @Override
-                                public void onGestureRegionClick(GestureRegion gestureRegion) {
-                                    thisListener.onAuctionEstate();
-                                }
-                            });
-                    
-                    addButton(
-                            LAYER_TURN,
-                            btn3Bounds,
-                            "End Turn",
-                            !auctionButtonEnabled,
-                            TAG_TURN_BUTTON_3,
-                            new GestureRegionListener() {
-                                
-                                @Override
-                                public void onGestureRegionLongPress(GestureRegion region) { }
-                                
-                                @Override
-                                public void onGestureRegionClick(GestureRegion gestureRegion) {
-                                    thisListener.onEndTurn();
-                                }
-                            });
-                }
-            }
-        }
     }
 
     /*public static GradientDrawable createPieceGradient(int playerId) {
@@ -1357,23 +1645,23 @@ public class BoardViewSurfaceThread implements Runnable {
         hsv[2] -= 0.4;
         return Color.HSVToColor(hsv);
     }
-
-    public boolean isOverlayOpen() {
-        return overlay != OverlayState.NONE;
-    }
     
     private volatile boolean waitDraw = false;
 
     public void waitDraw() {
         waitDraw = true;
-        while (waitDraw) {
-            try {
-                Thread.sleep(0);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-                waitDraw = false;
-                return;
+        if (running) {
+            while (waitDraw) {
+                try {
+                    Thread.sleep(0);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                    waitDraw = false;
+                    return;
+                }
             }
+        } else {
+            waitDraw = false;
         }
     }
 }

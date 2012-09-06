@@ -2,7 +2,6 @@ package edu.rochester.nbook.monopdroid.gamelist;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 
 import edu.rochester.nbook.monopdroid.monopd.MonoProtocolHandler;
 import edu.rochester.nbook.monopdroid.monopd.MonoProtocolMetaListener;
@@ -12,7 +11,7 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.os.AsyncTask;
 
-public final class GameListFetcher extends AsyncTask<Void, Void, List<GameItem>> {
+public final class GameListFetcher extends AsyncTask<Void, Void, ArrayList<GameItem>> {
     private GameListFetcherListener callback = null;
     private ArrayList<GameItem> list = new ArrayList<GameItem>();
     private boolean continueReading = true;
@@ -25,7 +24,7 @@ public final class GameListFetcher extends AsyncTask<Void, Void, List<GameItem>>
     }
 
     @Override
-    protected void onPostExecute(List<GameItem> result) {
+    protected void onPostExecute(ArrayList<GameItem> result) {
         super.onPostExecute(result);
         if (result != null) {
             this.callback.onGameListFetched(result);
@@ -38,7 +37,7 @@ public final class GameListFetcher extends AsyncTask<Void, Void, List<GameItem>>
     }
 
     @Override
-    protected List<GameItem> doInBackground(Void... params) {
+    protected ArrayList<GameItem> doInBackground(Void... params) {
         SharedPreferences prefs = act.getPreferences(Activity.MODE_PRIVATE);
         String server = prefs.getString("gamelist_server", "monopd.gradator.net");
         int port = prefs.getInt("gamelist_port", 1240);
@@ -64,7 +63,7 @@ public final class GameListFetcher extends AsyncTask<Void, Void, List<GameItem>>
             }
 
             @Override
-            public void onServerGameList(String host, int port, String version, List<GameItem> games) {
+            public void onServerGameList(String host, int port, String version, ArrayList<GameItem> games) {
                 for (GameItem game : games) {
                     GameListFetcher.this.list.add(game);
                 }
@@ -75,7 +74,7 @@ public final class GameListFetcher extends AsyncTask<Void, Void, List<GameItem>>
             }
 
             @Override
-            public void onServerList(List<ServerItem> servers) {
+            public void onServerList(ArrayList<ServerItem> servers) {
             }
         }, server, port, clientName, clientVersion);
 

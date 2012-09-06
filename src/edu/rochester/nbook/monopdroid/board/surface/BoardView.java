@@ -1,8 +1,8 @@
 package edu.rochester.nbook.monopdroid.board.surface;
 
 import java.util.ArrayList;
-import java.util.List;
 
+import edu.rochester.nbook.monopdroid.board.Button;
 import edu.rochester.nbook.monopdroid.board.Configurable;
 import edu.rochester.nbook.monopdroid.board.Estate;
 import edu.rochester.nbook.monopdroid.board.GameStatus;
@@ -80,24 +80,9 @@ public class BoardView extends SurfaceView {
             
                     @Override
                     public boolean onSingleTapConfirmed(MotionEvent e) {
-                        if (!surfaceRunner.isFixed()) {
-                            int x = (int) e.getX();
-                            int y = (int) e.getY();
-                            return surfaceRunner.onSingleTapUp(x, y);
-                        } else {
-                            return false;
-                        }
-                    }
-            
-                    @Override
-                    public boolean onSingleTapUp(MotionEvent e) {
-                        if (surfaceRunner.isFixed()) {
-                            int x = (int) e.getX();
-                            int y = (int) e.getY();
-                            return surfaceRunner.onSingleTapUp(x, y);
-                        } else {
-                            return false;
-                        }
+                        int x = (int) e.getX();
+                        int y = (int) e.getY();
+                        return surfaceRunner.onSingleTapUp(x, y);
                     }
         
                     @Override
@@ -228,10 +213,10 @@ public class BoardView extends SurfaceView {
         }
     }
     
-    public void drawActionRegions(ArrayList<Estate> estates, int[] playerIds, SparseArray<Player> players) {
+    public void drawActionRegions(ArrayList<Estate> estates, int[] playerIds, SparseArray<Player> players, ArrayList<Button> buttons) {
         if (surfaceRunner.getStatus() == GameStatus.RUN) {
             surfaceRunner.beginRegions(BoardViewSurfaceThread.LAYER_TURN);
-            surfaceRunner.addTurnRegions(estates, playerIds, players);
+            surfaceRunner.addTurnRegions(estates, playerIds, players, buttons);
             surfaceRunner.commitRegions(BoardViewSurfaceThread.LAYER_TURN);
         }
     }
@@ -244,7 +229,7 @@ public class BoardView extends SurfaceView {
         }
     }
 
-    public void drawConfigRegions(List<Configurable> configurables, boolean isMaster) {
+    public void drawConfigRegions(ArrayList<Configurable> configurables, boolean isMaster) {
         if (surfaceRunner.getStatus() == GameStatus.CONFIG) {
             surfaceRunner.beginRegions(BoardViewSurfaceThread.LAYER_BACKGROUND);
             surfaceRunner.addConfigurableRegions(configurables);
@@ -253,26 +238,34 @@ public class BoardView extends SurfaceView {
         }
     }
 
-    public void redrawConfigRegions(List<Configurable> configurables, boolean isMaster) {
+    public void redrawConfigRegions(ArrayList<Configurable> configurables, boolean isMaster) {
         if (surfaceRunner.getStatus() == GameStatus.CONFIG) {
             surfaceRunner.updateConfigurableRegions(configurables);
             surfaceRunner.updateStartButtonRegions(isMaster);
         }
     }
 
-    public void overlayPlayerInfo(Player player) {
+    public void overlayPlayerInfo(int playerId) {
         surfaceRunner.beginRegions(BoardViewSurfaceThread.LAYER_OVERLAY);
         //surfaceRunner.setEstateButtonsEnabled(false);
         surfaceRunner.addOverlayRegion();
-        surfaceRunner.addPlayerOverlayRegions(player);
+        surfaceRunner.addPlayerOverlayRegions(playerId);
         surfaceRunner.commitRegions(BoardViewSurfaceThread.LAYER_OVERLAY);
     }
 
-    public void overlayEstateInfo(Estate estate) {
+    public void overlayEstateInfo(int estateId) {
         surfaceRunner.beginRegions(BoardViewSurfaceThread.LAYER_OVERLAY);
         //surfaceRunner.setEstateButtonsEnabled(false);
         surfaceRunner.addOverlayRegion();
-        surfaceRunner.addEstateOverlayRegions(estate);
+        surfaceRunner.addEstateOverlayRegions(estateId);
+        surfaceRunner.commitRegions(BoardViewSurfaceThread.LAYER_OVERLAY);
+    }
+
+    public void overlayAuctionInfo(int auctionId) {
+        surfaceRunner.beginRegions(BoardViewSurfaceThread.LAYER_OVERLAY);
+        //surfaceRunner.setEstateButtonsEnabled(false);
+        surfaceRunner.addOverlayRegion();
+        surfaceRunner.addAuctionOverlayRegions(auctionId);
         surfaceRunner.commitRegions(BoardViewSurfaceThread.LAYER_OVERLAY);
     }
 
@@ -281,7 +274,7 @@ public class BoardView extends SurfaceView {
     }
 
     public void closeOverlay() {
-        surfaceRunner.clearRegions(BoardViewSurfaceThread.LAYER_OVERLAY);
+        surfaceRunner.closeOverlay();
     }
 
     public void calculateTextRegions() {

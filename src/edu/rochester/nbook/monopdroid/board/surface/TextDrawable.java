@@ -23,9 +23,8 @@ public class TextDrawable extends Drawable implements OnButtonStateChangedHandle
     private int disabled;
     private Alignment alignment;
     private VerticalAlignment valignment;
-    private boolean singleLine;
     
-    public TextDrawable(String text, int enabledColor, int disabledColor, Alignment align, VerticalAlignment valign, boolean singleLine) {
+    public TextDrawable(String text, int enabledColor, int disabledColor, Alignment align, VerticalAlignment valign) {
         this.enabled = enabledColor;
         this.disabled = disabledColor;
         this.text = text;
@@ -35,11 +34,6 @@ public class TextDrawable extends Drawable implements OnButtonStateChangedHandle
         this.alignment = align;
         this.valignment = valign;
         this.layout = null;
-        this.singleLine = singleLine;
-    }
-
-    public TextDrawable(String text, int enabledColor, int disabledColor, Alignment align, VerticalAlignment valign) {
-        this(text, enabledColor, disabledColor, align, valign, false);
     }
     
     public String getText() {
@@ -48,7 +42,7 @@ public class TextDrawable extends Drawable implements OnButtonStateChangedHandle
 
     @Override
     public void draw(Canvas canvas) {
-        canvas.save();
+        int saveCount = canvas.save();
         switch (valignment) {
         case VALIGN_TOP:
             canvas.translate(this.getBounds().left, this.getBounds().top);
@@ -61,7 +55,7 @@ public class TextDrawable extends Drawable implements OnButtonStateChangedHandle
             break;
         }
         this.layout.draw(canvas);
-        canvas.restore();
+        canvas.restoreToCount(saveCount);
         // canvas.drawText(this.getTag(), this.getBounds().left,
         // this.getBounds().top + 30, this.textPaint);
     }

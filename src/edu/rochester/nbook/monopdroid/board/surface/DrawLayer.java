@@ -58,6 +58,10 @@ public class DrawLayer {
     public GestureRegion getGestureRegion(int tag) {
         return gestureRegion.get(tag);
     }
+
+    public void clearGestureRegions() {
+        gestureRegion.clear();
+    }
     
     public void drawRegions(Canvas canvas) {
         if (visible) {
@@ -68,7 +72,7 @@ public class DrawLayer {
             synchronized (regions) {
                 for (Drawable d : regions) {
                     d.draw(canvas);
-                }
+                }   
                 /*for (Drawable d : regions) {
                     canvas.drawRect(d.getBounds(), p);
                 }*/

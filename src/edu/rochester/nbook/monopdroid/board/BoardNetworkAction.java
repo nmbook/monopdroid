@@ -71,50 +71,31 @@ public enum BoardNetworkAction {
      */
     MSG_GAME_QUIT(21),
     /**
-     * Send to end turn after landing on an estate.
-     */
-    MSG_ESTATE_NOACTION(30),
-    /**
-     * Send to buy the estate landed on.
-     */
-    MSG_ESTATE_BUY(31),
-    /**
-     * Send to auction off the estate landed on.
-     */
-    MSG_ESTATE_AUCTION(32),
-    /**
-     * Send when the user presses a server-sent utton.
+     * Send when the user presses a server-sent button.
      * Argument String "command": The command to send.
      */
-    MSG_BUTTON_COMMAND(40),
-    /**
-     * Send to pay $200 on tax.
-     */
-    MSG_TAX_200(50),
-    /**
-     * Send to pay 10% on tax.
-     */
-    MSG_TAX_10P(51),
+    MSG_BUTTON_COMMAND(30),
     /**
      * Send to toggle mortgage on the specified estate.
      * Argument int "estateId": The estate.
      */
-    MSG_MYESTATE_MORTGAGE(60),
+    MSG_ESTATE_MORTGAGE(40),
     /**
      * Send to buy a house on the specified estate.
      * Argument int "estateId": The estate.
      */
-    MSG_MYESTATE_BUYHOUSE(61),
+    MSG_ESTATE_BUYHOUSE(41),
     /**
      * Send to sell a house on the specified estate.
      * Argument int "estateId": The estate.
      */
-    MSG_MYESTATE_SELLHOUSE(62),
+    MSG_ESTATE_SELLHOUSE(42),
     /**
      * Send to bid in the auction of an estate.
+     * Argument int "auctionId": The auction (always 0).
      * Argument int "bid": The amount to bid.
      */
-    MSG_AUCTION_BID(70);
+    MSG_AUCTION_BID(50);
     
     private int msgWhat;
     
