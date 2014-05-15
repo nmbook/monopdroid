@@ -2,6 +2,8 @@ package edu.rochester.nbook.monopdroid.board.surface;
 
 import java.util.ArrayList;
 
+import org.xml.sax.XMLReader;
+
 import edu.rochester.nbook.monopdroid.R;
 import edu.rochester.nbook.monopdroid.board.Button;
 import edu.rochester.nbook.monopdroid.board.Configurable;
@@ -9,7 +11,6 @@ import edu.rochester.nbook.monopdroid.board.Estate;
 import edu.rochester.nbook.monopdroid.board.GameStatus;
 import edu.rochester.nbook.monopdroid.board.Player;
 import edu.rochester.nbook.monopdroid.board.surface.BoardViewPiece.For;
-
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -26,9 +27,12 @@ import android.graphics.drawable.GradientDrawable.Orientation;
 import android.graphics.drawable.shapes.PathShape;
 import android.graphics.drawable.ShapeDrawable;
 import android.os.Handler;
+import android.text.Editable;
+import android.text.Html.TagHandler;
 import android.text.Layout.Alignment;
 import android.util.Log;
 import android.util.SparseArray;
+import android.util.TypedValue;
 import android.view.SurfaceHolder;
 
 public class BoardViewSurfaceThread implements Runnable {
@@ -76,6 +80,10 @@ public class BoardViewSurfaceThread implements Runnable {
     private static final int DRAW_POINT_BOARD_ESTATE_ICON_RADIUS = 161;
     private static final int DRAW_POINT_BOARD_ESTATE_HOUSE_RADIUS = 162;
     private static final int DRAW_POINT_BOARD_COUNT = 163;
+    
+    private static final int DPI_SIZE_TEXT = 24;
+    private static final int DPI_BUTTON_HEIGHT = 32;
+    private static final int DPI_BUTTON2_HEIGHT = 48;
 
     /**
      * Approximation of mathematical constant PHI.
@@ -161,9 +169,17 @@ public class BoardViewSurfaceThread implements Runnable {
     
     private SurfaceHolder surfaceHolder = null;
     private BoardViewListener listener = null;
+    private TagHandler tagHandler = null;
     
     public void setListener(BoardViewListener listener) {
         this.listener = listener;
+        this.tagHandler = new TagHandler() {
+            
+            @Override
+            public void handleTag(boolean opening, String tag, Editable output, XMLReader xmlReader) {
+                
+            }
+        };
     }
 
     public BoardViewListener getListener() {
@@ -592,14 +608,16 @@ public class BoardViewSurfaceThread implements Runnable {
         drawRegions = new Rect[DRAW_REGION_CONFIG_COUNT];
         drawPoints = new Point[DRAW_POINT_CONFIG_COUNT];
         
+        int btnHeight = (int) getPixelSize(DPI_BUTTON_HEIGHT);
+        
         drawRegions[DRAW_REGION_CONFIG_BUTTON_BOUNDS] =
                 new Rect(60, height - 80, width - 60, height - 5);
                 //new Rect(60, height - 38, width - 60, height - 5);
         for (int index = 0; index < 16; index++) {
             drawRegions[DRAW_REGION_CONFIG_CHECK_BOX_BOUNDS + index] =
-                    new Rect(5, 10 + (index * 55), 40, 55 + (index * 55));
+                    new Rect(5, 10 + (index * btnHeight), 40, btnHeight + (index * btnHeight));
             drawRegions[DRAW_REGION_CONFIG_CHECK_TEXT_BOUNDS + index] =
-                    new Rect(45, 10 + (index * 55), width, 55 + (index * 55));
+                    new Rect(45, 10 + (index * btnHeight), width, btnHeight + (index * btnHeight));
                     //new Rect(45, 32 + (index * 55), width, 55 + (index * 55));
         }
         //float part = ((float)width / ((4f * phi) + 18f));
@@ -619,6 +637,8 @@ public class BoardViewSurfaceThread implements Runnable {
         drawState = DrawState.BOARD;
         drawRegions = new Rect[DRAW_REGION_BOARD_COUNT];
         drawPoints = new Point[DRAW_POINT_BOARD_COUNT];
+        
+        int btnHeight = (int) getPixelSize(DPI_BUTTON_HEIGHT);
         
         float part = ((float)width / ((4f * phi) + 18f));
         float radius = 0;
@@ -721,7 +741,7 @@ public class BoardViewSurfaceThread implements Runnable {
         drawPoints[DRAW_POINT_BOARD_ESTATE_PIECE_RADIUS] =
                 new Point((int)radius, (int)radius);
         drawRegions[DRAW_REGION_CENTER_BOUNDS] =
-                new Rect(width / 16, height / 16, width * 15 / 16, height * 15 / 16);
+                new Rect(width / 16 + 6, height / 16 + 6, width * 15 / 16 - 6, height * 15 / 16 - 6);
                 //new Rect((int)(2f * phi * part), (int)(2f * phi * part), (int)(width - 2f * phi * part), (int)(height - 2f * phi * part));
     }
 
@@ -731,10 +751,11 @@ public class BoardViewSurfaceThread implements Runnable {
         }
         TextDrawable text = new TextDrawable(
                 string,
+                getPixelSize(DPI_SIZE_TEXT),
                 Color.WHITE,
                 Color.RED,
                 Alignment.ALIGN_NORMAL,
-                VerticalAlignment.VALIGN_TOP);
+                VerticalAlignment.VALIGN_TOP, tagHandler);
         text.setBounds(drawRegions[DRAW_REGION_TEXT_BOUNDS]);
         if (isError) {
             text.onStateChanged(ButtonState.DISABLED);
@@ -743,7 +764,7 @@ public class BoardViewSurfaceThread implements Runnable {
         }
         layers.get(LAYER_BACKGROUND).addDrawable(text);
     }
-    
+
     public void addConfigurableRegions(final ArrayList<Configurable> configurables) {
         if (drawState == DrawState.NOTREADY) {
             return;
@@ -758,10 +779,11 @@ public class BoardViewSurfaceThread implements Runnable {
             checkbox.setBounds(drawRegions[DRAW_REGION_CONFIG_CHECK_BOX_BOUNDS + index]);
             TextDrawable text = new TextDrawable(
                     config.getTitle(),
+                    getPixelSize(DPI_SIZE_TEXT),
                     Color.WHITE,
                     Color.GRAY,
                     Alignment.ALIGN_NORMAL,
-                    VerticalAlignment.VALIGN_MIDDLE);
+                    VerticalAlignment.VALIGN_MIDDLE, tagHandler);
             text.setBounds(drawRegions[DRAW_REGION_CONFIG_CHECK_TEXT_BOUNDS + index]);
             GestureRegion item = new GestureRegion(
                     encl,
@@ -826,16 +848,11 @@ public class BoardViewSurfaceThread implements Runnable {
         if (drawState == DrawState.NOTREADY) {
             return;
         }
-        ButtonDrawable button = new ButtonDrawable(context);
-        TextDrawable text = new TextDrawable(
-                "Start Game",
-                Color.WHITE,
-                Color.DKGRAY,
-                Alignment.ALIGN_CENTER,
-                VerticalAlignment.VALIGN_MIDDLE);
-        GestureRegion item = new GestureRegion(
+        addButton(LAYER_BACKGROUND,
                 drawRegions[DRAW_REGION_CONFIG_BUTTON_BOUNDS],
-                TAG_GAME_START_BUTTON,
+                "Start Game",
+                isMaster,
+                TAG_GAME_START_BUTTON, 
                 new GestureRegionListener() {
                     @Override
                     public void onGestureRegionLongPress(GestureRegion region) {
@@ -846,20 +863,7 @@ public class BoardViewSurfaceThread implements Runnable {
                     public void onGestureRegionClick(GestureRegion region) {
                         listener.onStartGame();
                     }
-                });
-        button.setBounds(drawRegions[DRAW_REGION_CONFIG_BUTTON_BOUNDS]);
-        text.setBounds(drawRegions[DRAW_REGION_CONFIG_BUTTON_BOUNDS]);
-        item.addStateHandler(button);
-        item.addStateHandler(text);
-        if (isMaster) {
-            item.enable();
-        } else {
-            item.disable();
-        }
-        
-        layers.get(LAYER_BACKGROUND).addDrawable(button);
-        layers.get(LAYER_BACKGROUND).addDrawable(text);
-        layers.get(LAYER_BACKGROUND).addGestureRegion(item);
+            });
     }
 
     public void updateStartButtonRegions(boolean isMaster) {
@@ -902,7 +906,7 @@ public class BoardViewSurfaceThread implements Runnable {
          * @return The calculated Orientation value.
          */
         public Orientation getGradientOrientation() {
-            int oDegrees = degrees / 45 - 4;
+            int oDegrees = degrees / 45 - 6;
             if (oDegrees < 0) {
                 oDegrees += 8;
             }
@@ -1049,7 +1053,7 @@ public class BoardViewSurfaceThread implements Runnable {
                 Point iconCenter = drawPoints[DRAW_POINT_BOARD_ESTATE_ICON_POSITION + index];
                 Drawable iconBitmap = context.getResources().getDrawable(iconResource).mutate();
                 RotateDrawable iconBitmapRotator = new RotateDrawable(iconBitmap, direction.getRotateDegrees());
-                float radius = drawPoints[DRAW_POINT_BOARD_ESTATE_PIECE_RADIUS].x;
+                float radius = drawPoints[DRAW_POINT_BOARD_ESTATE_ICON_RADIUS].x;
                 Rect iconBounds = new Rect((int)iconCenter.x - (int)radius, (int)iconCenter.y - (int)radius, (int)iconCenter.x + (int)radius, (int)iconCenter.y + (int)radius);
                 iconBitmapRotator.setBounds(iconBounds);
                 layers.get(LAYER_BACKGROUND).addDrawable(iconBitmapRotator);
@@ -1235,9 +1239,10 @@ public class BoardViewSurfaceThread implements Runnable {
         }
         overlayBody = new TextDrawable(
                 bodyText,
+                getPixelSize(DPI_SIZE_TEXT),
                 Color.LTGRAY, Color.LTGRAY,
                 Alignment.ALIGN_NORMAL,
-                VerticalAlignment.VALIGN_TOP);
+                VerticalAlignment.VALIGN_TOP, tagHandler);
         Rect bounds = new Rect(drawRegions[DRAW_REGION_CENTER_BOUNDS]);
         bounds.inset(6, 6);
         overlayBody.setBounds(new Rect(bounds.left, bounds.top, bounds.right, bounds.bottom));
@@ -1255,7 +1260,7 @@ public class BoardViewSurfaceThread implements Runnable {
 
         Rect bounds = new Rect(drawRegions[DRAW_REGION_CENTER_BOUNDS]);
         bounds.inset(12, 12);
-        bounds.top = bounds.bottom - 75;
+        bounds.top = bounds.bottom - (int) getPixelSize(DPI_BUTTON2_HEIGHT);
         
         Rect tradeBounds = new Rect(bounds.left, bounds.top, bounds.right - bounds.width() / 2, bounds.bottom);
         addButton(LAYER_OVERLAY, tradeBounds, "Trade", status == GameStatus.RUN, TAG_OVERLAY_BUTTON_1, new GestureRegionListener() {
@@ -1302,10 +1307,15 @@ public class BoardViewSurfaceThread implements Runnable {
         });
     }
 
-    public void addEstateOverlayRegions(final int estateId) {
+    public void addEstateOverlayRegions(ArrayList<Estate> estates, final int estateId, final int selfPlayerId) {
         if (drawState == DrawState.NOTREADY) {
             return;
         }
+        Estate estate = estates.get(estateId);
+        String mortgageText = estate.isMortgaged() ? "Unmortgage" : "Mortgage";
+        boolean canMortgage = status == GameStatus.RUN && estate.canToggleMortgage();
+        boolean canBuyHouses = status == GameStatus.RUN && estate.canBuyHouses();
+        boolean canSellHouses = status == GameStatus.RUN && estate.canSellHouses();
         currentEstateRegion = layers.get(LAYER_BACKGROUND).getGestureRegion(TAG_ESTATE + estateId);
         currentEstateRegion.focus();
         overlay = OverlayState.OVERLAY_ESTATE;
@@ -1315,10 +1325,10 @@ public class BoardViewSurfaceThread implements Runnable {
 
         Rect bounds = new Rect(drawRegions[DRAW_REGION_CENTER_BOUNDS]);
         bounds.inset(12, 12);
-        bounds.top = bounds.bottom - 75;
+        bounds.top = bounds.bottom - (int) getPixelSize(DPI_BUTTON2_HEIGHT);
         
         Rect mortgageBounds = new Rect(bounds.left, bounds.top, bounds.left + bounds.width() / 3, bounds.bottom);
-        addButton(LAYER_OVERLAY, mortgageBounds, "Mortgage", status == GameStatus.RUN, TAG_OVERLAY_BUTTON_1, new GestureRegionListener() {
+        addButton(LAYER_OVERLAY, mortgageBounds, mortgageText, canMortgage, TAG_OVERLAY_BUTTON_1, new GestureRegionListener() {
             @Override
             public void onGestureRegionLongPress(GestureRegion region) {}
             
@@ -1329,7 +1339,7 @@ public class BoardViewSurfaceThread implements Runnable {
         });
         
         Rect buyBounds = new Rect(bounds.left + bounds.width() / 3, bounds.top, bounds.right - bounds.width() / 3, bounds.bottom);
-        addButton(LAYER_OVERLAY, buyBounds, "Buy House", status == GameStatus.RUN, TAG_OVERLAY_BUTTON_2, new GestureRegionListener() {
+        addButton(LAYER_OVERLAY, buyBounds, "Buy house", canBuyHouses, TAG_OVERLAY_BUTTON_2, new GestureRegionListener() {
             @Override
             public void onGestureRegionLongPress(GestureRegion region) {}
             
@@ -1340,7 +1350,7 @@ public class BoardViewSurfaceThread implements Runnable {
         });
         
         Rect sellBounds = new Rect(bounds.right - bounds.width() / 3, bounds.top, bounds.right, bounds.bottom);
-        addButton(LAYER_OVERLAY, sellBounds, "Sell House", status == GameStatus.RUN, TAG_OVERLAY_BUTTON_3, new GestureRegionListener() {
+        addButton(LAYER_OVERLAY, sellBounds, "Sell house", canSellHouses, TAG_OVERLAY_BUTTON_3, new GestureRegionListener() {
             @Override
             public void onGestureRegionLongPress(GestureRegion region) {}
             
@@ -1362,7 +1372,7 @@ public class BoardViewSurfaceThread implements Runnable {
 
         Rect bounds = new Rect(drawRegions[DRAW_REGION_CENTER_BOUNDS]);
         bounds.inset(12, 12);
-        bounds.top = bounds.bottom - 75;
+        bounds.top = bounds.bottom - (int) getPixelSize(DPI_BUTTON2_HEIGHT);
         
         Rect bidP1 = new Rect(bounds.left, bounds.top, bounds.left + bounds.width() / 6, bounds.bottom);
         addButton(LAYER_OVERLAY, bidP1, "+ $1", status == GameStatus.RUN, TAG_OVERLAY_BUTTON_1, new GestureRegionListener() {
@@ -1376,7 +1386,7 @@ public class BoardViewSurfaceThread implements Runnable {
         });
         
         Rect bidP10 = new Rect(bounds.left + bounds.width() / 6, bounds.top, bounds.left + bounds.width() / 3, bounds.bottom);
-        addButton(LAYER_OVERLAY, bidP10, "+ 10", status == GameStatus.RUN, TAG_OVERLAY_BUTTON_2, new GestureRegionListener() {
+        addButton(LAYER_OVERLAY, bidP10, "+ $10", status == GameStatus.RUN, TAG_OVERLAY_BUTTON_2, new GestureRegionListener() {
             @Override
             public void onGestureRegionLongPress(GestureRegion region) {}
             
@@ -1387,7 +1397,7 @@ public class BoardViewSurfaceThread implements Runnable {
         });
         
         Rect bidP50 = new Rect(bounds.left + bounds.width() / 3, bounds.top, bounds.left + bounds.width() / 2, bounds.bottom);
-        addButton(LAYER_OVERLAY, bidP50, "+ 50", status == GameStatus.RUN, TAG_OVERLAY_BUTTON_3, new GestureRegionListener() {
+        addButton(LAYER_OVERLAY, bidP50, "+ $50", status == GameStatus.RUN, TAG_OVERLAY_BUTTON_3, new GestureRegionListener() {
             @Override
             public void onGestureRegionLongPress(GestureRegion region) {}
             
@@ -1398,7 +1408,7 @@ public class BoardViewSurfaceThread implements Runnable {
         });
         
         Rect bidP100 = new Rect(bounds.left + bounds.width() / 2, bounds.top, bounds.right - bounds.width() / 3, bounds.bottom);
-        addButton(LAYER_OVERLAY, bidP100, "+100", status == GameStatus.RUN, TAG_OVERLAY_BUTTON_4, new GestureRegionListener() {
+        addButton(LAYER_OVERLAY, bidP100, "+ $100", status == GameStatus.RUN, TAG_OVERLAY_BUTTON_4, new GestureRegionListener() {
             @Override
             public void onGestureRegionLongPress(GestureRegion region) {}
             
@@ -1409,7 +1419,7 @@ public class BoardViewSurfaceThread implements Runnable {
         });
         
         Rect bidP500 = new Rect(bounds.right - bounds.width() / 3, bounds.top, bounds.right - bounds.width() / 6, bounds.bottom);
-        addButton(LAYER_OVERLAY, bidP500, "+500", status == GameStatus.RUN, TAG_OVERLAY_BUTTON_5, new GestureRegionListener() {
+        addButton(LAYER_OVERLAY, bidP500, "+ $500", status == GameStatus.RUN, TAG_OVERLAY_BUTTON_5, new GestureRegionListener() {
             @Override
             public void onGestureRegionLongPress(GestureRegion region) {}
             
@@ -1431,7 +1441,7 @@ public class BoardViewSurfaceThread implements Runnable {
         });
     }
 
-    public void addTurnRegions(ArrayList<Estate> estates, int[] playerIds, SparseArray<Player> players, ArrayList<Button> buttons) {
+    public void addTurnRegions(ArrayList<Estate> estates, int[] playerIds, SparseArray<Player> players, ArrayList<Button> buttons, int selfPlayerId) {
         if (drawState == DrawState.NOTREADY) {
             return;
         }
@@ -1440,32 +1450,44 @@ public class BoardViewSurfaceThread implements Runnable {
                 final Player player = players.get(playerId);
                 Rect bounds = new Rect(drawRegions[DRAW_REGION_CENTER_BOUNDS]);
                 bounds.inset(width / 16 + 6, height / 16 + 6);
-                Rect textBounds = new Rect(bounds.left, bounds.top, bounds.right, bounds.top + 90);
-                Rect btn1Bounds = new Rect(bounds.left, bounds.top + 90, bounds.right, bounds.top + 165);
-                Rect btn2Bounds = new Rect(bounds.left, bounds.top + 165, bounds.right, bounds.top + 235);
-                Rect btn3Bounds = new Rect(bounds.left, bounds.top + 235, bounds.right, bounds.top + 310); 
+                int lineHeight = (int) getPixelSize(DPI_BUTTON_HEIGHT);
+                int buttonHeight = (int) getPixelSize(DPI_BUTTON2_HEIGHT);
+                Rect textBounds = new Rect(bounds.left, bounds.top, bounds.right, bounds.top + lineHeight * 3);
+                Rect btn1Bounds = new Rect(bounds.left, bounds.top + lineHeight * 3, bounds.right, bounds.top + lineHeight * 3 + buttonHeight);
+                Rect btn2Bounds = new Rect(bounds.left, bounds.top + lineHeight * 3 + buttonHeight, bounds.right, bounds.top + lineHeight * 3 + buttonHeight * 2);
+                Rect btn3Bounds = new Rect(bounds.left, bounds.top + lineHeight * 3 + buttonHeight * 2, bounds.right, bounds.top + lineHeight * 3 + buttonHeight * 3); 
                 if (player.isTurn()) {
-                    String location = "On " + estates.get(player.getLocation()).getName();
-                    if (player.isJailed()) {
-                        location = "In Jail";
+                    Estate estate = estates.get(player.getLocation());
+                    String colorStart = "";
+                    String colorEnd = "";
+                    if (estate.getColor() != 0) {
+                        colorStart = "<font color=\"#" + getHtmlColor(estate.getColor()) + "\">";
+                        colorEnd = "</font>";
                     }
-                    String actionText = "<b>Turn goes to " + player.getName() + "</b><br>" + location + ".<br>";
-                    if (player.canRoll()) {
+                    String location = "On <b>" + colorStart + estate.getColor() + "\">" + estate.getName() + "</font></b>";
+                    if (player.isJailed()) {
+                        location = "In <b><font color=\"red\">Jail</font></b>";
+                    }
+                    
+                    String isYou = "";
+                    String actionText = "Current turn is <b><font color=\"yellow\">" + player.getName() + "</font></b>" + isYou + "<br>" + location + ".<br>";
+                    if (player.canRoll() && player.getPlayerId() == selfPlayerId) {
                         actionText += "Roll the dice:";
-                    } else if (player.canBuyEstate()) {
+                    } else if (player.canBuyEstate() && player.getPlayerId() == selfPlayerId) {
                         actionText += "Buy estate for $" + estates.get(player.getLocation()).getPrice() + "?:";
-                    } else if (buttons.size() > 0) {
+                    } else if (buttons.size() > 0 && player.getPlayerId() == selfPlayerId) {
                         actionText += "Choose an action:";
-                    } else if (player.isInDebt()) {
+                    } else if (player.isInDebt() && player.getPlayerId() == selfPlayerId) {
                         actionText += player.getName() + " is in debt.";
                     } else if (player.canRollAgain()) {
                         actionText += player.getName() + " can roll again.";
                     }
                     TextDrawable turnHeader = new TextDrawable(
                             actionText,
+                            getPixelSize(DPI_SIZE_TEXT),
                             Color.WHITE, Color.WHITE,
                             Alignment.ALIGN_NORMAL,
-                            VerticalAlignment.VALIGN_TOP);
+                            VerticalAlignment.VALIGN_TOP, tagHandler);
                     turnHeader.setBounds(textBounds);
                     layers.get(LAYER_TURN).addDrawable(turnHeader);
 
@@ -1509,7 +1531,7 @@ public class BoardViewSurfaceThread implements Runnable {
                         
                         index++;
                     }
-                    if (player.canRoll()) {
+                    if (player.canRoll() && player.getPlayerId() == selfPlayerId) {
                         addButton(
                                 LAYER_TURN,
                                 btn1Bounds,
@@ -1586,15 +1608,32 @@ public class BoardViewSurfaceThread implements Runnable {
             }
         }
     }
+    
+    private String getHtmlColor(int color) {
+        String r = Integer.toHexString(Color.red(color));
+        if (r.length() == 1) {
+            r = '0' + r;
+        }
+        String g = Integer.toHexString(Color.green(color));
+        if (g.length() == 1) {
+            g = '0' + g;
+        }
+        String b = Integer.toHexString(Color.blue(color));
+        if (b.length() == 1) {
+            b = '0' + b;
+        }
+        return r + g + b;
+    }
 
     private void addButton(int layerId, Rect bounds, String buttonText, boolean buttonEnabled, int gestureRegionTag,
             GestureRegionListener gestureRegionListener) {
         ButtonDrawable button = new ButtonDrawable(context);
         TextDrawable text = new TextDrawable(
                 buttonText,
+                getPixelSize(DPI_SIZE_TEXT),
                 Color.WHITE, Color.DKGRAY,
                 Alignment.ALIGN_CENTER,
-                VerticalAlignment.VALIGN_MIDDLE);
+                VerticalAlignment.VALIGN_MIDDLE, tagHandler);
         GestureRegion region = new GestureRegion(bounds, gestureRegionTag, gestureRegionListener); 
         button.setBounds(bounds);
         text.setBounds(bounds);
@@ -1663,5 +1702,10 @@ public class BoardViewSurfaceThread implements Runnable {
         } else {
             waitDraw = false;
         }
+    }
+    
+    private float getPixelSize(int dpiSize) {
+        return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP,
+                dpiSize, context.getResources().getDisplayMetrics());
     }
 }

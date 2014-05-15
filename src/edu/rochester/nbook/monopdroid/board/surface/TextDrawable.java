@@ -6,6 +6,7 @@ import android.graphics.Paint;
 import android.graphics.PixelFormat;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
+import android.text.Html.TagHandler;
 import android.text.Layout.Alignment;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
@@ -14,29 +15,32 @@ import android.text.style.LeadingMarginSpan;
 import android.text.Html;
 import android.text.StaticLayout;
 import android.text.TextPaint;
+import android.util.TypedValue;
 
 public class TextDrawable extends Drawable implements OnButtonStateChangedHandler {
     private StaticLayout layout;
-    private String text;
+    private CharSequence text;
     private TextPaint paint;
     private int enabled;
     private int disabled;
     private Alignment alignment;
     private VerticalAlignment valignment;
     
-    public TextDrawable(String text, int enabledColor, int disabledColor, Alignment align, VerticalAlignment valign) {
+    public TextDrawable(String text, float pxTextSize, int enabledColor, int disabledColor, Alignment align, VerticalAlignment valign, TagHandler tagHandler) {
         this.enabled = enabledColor;
         this.disabled = disabledColor;
-        this.text = text;
+        SpannableStringBuilder formattedText = (SpannableStringBuilder) Html.fromHtml(text, null, tagHandler);
+        formattedText.setSpan(new LeadingMarginSpan.Standard(0, 30), 0, formattedText.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        this.text = formattedText;
         this.paint = new TextPaint(Paint.ANTI_ALIAS_FLAG | Paint.SUBPIXEL_TEXT_FLAG);
         this.paint.setColor(enabled);
-        this.paint.setTextSize(24f);
+        this.paint.setTextSize(pxTextSize);
         this.alignment = align;
         this.valignment = valign;
         this.layout = null;
     }
-    
-    public String getText() {
+
+    public CharSequence getText() {
         return text;
     }
 
@@ -73,9 +77,7 @@ public class TextDrawable extends Drawable implements OnButtonStateChangedHandle
     }
     
     private void updateLayout() {
-        SpannableStringBuilder formattedText = (SpannableStringBuilder) Html.fromHtml(text);
-        formattedText.setSpan(new LeadingMarginSpan.Standard(0, 30), 0, formattedText.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-        this.layout = new StaticLayout(formattedText, 0, formattedText.length(), paint, getBounds().width(), alignment, 1f, 0f, false, TruncateAt.END, getBounds().width());
+        this.layout = new StaticLayout(text, 0, text.length(), paint, getBounds().width(), alignment, 1f, 0f, false, TruncateAt.END, getBounds().width());
     }
     
     @Override

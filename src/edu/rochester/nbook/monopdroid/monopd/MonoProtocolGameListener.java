@@ -5,9 +5,9 @@ import java.util.HashMap;
 
 import edu.rochester.nbook.monopdroid.board.Button;
 import edu.rochester.nbook.monopdroid.board.Configurable;
+import edu.rochester.nbook.monopdroid.board.GameStatus;
 import edu.rochester.nbook.monopdroid.board.Player;
 import edu.rochester.nbook.monopdroid.gamelist.GameItem;
-
 import android.os.Handler;
 
 public interface MonoProtocolGameListener extends MonoProtocolListener {

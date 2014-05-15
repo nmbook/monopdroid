@@ -16,7 +16,6 @@ import edu.rochester.nbook.monopdroid.gamelist.GameItem;
 import edu.rochester.nbook.monopdroid.gamelist.GameItemType;
 import edu.rochester.nbook.monopdroid.gamelist.ServerItem;
 import edu.rochester.nbook.monopdroid.monopd.MonoProtocolGameListener;
-
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.DialogInterface;
@@ -45,6 +44,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnKeyListener;
+import android.view.WindowManager;
 import android.view.inputmethod.EditorInfo;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
@@ -249,6 +249,8 @@ public class BoardActivity extends FragmentActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
         Log.d("monopd", "board: BoardActivity start");
         
@@ -465,7 +467,7 @@ public class BoardActivity extends FragmentActivity {
 
             @Override
             public void onEstateClick(int estateId) {
-                BoardActivity.this.boardView.overlayEstateInfo(estateId);
+                BoardActivity.this.boardView.overlayEstateInfo(estates, estateId, playerId);
             }
 
             @Override
@@ -603,7 +605,7 @@ public class BoardActivity extends FragmentActivity {
                 if (estate.getColor() != 0) {
                     estateColor = estate.getColor();
                 }
-                sb.append("<b><u><font color=\"#" + getHtmlColor(estateColor) + "\">" + estate.getName() + "</font></u></b><br>");
+                sb.append("<b><font color=\"#" + getHtmlColor(estateColor) + "\">" + estate.getName() + "</font></b><br>");
                 //sb.append("Estate ID: " + estate.getEstateId() + "\n");
                 //EstateGroup group = estateGroups.get(estate.getEstateGroup());
                 if (estate.canBeOwned()) {
@@ -699,7 +701,7 @@ public class BoardActivity extends FragmentActivity {
                 if (item.getPlayerId() > 0) {
                     BoardActivity.this.boardView.overlayPlayerInfo(item.getPlayerId());
                 } else if (item.getEstateId() > 0) {
-                    BoardActivity.this.boardView.overlayEstateInfo(item.getEstateId());
+                    BoardActivity.this.boardView.overlayEstateInfo(estates, item.getEstateId(), playerId);
                 }
             }
         });
@@ -819,7 +821,7 @@ public class BoardActivity extends FragmentActivity {
                         // update player view
                         updatePlayerView();
                         // redraw for possible new colors
-                        boardView.drawActionRegions(estates, playerIds, players, buttons);
+                        boardView.drawActionRegions(estates, playerIds, players, buttons, playerId);
                         // redraw overlay for possible new data
                         boardView.redrawOverlay();
                         // join message
@@ -956,7 +958,7 @@ public class BoardActivity extends FragmentActivity {
                             estates.set(estateId, estate);
                         }
                         boardView.drawBoardRegions(estates, players);
-                        boardView.drawActionRegions(estates, playerIds, players, buttons);
+                        boardView.drawActionRegions(estates, playerIds, players, buttons, playerId);
                         boardView.drawPieces(estates, playerIds, players);
                         boardView.redrawOverlay();
                     }
@@ -980,7 +982,7 @@ public class BoardActivity extends FragmentActivity {
                         
                         switch (BoardActivity.this.status) {
                         case CONFIG:
-                            writeMessage("Entered lobby. The game master may choose game configuration and start the game.", Color.YELLOW, -1, -1);
+                            writeMessage("Entering a game...", Color.YELLOW, -1, -1);
                             clearCookie();
                             break;
                         case INIT:
@@ -1182,7 +1184,7 @@ public class BoardActivity extends FragmentActivity {
                     redrawButtons = true;
                 }
                 if (redrawButtons) {
-                    boardView.drawActionRegions(estates, playerIds, players, buttons);
+                    boardView.drawActionRegions(estates, playerIds, players, buttons, playerId);
                 }
                 if (text == null || text.length() == 0) {
                     return;
@@ -1427,7 +1429,7 @@ public class BoardActivity extends FragmentActivity {
         case RUN:
             boardView.calculateBoardRegions();
             boardView.drawBoardRegions(estates, players);
-            boardView.drawActionRegions(estates, playerIds, players, buttons);
+            boardView.drawActionRegions(estates, playerIds, players, buttons, playerId);
             boardView.drawPieces(estates, playerIds, players);
             break;
         }

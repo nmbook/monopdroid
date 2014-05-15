@@ -582,8 +582,10 @@ public class MonoProtocolHandler {
     private void handleNodeGameUpdate(XmlNodeType nodeType, HashMap<String, String> data,
             MonoProtocolGameListener glistener) {
         int gameId = this.getAttributeAsInt(data, "gameid");
-        String status = this.getAttributeAsString(data, "status");
-        glistener.onGameUpdate(gameId, status);
+        if (data.containsKey("status")) {
+            String status = this.getAttributeAsString(data, "status");
+            glistener.onGameUpdate(gameId, status);
+        }
         data.clear();
     }
 

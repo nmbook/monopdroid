@@ -213,10 +213,10 @@ public class BoardView extends SurfaceView {
         }
     }
     
-    public void drawActionRegions(ArrayList<Estate> estates, int[] playerIds, SparseArray<Player> players, ArrayList<Button> buttons) {
+    public void drawActionRegions(ArrayList<Estate> estates, int[] playerIds, SparseArray<Player> players, ArrayList<Button> buttons, int selfPlayerId) {
         if (surfaceRunner.getStatus() == GameStatus.RUN) {
             surfaceRunner.beginRegions(BoardViewSurfaceThread.LAYER_TURN);
-            surfaceRunner.addTurnRegions(estates, playerIds, players, buttons);
+            surfaceRunner.addTurnRegions(estates, playerIds, players, buttons, selfPlayerId);
             surfaceRunner.commitRegions(BoardViewSurfaceThread.LAYER_TURN);
         }
     }
@@ -253,11 +253,11 @@ public class BoardView extends SurfaceView {
         surfaceRunner.commitRegions(BoardViewSurfaceThread.LAYER_OVERLAY);
     }
 
-    public void overlayEstateInfo(int estateId) {
+    public void overlayEstateInfo(ArrayList<Estate> estates, int estateId, int selfPlayerId) {
         surfaceRunner.beginRegions(BoardViewSurfaceThread.LAYER_OVERLAY);
         //surfaceRunner.setEstateButtonsEnabled(false);
         surfaceRunner.addOverlayRegion();
-        surfaceRunner.addEstateOverlayRegions(estateId);
+        surfaceRunner.addEstateOverlayRegions(estates, estateId, selfPlayerId);
         surfaceRunner.commitRegions(BoardViewSurfaceThread.LAYER_OVERLAY);
     }
 

@@ -37,11 +37,13 @@ public class GameListAdapter extends ArrayAdapter<GameItem> {
             if (nameText != null) {
                 switch (o.getItemType()) {
                 case RECONNECT:
-                    nameText.setText(o.getTypeName() + " (" + o.getType() + "): you may be able to rejoin this game");
+                    nameText.setText("#" + o.getGameId() + ": " + o.getTypeName() + " (" + o.getType() + "): you may be able to rejoin this game");
                     break;
                 case CREATE:
-                case JOIN:
                     nameText.setText(o.getTypeName() + " (" + o.getType() + ")");
+                    break;
+                case JOIN:
+                    nameText.setText("#" + o.getGameId() + ": " + o.getTypeName() + " (" + o.getType() + ")");
                     break;
                 default:
                 case LOADING:
