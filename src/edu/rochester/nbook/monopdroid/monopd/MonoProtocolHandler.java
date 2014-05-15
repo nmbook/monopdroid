@@ -196,7 +196,7 @@ public class MonoProtocolHandler {
             return;
         }
         try {
-            Log.v("monopd", "monopd: Do receive");
+            //Log.v("monopd", "monopd: Do receive");
             while (this.rd.ready()) {
                 String line = this.rd.readLine();
                 if (line == null) {
@@ -609,9 +609,17 @@ public class MonoProtocolHandler {
     @SuppressWarnings({ "unchecked", "rawtypes" })
     private void handleNodeConfigUpdate(XmlNodeType nodeType, HashMap<String, String> data,
             MonoProtocolGameListener glistener, ArrayList list) {
-        glistener.onConfigUpdate(list);
-        list.clear();
-        data.clear();
+        if (data.containsKey("configid")) {
+            int configId = this.getAttributeAsInt(data, "configid");
+            data.remove("configid");
+            glistener.onConfigUpdate(configId, data);
+            data.clear();
+        } else {
+            // handle older style options <configupdate gameid="#"><option>...</configupdate>
+            glistener.onConfigUpdate(list);
+            list.clear();
+            data.clear();
+        }
     }
 
     private void handleNodeMessage(XmlNodeType nodeType, HashMap<String, String> data,

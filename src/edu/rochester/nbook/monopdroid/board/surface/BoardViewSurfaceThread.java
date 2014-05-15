@@ -1,10 +1,12 @@
 package edu.rochester.nbook.monopdroid.board.surface;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map.Entry;
 
 import org.xml.sax.XMLReader;
 
-import edu.rochester.nbook.monopdroid.R;
+import edu.rochester.nbook.monopdroid.board.BoardActivity;
 import edu.rochester.nbook.monopdroid.board.Button;
 import edu.rochester.nbook.monopdroid.board.Configurable;
 import edu.rochester.nbook.monopdroid.board.Estate;
@@ -82,8 +84,8 @@ public class BoardViewSurfaceThread implements Runnable {
     private static final int DRAW_POINT_BOARD_COUNT = 163;
     
     private static final int DPI_SIZE_TEXT = 24;
-    private static final int DPI_BUTTON_HEIGHT = 32;
-    private static final int DPI_BUTTON2_HEIGHT = 48;
+    private static final int DPI_LINE_HEIGHT = 32;
+    private static final int DPI_BUTTON_HEIGHT = 48;
 
     /**
      * Approximation of mathematical constant PHI.
@@ -96,6 +98,9 @@ public class BoardViewSurfaceThread implements Runnable {
     private Rect[] drawRegions;
     // calculated drawing points for the current canvas size
     private Point[] drawPoints;
+    
+    private volatile boolean hasChanges = false;
+    private volatile boolean waitDraw = false;
     
     // has cached data been initialized yet?
     private static boolean staticInit = false;
@@ -165,7 +170,7 @@ public class BoardViewSurfaceThread implements Runnable {
     
     private Context context;
     
-    public static final int animationSteps = 10;
+    public static final int animationSteps = 3;
     
     private SurfaceHolder surfaceHolder = null;
     private BoardViewListener listener = null;
@@ -227,7 +232,7 @@ public class BoardViewSurfaceThread implements Runnable {
         // oPaint.setColor(Color.YELLOW);
         // oPaint.setStyle(Paint.Style.STROKE);
         while (this.running) {
-            if (this.surfaceHolder.getSurface().isValid()) {
+            if (this.surfaceHolder.getSurface().isValid() && hasChanges) {
                 Canvas canvas = this.surfaceHolder.lockCanvas();
                 canvas.drawRect(new Rect(0, 0, canvas.getWidth(), canvas.getHeight()), bgPaint);
                 for (DrawLayer layer : this.layers) {
@@ -240,7 +245,14 @@ public class BoardViewSurfaceThread implements Runnable {
                     canvas.restore();
                 }
                 this.surfaceHolder.unlockCanvasAndPost(canvas);
+                hasChanges = false;
                 waitDraw = false;
+            }
+            try {
+                // 20 fps
+                Thread.sleep(50);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
         }
     }
@@ -345,11 +357,13 @@ public class BoardViewSurfaceThread implements Runnable {
     
     private void resetPZState() {
         pzState = new PZState();
+        hasChanges = true;
     }
     
     private void commitPZState(PZState state) {
         pzAnimRunnable = null;
         pzState = state;
+        hasChanges = true;
     }
     
     private int pzAnimIndex = 0;
@@ -367,6 +381,7 @@ public class BoardViewSurfaceThread implements Runnable {
                     return;
                 }
                 pzState = steps[pzAnimIndex];
+                hasChanges = true;
                 pzAnimIndex++;
                 if (pzAnimIndex < stepsToTake) {
                     if (pzAnimRunnable != null) {
@@ -540,6 +555,7 @@ public class BoardViewSurfaceThread implements Runnable {
                 return true;
             }
         });
+        hasChanges = true;
     }
 
     public void onShowPressUp(int x, int y) {
@@ -550,10 +566,12 @@ public class BoardViewSurfaceThread implements Runnable {
                 return true;
             }
         });
+        hasChanges = true;
     }
 
     public void commitRegions(int layer) {
         layers.get(layer).commitRegions();
+        hasChanges = true;
     }
 
     public void beginRegions(int layer) {
@@ -562,6 +580,7 @@ public class BoardViewSurfaceThread implements Runnable {
 
     public void clearRegions(int layer) {
         layers.get(layer).clearRegions();
+        hasChanges = true;
     }
 
     public void setSize(int width, int height) {
@@ -607,17 +626,18 @@ public class BoardViewSurfaceThread implements Runnable {
         drawState = DrawState.CONFIG;
         drawRegions = new Rect[DRAW_REGION_CONFIG_COUNT];
         drawPoints = new Point[DRAW_POINT_CONFIG_COUNT];
-        
+
+        int lineHeight = (int) getPixelSize(DPI_LINE_HEIGHT);
         int btnHeight = (int) getPixelSize(DPI_BUTTON_HEIGHT);
         
         drawRegions[DRAW_REGION_CONFIG_BUTTON_BOUNDS] =
-                new Rect(60, height - 80, width - 60, height - 5);
+                new Rect(60, height - 5 - btnHeight, width - 60, height - 5);
                 //new Rect(60, height - 38, width - 60, height - 5);
         for (int index = 0; index < 16; index++) {
             drawRegions[DRAW_REGION_CONFIG_CHECK_BOX_BOUNDS + index] =
-                    new Rect(5, 10 + (index * btnHeight), 40, btnHeight + (index * btnHeight));
+                    new Rect(5, 10 + (index * lineHeight), 40, lineHeight + (index * lineHeight));
             drawRegions[DRAW_REGION_CONFIG_CHECK_TEXT_BOUNDS + index] =
-                    new Rect(45, 10 + (index * btnHeight), width, btnHeight + (index * btnHeight));
+                    new Rect(45, 10 + (index * lineHeight), width, lineHeight + (index * lineHeight));
                     //new Rect(45, 32 + (index * 55), width, 55 + (index * 55));
         }
         //float part = ((float)width / ((4f * phi) + 18f));
@@ -638,8 +658,6 @@ public class BoardViewSurfaceThread implements Runnable {
         drawRegions = new Rect[DRAW_REGION_BOARD_COUNT];
         drawPoints = new Point[DRAW_POINT_BOARD_COUNT];
         
-        int btnHeight = (int) getPixelSize(DPI_BUTTON_HEIGHT);
-        
         float part = ((float)width / ((4f * phi) + 18f));
         float radius = 0;
         for (int index = 0; index < 40; index++) {
@@ -655,8 +673,8 @@ public class BoardViewSurfaceThread implements Runnable {
                 gradY = estateY = ((4f * phi) + 18f) - (2f * phi);
                 gradH = 1;
                 pieceX = iconX = estateX + 1f;
+                pieceY = estateY + 2f;
                 iconY = ((4f * phi) + 18f) - 1.4f;
-                pieceY = ((4f * phi) + 18f) - 0.7f;
                 pieceDeltaX = 0.5f;
                 pieceDeltaY = 0f;
             }
@@ -669,9 +687,9 @@ public class BoardViewSurfaceThread implements Runnable {
                 gradY = estateY = ((4f * phi) + 18f) - 2f * phi - ((float)index - 10f) * 2f;
                 gradX = 2f * phi - 1f;
                 gradW = 1;
-                iconX = 1.4f;
-                pieceX = 0.7f;
+                pieceX = estateX + 1f;
                 pieceY = iconY = estateY + 1f;
+                iconX = 1.4f;
                 pieceDeltaX = 0f;
                 pieceDeltaY = 0.5f;
             }
@@ -685,8 +703,8 @@ public class BoardViewSurfaceThread implements Runnable {
                 gradY = 2f * phi - 1f;
                 gradH = 1;
                 pieceX = iconX = estateX + 1f;
+                pieceY = estateY + 1f;
                 iconY = 1.4f;
-                pieceY = 0.7f;
                 pieceDeltaX = -0.5f;
                 pieceDeltaY = 0f;
             }
@@ -699,9 +717,9 @@ public class BoardViewSurfaceThread implements Runnable {
                 gradX = estateX = ((4f * phi) + 18f) - (2f * phi);
                 gradW = 1;
                 if (index != 0) {
-                    iconX = ((4f * phi) + 18f) - 1.4f;
-                    pieceX = ((4f * phi) + 18f) - 0.7f;
+                    pieceX = estateX + 2f;
                     pieceY = iconY = estateY + 1f;
+                    iconX = ((4f * phi) + 18f) - 1.4f;
                     pieceDeltaX = 0f;
                     pieceDeltaY = -0.5f;
                 }
@@ -765,20 +783,22 @@ public class BoardViewSurfaceThread implements Runnable {
         layers.get(LAYER_BACKGROUND).addDrawable(text);
     }
 
-    public void addConfigurableRegions(final ArrayList<Configurable> configurables) {
+    public void addConfigurableRegions(final HashMap<String, Configurable> configurables) {
         if (drawState == DrawState.NOTREADY) {
             return;
         }
         int index = 0;
         configIndexMap = new ArrayList<String>();
-        for (final Configurable config : configurables) {
-            configIndexMap.add(config.getCommand());
+        for (final Entry<String, Configurable> kvp : configurables.entrySet()) {
+            final String configKey = kvp.getKey();
+            Configurable config = kvp.getValue();
+            configIndexMap.add(configKey);
             Rect encl = new Rect(drawRegions[DRAW_REGION_CONFIG_CHECK_BOX_BOUNDS + index]);
             encl.union(drawRegions[DRAW_REGION_CONFIG_CHECK_TEXT_BOUNDS + index]);
             CheckboxDrawable checkbox = new CheckboxDrawable(context);
             checkbox.setBounds(drawRegions[DRAW_REGION_CONFIG_CHECK_BOX_BOUNDS + index]);
             TextDrawable text = new TextDrawable(
-                    config.getTitle(),
+                    config.getDescription(),
                     getPixelSize(DPI_SIZE_TEXT),
                     Color.WHITE,
                     Color.GRAY,
@@ -797,8 +817,9 @@ public class BoardViewSurfaceThread implements Runnable {
                         @Override
                         public void onGestureRegionClick(GestureRegion region) {
                             if (listener != null) {
-                                for (Configurable currentConfigurable : configurables) {
-                                    if (currentConfigurable.getCommand().equals(config.getCommand())) {
+                                for (Entry<String, Configurable> kvp : configurables.entrySet()) {
+                                    Configurable currentConfigurable = kvp.getValue();
+                                    if (kvp.getKey().equals(configKey)) {
                                         listener.onConfigChange(currentConfigurable.getCommand(),
                                                 currentConfigurable.getValue().equals("0") ? "1" : "0");
                                     }
@@ -825,8 +846,9 @@ public class BoardViewSurfaceThread implements Runnable {
         }
     }
 
-    public void updateConfigurableRegions(ArrayList<Configurable> configurables) {
-        for (Configurable config : configurables) {
+    public void updateConfigurableRegions(HashMap<String, Configurable> configurables) {
+        for (Entry<String, Configurable> kvp : configurables.entrySet()) {
+            Configurable config = kvp.getValue();
             int configIndex = configIndexMap.indexOf(config.getCommand());
             if (configIndex >= 0) {
                 GestureRegion region = layers.get(LAYER_BACKGROUND).getGestureRegion(TAG_CONFIG_ITEM_CHECK + configIndex);
@@ -842,6 +864,7 @@ public class BoardViewSurfaceThread implements Runnable {
                 }
             }
         }
+        hasChanges = true;
     }
 
     public void addStartButtonRegions(boolean isMaster) {
@@ -873,6 +896,7 @@ public class BoardViewSurfaceThread implements Runnable {
         } else {
             region.disable();
         }
+        hasChanges = true;
     }
     
     /**
@@ -1039,11 +1063,11 @@ public class BoardViewSurfaceThread implements Runnable {
             } else if (estate.getIcon().equals("qmark-red.png") || estate.getIcon().equals("chance.png")) { // chance
                 iconResource = 0; // R.drawable.qmark_red
             } else if (estate.getIcon().equals("dollar.png") || estate.getIcon().equals("tax.png")) { // tax
-                iconResource = R.drawable.tax;
+                iconResource = 0; // R.drawable.tax;
             } else if (estate.getIcon().equals("c_chest.png")) { // community chest
                 iconResource = 0; // R.drawable.c_chest
             } else if (estate.getIcon().equals("railroad.png")) { // railroad
-                iconResource = R.drawable.railroad;
+                iconResource = 0; // R.drawable.railroad;
             } else if (estate.getIcon().equals("electric_co.png")) { // elco
                 iconResource = 0; //R.drawable.electric_co;
             } else if (estate.getIcon().equals("water_wks.png")) { // wawks
@@ -1094,7 +1118,7 @@ public class BoardViewSurfaceThread implements Runnable {
                 int owner = estate.getOwner();
                 if (owner > 0) {
                     int playerIndex = 0;
-                    for (int j = 0; j < 4; j++) {
+                    for (int j = 0; j < BoardViewPiece.MAX_PLAYERS; j++) {
                         if (owner == BoardViewPiece.pieces[j].getPlayerId()) {
                             playerIndex = j;
                         }
@@ -1119,7 +1143,7 @@ public class BoardViewSurfaceThread implements Runnable {
         if (drawState == DrawState.NOTREADY) {
             return;
         }
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < BoardViewPiece.MAX_PLAYERS; i++) {
             int playerId = BoardViewPiece.pieces[i].getPlayerId();
             int currentEstate = BoardViewPiece.pieces[i].getCurrentEstate();
             int progressEstate = BoardViewPiece.pieces[i].getProgressEstate();
@@ -1128,7 +1152,7 @@ public class BoardViewSurfaceThread implements Runnable {
             if (playerId > 0) {
                 int sameEstateIndex = 0;
                 int sameEstate = 0;
-                for (int j = 0; j < 4; j++) {
+                for (int j = 0; j < BoardViewPiece.MAX_PLAYERS; j++) {
                     if (playerId > 0 &&
                             BoardViewPiece.pieces[j].getProgressEstate() == progressEstate) {
                         if (j < i) {
@@ -1174,6 +1198,7 @@ public class BoardViewSurfaceThread implements Runnable {
             currentEstateRegion.unfocus();
             currentEstateRegion = null;
         }
+        hasChanges = true;
     }
 
     public void addOverlayRegion() {
@@ -1247,6 +1272,7 @@ public class BoardViewSurfaceThread implements Runnable {
         bounds.inset(6, 6);
         overlayBody.setBounds(new Rect(bounds.left, bounds.top, bounds.right, bounds.bottom));
         overlayBody.invalidateSelf();
+        hasChanges = true;
     }
 
     public void addPlayerOverlayRegions(final int playerId) {
@@ -1260,7 +1286,7 @@ public class BoardViewSurfaceThread implements Runnable {
 
         Rect bounds = new Rect(drawRegions[DRAW_REGION_CENTER_BOUNDS]);
         bounds.inset(12, 12);
-        bounds.top = bounds.bottom - (int) getPixelSize(DPI_BUTTON2_HEIGHT);
+        bounds.top = bounds.bottom - (int) getPixelSize(DPI_BUTTON_HEIGHT);
         
         Rect tradeBounds = new Rect(bounds.left, bounds.top, bounds.right - bounds.width() / 2, bounds.bottom);
         addButton(LAYER_OVERLAY, tradeBounds, "Trade", status == GameStatus.RUN, TAG_OVERLAY_BUTTON_1, new GestureRegionListener() {
@@ -1325,7 +1351,7 @@ public class BoardViewSurfaceThread implements Runnable {
 
         Rect bounds = new Rect(drawRegions[DRAW_REGION_CENTER_BOUNDS]);
         bounds.inset(12, 12);
-        bounds.top = bounds.bottom - (int) getPixelSize(DPI_BUTTON2_HEIGHT);
+        bounds.top = bounds.bottom - (int) getPixelSize(DPI_BUTTON_HEIGHT);
         
         Rect mortgageBounds = new Rect(bounds.left, bounds.top, bounds.left + bounds.width() / 3, bounds.bottom);
         addButton(LAYER_OVERLAY, mortgageBounds, mortgageText, canMortgage, TAG_OVERLAY_BUTTON_1, new GestureRegionListener() {
@@ -1372,7 +1398,7 @@ public class BoardViewSurfaceThread implements Runnable {
 
         Rect bounds = new Rect(drawRegions[DRAW_REGION_CENTER_BOUNDS]);
         bounds.inset(12, 12);
-        bounds.top = bounds.bottom - (int) getPixelSize(DPI_BUTTON2_HEIGHT);
+        bounds.top = bounds.bottom - (int) getPixelSize(DPI_BUTTON_HEIGHT);
         
         Rect bidP1 = new Rect(bounds.left, bounds.top, bounds.left + bounds.width() / 6, bounds.bottom);
         addButton(LAYER_OVERLAY, bidP1, "+ $1", status == GameStatus.RUN, TAG_OVERLAY_BUTTON_1, new GestureRegionListener() {
@@ -1450,37 +1476,44 @@ public class BoardViewSurfaceThread implements Runnable {
                 final Player player = players.get(playerId);
                 Rect bounds = new Rect(drawRegions[DRAW_REGION_CENTER_BOUNDS]);
                 bounds.inset(width / 16 + 6, height / 16 + 6);
-                int lineHeight = (int) getPixelSize(DPI_BUTTON_HEIGHT);
-                int buttonHeight = (int) getPixelSize(DPI_BUTTON2_HEIGHT);
+                int lineHeight = (int) getPixelSize(DPI_LINE_HEIGHT);
+                int buttonHeight = (int) getPixelSize(DPI_BUTTON_HEIGHT);
                 Rect textBounds = new Rect(bounds.left, bounds.top, bounds.right, bounds.top + lineHeight * 3);
                 Rect btn1Bounds = new Rect(bounds.left, bounds.top + lineHeight * 3, bounds.right, bounds.top + lineHeight * 3 + buttonHeight);
                 Rect btn2Bounds = new Rect(bounds.left, bounds.top + lineHeight * 3 + buttonHeight, bounds.right, bounds.top + lineHeight * 3 + buttonHeight * 2);
                 Rect btn3Bounds = new Rect(bounds.left, bounds.top + lineHeight * 3 + buttonHeight * 2, bounds.right, bounds.top + lineHeight * 3 + buttonHeight * 3); 
                 if (player.isTurn()) {
                     Estate estate = estates.get(player.getLocation());
-                    String colorStart = "";
-                    String colorEnd = "";
-                    if (estate.getColor() != 0) {
-                        colorStart = "<font color=\"#" + getHtmlColor(estate.getColor()) + "\">";
-                        colorEnd = "</font>";
-                    }
-                    String location = "On <b>" + colorStart + estate.getColor() + "\">" + estate.getName() + "</font></b>";
+                    String location = "On " + BoardActivity.makeEstateName(estate);
                     if (player.isJailed()) {
                         location = "In <b><font color=\"red\">Jail</font></b>";
                     }
                     
-                    String isYou = "";
-                    String actionText = "Current turn is <b><font color=\"yellow\">" + player.getName() + "</font></b>" + isYou + "<br>" + location + ".<br>";
-                    if (player.canRoll() && player.getPlayerId() == selfPlayerId) {
-                        actionText += "Roll the dice:";
-                    } else if (player.canBuyEstate() && player.getPlayerId() == selfPlayerId) {
-                        actionText += "Buy estate for $" + estates.get(player.getLocation()).getPrice() + "?:";
-                    } else if (buttons.size() > 0 && player.getPlayerId() == selfPlayerId) {
-                        actionText += "Choose an action:";
-                    } else if (player.isInDebt() && player.getPlayerId() == selfPlayerId) {
-                        actionText += player.getName() + " is in debt.";
-                    } else if (player.canRollAgain()) {
-                        actionText += player.getName() + " can roll again.";
+                    String actionText = "Current turn is " + BoardActivity.makePlayerName(player) + "<br>" + location + "<br>";
+                    if (player.canRoll()) {
+                        if (player.getPlayerId() == selfPlayerId) {
+                            actionText += "Roll the dice:";
+                        } else {
+                            actionText += "Player is rolling the dice.";
+                        }
+                    } else if (player.canBuyEstate()) {
+                        if (player.getPlayerId() == selfPlayerId) {
+                            actionText += "Buy estate for $" + estates.get(player.getLocation()).getPrice() + "?:";
+                        } else {
+                            actionText += "Player can choose to buy the estate.";
+                        }
+                    } else if (buttons.size() > 0) {
+                        if (player.getPlayerId() == selfPlayerId) {
+                            actionText += "Choose an action:";
+                        } else {
+                            actionText += "Player is choosing an action.";
+                        }
+                    } else if (player.isInDebt()) {
+                        if (player.getPlayerId() == selfPlayerId) {
+                            actionText += "You are in debt. You must pay it off by mortgaging properties or selling assets.";
+                        } else {
+                            actionText += "Player is in debt.";
+                        }
                     }
                     TextDrawable turnHeader = new TextDrawable(
                             actionText,
@@ -1608,22 +1641,6 @@ public class BoardViewSurfaceThread implements Runnable {
             }
         }
     }
-    
-    private String getHtmlColor(int color) {
-        String r = Integer.toHexString(Color.red(color));
-        if (r.length() == 1) {
-            r = '0' + r;
-        }
-        String g = Integer.toHexString(Color.green(color));
-        if (g.length() == 1) {
-            g = '0' + g;
-        }
-        String b = Integer.toHexString(Color.blue(color));
-        if (b.length() == 1) {
-            b = '0' + b;
-        }
-        return r + g + b;
-    }
 
     private void addButton(int layerId, Rect bounds, String buttonText, boolean buttonEnabled, int gestureRegionTag,
             GestureRegionListener gestureRegionListener) {
@@ -1684,10 +1701,9 @@ public class BoardViewSurfaceThread implements Runnable {
         hsv[2] -= 0.4;
         return Color.HSVToColor(hsv);
     }
-    
-    private volatile boolean waitDraw = false;
 
     public void waitDraw() {
+        hasChanges = true;
         waitDraw = true;
         if (running) {
             while (waitDraw) {

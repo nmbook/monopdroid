@@ -29,14 +29,16 @@ public class Configurable {
         }
     }*/
 
-    private String title;
+    private int configId;
+    private String name;
+    private String description;
     //private ConfigurableType type;
     private String command;
     private String value;
     private boolean editable;
 
     /**
-     * Create a new configurable.
+     * Create a new configurable (old style).
      * @param title The text label to display.
      * @param type The configurable type.
      * @param command The command used by people who can edit it to update it.
@@ -44,7 +46,7 @@ public class Configurable {
      * @param editable Whether this configurable can be edited by this instance.
      */
     public Configurable(String title, String type, String command, String value, boolean editable) {
-        this.title = title;
+        this.description = title;
         if (!type.equals("bool")) {
             Log.w("monopd", "Encountered a configuration option of type other than BOOLEAN. Ignoring.");
         }
@@ -52,6 +54,14 @@ public class Configurable {
         this.command = command;
         this.value = value;
         this.editable = editable;
+    }
+
+    public Configurable(int configId) {
+        this.configId = configId;
+    }
+    
+    public int getConfigId() {
+        return configId;
     }
 
     /**
@@ -74,8 +84,20 @@ public class Configurable {
         this.editable = editable;
     }
 
-    public String getTitle() {
-        return this.title;
+    public String getName() {
+        return this.name;
+    }
+    
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getDescription() {
+        return this.description;
+    }
+    
+    public void setDescription(String descr) {
+        this.description = descr;
     }
 
     /*public ConfigurableType getType() {
@@ -83,11 +105,14 @@ public class Configurable {
     }*/
 
     public String getCommand() {
+        if (this.command == null) {
+            return ".gc" + configId + ":";
+        }
         return this.command;
     }
     
     @Override
     public String toString() {
-        return title + " (" + command + ")";
+        return description + " (" + command + ")";
     }
 }

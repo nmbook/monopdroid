@@ -11,7 +11,7 @@
         android:nextFocusUp="@id/board_player_item_1"
         android:nextFocusDown="@id/board_chat_list"
         android:nextFocusLeft="@null"
-        android:nextFocusRight="@id/board_player_item_1"
+        android:nextFocusRight="@id/board_player_item_8"
         android:nextFocusForward="@id/board_chat_list" >
         <requestFocus />
     </edu.rochester.nbook.monopdroid.board.surface.BoardView>

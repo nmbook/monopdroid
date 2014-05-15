@@ -8,13 +8,14 @@ import android.graphics.drawable.GradientDrawable.Orientation;
 
 /**
  * Represents one of four pieces.
- * 1=GREEN, 2=RED, 3=CYAN, 4=YELLOW
+ * 1=GREEN, 2=RED, 3=CYAN, 4=YELLOW, 5=PURPLE, 6=
  * 
  * @author Nate
  *
  */
 public class BoardViewPiece {
-    public static final BoardViewPiece[] pieces = new BoardViewPiece[4];
+    public static final int MAX_PLAYERS = 8;
+    public static final BoardViewPiece[] pieces = new BoardViewPiece[MAX_PLAYERS];
     
     public enum For {
         PLAYER_LIST, BOARD, OVERLAY
@@ -27,10 +28,14 @@ public class BoardViewPiece {
         pieces[1] = new BoardViewPiece(2);
         pieces[2] = new BoardViewPiece(3);
         pieces[3] = new BoardViewPiece(4);
+        pieces[4] = new BoardViewPiece(5);
+        pieces[5] = new BoardViewPiece(6);
+        pieces[6] = new BoardViewPiece(7);
+        pieces[7] = new BoardViewPiece(8);
     }
     
     /**
-     * The index of the piece. 1-4.
+     * The index of the piece. 1-8.
      */
     private int pieceIndex;
     /**
@@ -89,6 +94,14 @@ public class BoardViewPiece {
             return Color.CYAN;
         case 4:
             return Color.YELLOW;
+        case 5:
+            return Color.MAGENTA;
+        case 6:
+            return Color.BLUE;
+        case 7:
+            return Color.LTGRAY;
+        case 8:
+            return Color.rgb(255, 127, 0); // orange, sucker
         }
     }
 
@@ -135,7 +148,7 @@ public class BoardViewPiece {
     }
 
     public static BoardViewPiece getPiece(int playerId) {
-        for (int j = 0; j < 4; j++) {
+        for (int j = 0; j < MAX_PLAYERS; j++) {
             if (playerId == BoardViewPiece.pieces[j].getPlayerId()) {
                 return BoardViewPiece.pieces[j];
             }

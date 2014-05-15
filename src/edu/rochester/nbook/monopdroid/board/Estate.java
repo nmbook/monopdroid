@@ -1,5 +1,7 @@
 package edu.rochester.nbook.monopdroid.board;
 
+import android.graphics.Color;
+
 public class Estate {
     // estate data
     private int estateId;
@@ -240,5 +242,43 @@ public class Estate {
     @Override
     public String toString() {
         return this.name + " (id: " + this.estateId + ")";
+    }
+    
+    /**
+     * Get the Estate's board color in an HTML-ready string. 
+     * @return
+     */
+    public String getHtmlColor() {
+        int color = this.color;
+        if (color == 0) {
+            color = Color.WHITE;
+        }
+        return Estate.getHtmlColor(color);
+    }
+
+    public static String getHtmlColor(int javaColor) {
+        String r = Integer.toHexString(Color.red(javaColor));
+        if (r.length() == 1) {
+            r = '0' + r;
+        }
+        String g = Integer.toHexString(Color.green(javaColor));
+        if (g.length() == 1) {
+            g = '0' + g;
+        }
+        String b = Integer.toHexString(Color.blue(javaColor));
+        if (b.length() == 1) {
+            b = '0' + b;
+        }
+        return "#" + r + g + b;
+    }
+
+    public static String getHouseHtmlColor(int houses) {
+        if (houses >= 5) {
+            return "red";
+        } else if (houses > 0) {
+            return "green";
+        } else {
+            return "white";
+        }
     }
 }

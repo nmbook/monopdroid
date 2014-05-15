@@ -15,7 +15,6 @@ import android.text.style.LeadingMarginSpan;
 import android.text.Html;
 import android.text.StaticLayout;
 import android.text.TextPaint;
-import android.util.TypedValue;
 
 public class TextDrawable extends Drawable implements OnButtonStateChangedHandler {
     private StaticLayout layout;

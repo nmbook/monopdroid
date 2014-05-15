@@ -141,6 +141,19 @@ public class BoardActivity extends FragmentActivity {
         }
     };
     
+    private static final HashMap<String, XmlAttribute> configurableAttributes = new HashMap<String, XmlAttribute>() {
+        private static final long serialVersionUID = 2978911583408943533L;
+
+        {
+            this.put("configid", new XmlAttribute(Auction.class, "setConfigId", XmlAttributeType.INT));
+            this.put("name", new XmlAttribute(Auction.class, "setName", XmlAttributeType.STRING));
+            this.put("description", new XmlAttribute(Auction.class, "setDescription", XmlAttributeType.STRING));
+            this.put("type", new XmlAttribute(Auction.class, "setType", XmlAttributeType.STRING));
+            this.put("edit", new XmlAttribute(Auction.class, "setEditable", XmlAttributeType.BOOLEAN));
+            this.put("value", new XmlAttribute(Auction.class, "setValue", XmlAttributeType.STRING));
+        }
+    };
+    
     /**
      * The Board UI. Do not access from networking thread.
      */
@@ -160,7 +173,7 @@ public class BoardActivity extends FragmentActivity {
     /**
      * The player views. Do not access from networking thread.
      */
-    private LinearLayout[] playerView = new LinearLayout[4];
+    private LinearLayout[] playerView = new LinearLayout[BoardViewPiece.MAX_PLAYERS];
     /**
      * The networking handler. Used to send messages to the networking thread.
      */
@@ -176,9 +189,9 @@ public class BoardActivity extends FragmentActivity {
      */
     private GameItem gameItem = null;
     /**
-     * Array of players to show in the 4 slots.
+     * Array of players to show up to MAX_PLAYERS
      */
-    private int[] playerIds = new int[4];
+    private int[] playerIds = new int[BoardViewPiece.MAX_PLAYERS];
     /**
      * List of players.
      */
@@ -198,7 +211,7 @@ public class BoardActivity extends FragmentActivity {
     /**
      * List of options.
      */
-    private ArrayList<Configurable> configurables = new ArrayList<Configurable>();
+    private HashMap<String, Configurable> configurables = new HashMap<String, Configurable>();
     /**
      * List of buttons.
      */
@@ -363,7 +376,7 @@ public class BoardActivity extends FragmentActivity {
         public GameItem gameItem;
         public SparseArray<Player> players;
         public ArrayList<Estate> estates;
-        public ArrayList<Configurable> configurables;
+        public HashMap<String, Configurable> configurables;
         public int playerId;
         public String cookie;
         public GameStatus status;
@@ -533,25 +546,25 @@ public class BoardActivity extends FragmentActivity {
             public String getPlayerBodyText(int playerId) {
                 Player player = players.get(playerId);
                 StringBuilder sb = new StringBuilder();
-                BoardViewPiece playerPiece = BoardViewPiece.getPiece(playerId);
-                int playerPieceColor = Color.WHITE;
-                if (playerPiece != null) {
-                    playerPieceColor = playerPiece.getColor();
-                }
-                sb.append("<b><u><font color=\"#" + getHtmlColor(playerPieceColor) + "\">" + player.getName() + "</font></u></b><br>");
+                sb.append(makePlayerName(player));
+                sb.append("<br>");
                 //sb.append("Player ID: " + player.getPlayerId() + "\n");
                 if (player.isMaster() && status == GameStatus.CONFIG) {
                     sb.append("<i>This player created this game.</i><br>");
                 }
                 if (player.isTurn()) {
-                    sb.append("<i>It is this player's turn.</i><br>");
+                    sb.append("<i><font color=\"yellow\">It is this player's turn.</font></i><br>");
                 }
                 if (player.getHost() != null) {
-                    sb.append("<b>Host:</b> " + player.getHost() + "<br>");
+                    sb.append(makeFieldLine("IP address", 
+                            player.getHost()));
                 }
                 if (status == GameStatus.RUN) {
-                    sb.append("<b>Money:</b> $" + player.getMoney() + "<br>");
-                    sb.append("<b>On estate:</b> " + estates.get(player.getLocation()).getName() + "<br>");
+                    Estate estate = estates.get(player.getLocation());
+                    sb.append(makeFieldLine("Money", 
+                            "$" + player.getMoney()));
+                    sb.append(makeFieldLine("On estate", 
+                            makeEstateName(estate)));
                     int owned = 0;
                     int mortgaged = 0;
                     int houses = 0;
@@ -588,11 +601,16 @@ public class BoardActivity extends FragmentActivity {
                             }
                         }
                     }
-                    sb.append("<b>Owned estates:</b> " + owned + "<br>");
-                    sb.append("<b>Owned estates mortgaged:</b> " + mortgaged + "<br>");
-                    sb.append("<b>Complete estate sets:</b> " + completeGroups + "<br>");
-                    sb.append("<b>Owned houses:</b> " + houses + "<br>");
-                    sb.append("<b>Owned hotels:</b> " + hotels + "<br>");
+                    sb.append(makeFieldLine("Owned estates", 
+                            Integer.toString(owned)));
+                    sb.append(makeFieldLine("Owned estates mortgaged", 
+                            Integer.toString(mortgaged)));
+                    sb.append(makeFieldLine("Owned complete estate sets", 
+                            Integer.toString(completeGroups)));
+                    sb.append(makeFieldLine("Owned houses", 
+                            Integer.toString(houses)));
+                    sb.append(makeFieldLine("Owned hotels", 
+                            Integer.toString(hotels)));
                 }
                 return sb.toString();
             }
@@ -601,45 +619,82 @@ public class BoardActivity extends FragmentActivity {
             public String getEstateBodyText(int estateId) {
                 Estate estate = estates.get(estateId);
                 StringBuilder sb = new StringBuilder();
-                int estateColor = Color.WHITE;
-                if (estate.getColor() != 0) {
-                    estateColor = estate.getColor();
-                }
-                sb.append("<b><font color=\"#" + getHtmlColor(estateColor) + "\">" + estate.getName() + "</font></b><br>");
+                sb.append(makeEstateName(estate));
+                sb.append("<br>");
                 //sb.append("Estate ID: " + estate.getEstateId() + "\n");
                 //EstateGroup group = estateGroups.get(estate.getEstateGroup());
                 if (estate.canBeOwned()) {
                     if (estate.getOwner() <= 0) {
-                        sb.append("<b>Owner:</b> <i>none</i><br>");
+                        sb.append(makeFieldLine("Current owner", "<i>none</i>"));
                     } else {
-                        sb.append("<b>Owner:</b> " + players.get(estate.getOwner()).getName() + "<br>");
-                    }
-                    sb.append("<b>Price to buy:</b> $" + estate.getPrice() + "<br>");
-                    if (estate.getMortgagePrice() > 0) {
-                        sb.append("<b>Price to mortgage:</b> $" + estate.getMortgagePrice() + "<br>");
-                        sb.append("<b>Price to unmortgage:</b> $" + estate.getUnmortgagePrice() + "<br>");
+                        Player player = players.get(estate.getOwner());
+                        sb.append(makeFieldLine("Current owner", 
+                                makePlayerName(player)));
                     }
                     if (estate.getColor() != 0) {
-                        sb.append("<b>Houses:</b> " + estate.getHouses() + "<br>");
-                        sb.append("<b>Rent (houses):</b> 0:$" + estate.getRent(0) + ", 1:$" + estate.getRent(1) + ", 2:$" + estate.getRent(2) + ", 3:$" + estate.getRent(3) + ", 4:$" + estate.getRent(4) + ", 5:$" + estate.getRent(5) + "<br>");
-                        sb.append("<b>Price to buy house:</b> $" + estate.getHousePrice() + "<br>");
-                        sb.append("<b>Price to sell house:</b> $" + estate.getSellHousePrice() + "<br>");
+                        sb.append(makeFieldLine("Current houses",
+                                makeHouseCount(estate.getHouses())));
+                    }
+                    sb.append("<br>");
+                    sb.append(makeFieldLine("Price to buy",
+                            "$" + estate.getPrice()));
+                    if (estate.getMortgagePrice() > 0) {
+                        sb.append(makeFieldLine("Price to mortgage",
+                                "$" + estate.getMortgagePrice()));
+                        sb.append(makeFieldLine("Price to unmortgage",
+                                "$" + estate.getUnmortgagePrice()));
+                    }
+                    if (estate.getColor() != 0) {
+                        sb.append(makeFieldLine("Price to rent by house number",
+                                "$" + estate.getRent(0) + " (" + makeHouseCount(0) + "), " +
+                                "$" + estate.getRent(1) + " (" + makeHouseCount(1) + "), " +
+                                "$" + estate.getRent(2) + " (" + makeHouseCount(2) + "), " +
+                                "$" + estate.getRent(3) + " (" + makeHouseCount(3) + "), " +
+                                "$" + estate.getRent(4) + " (" + makeHouseCount(4) + "), " +
+                                "$" + estate.getRent(5) + " (" + makeHouseCount(5) + ")"));
+                        sb.append(makeFieldLine("Price to buy house",
+                                "$" + estate.getHousePrice()));
+                        sb.append(makeFieldLine("Price to sell house",
+                                "$" + estate.getSellHousePrice()));
                     }
                 }
                 if (estate.getPassMoney() > 0) {
-                    sb.append("<b>On-pass money:</b> $" + estate.getPassMoney() + "<br>");
+                    sb.append(makeFieldLine("Money on pass",
+                            "$" + estate.getPassMoney()));
                 }
                 if (estate.getTax() > 0) {
-                    sb.append("<b>Tax amount:</b> $" + estate.getTax() + "<br>");
+                    sb.append(makeFieldLine("Tax amount to pay",
+                            "$" + estate.getTax()));
                 }
                 if (estate.getTaxPercentage() > 0) {
-                    sb.append("<b>Tax percent:</b> " + estate.getTaxPercentage() + " %<br>");
+                    if (estate.getTax() > 0) {
+                        sb.append("-- OR --<br>");
+                    }
+                    sb.append(makeFieldLine("Tax percent to pay",
+                            "$" + estate.getTaxPercentage()));
                 }
                 if (estate.isJail()) {
-                    sb.append("<i>Is jail</i><br>");
+                    sb.append("<i>Jail</i><br>");
                 }
                 if (estate.isToJail()) {
                     sb.append("<i>Go to jail</i><br>");
+                }
+                
+                String onThis = "";
+                for (int i = 0; i < BoardViewPiece.MAX_PLAYERS; i++) {
+                    if (BoardActivity.this.playerIds[i] != 0) {
+                        Player player = BoardActivity.this.players.get(BoardActivity.this.playerIds[i]);
+                        if (player.getLocation() == estateId) {
+                            if (onThis != "") {
+                                onThis += ", ";
+                            }
+                            onThis += makePlayerName(player);
+                        }
+                    }
+                }
+                if (onThis != "") {
+                    sb.append("<br>");
+                    sb.append(makeFieldLine("Players here", onThis));
                 }
                 return sb.toString();
             }
@@ -648,26 +703,32 @@ public class BoardActivity extends FragmentActivity {
             public String getAuctionBodyText(int auctionId) {
                 StringBuilder sb = new StringBuilder();
                 Estate estate = estates.get(auction.getEstateId());
-                sb.append("<b><u>Auction of " + estate.getName() + "</u></b><br>");
+                sb.append("<b>Auction of </b>")
+                .append(makeEstateName(estate))
+                .append("<br>");
                 switch (auction.getStatus()) {
-                case 0:
+                case 0: // ACTIVE
                     break;
-                case 1:
-                    sb.append("<font color=\"#ffff00\"><b>GOING ONCE</b></font><br>");
+                case 1: // ONCE
+                    sb.append("<font color=\"yellow\"><b>GOING ONCE</b></font><br>");
                     break;
-                case 2:
+                case 2: // TWICE
                     sb.append("<font color=\"#ff8800\"><b>GOING TWICE</b></font><br>");
                     break;
-                case 3:
-                    sb.append("<font color=\"#ff0000\"><b>SOLD</b></font><br>");
+                case 3: // SOLD
+                    sb.append("<font color=\"red\"><b>SOLD</b></font><br>");
                     break;
                 }
-                sb.append("<b>Auctioned by:</b> " + players.get(auction.getActorId()).getName() + "<br>");
+                Player auPlayer = players.get(auction.getActorId());
+                sb.append(makeFieldLine("Auctioned by",
+                        makePlayerName(auPlayer)));
                 if (auction.getHighBidder() == 0) {
-                    sb.append("<b>Current bid:</b> <i>none yet</i><br>");
+                    sb.append(makeFieldLine("Current bid",
+                            "<i>none yet</i>"));
                 } else {
-                    sb.append("<b>Current bid:</b> $" + auction.getHighBid() + "<br>");
-                    sb.append("<b>Bid by:</b> " + players.get(auction.getHighBidder()).getName() + "<br>");
+                    Player bidPlayer = players.get(auction.getHighBidder());
+                    sb.append(makeFieldLine("Current highest bid",
+                            "$" + auction.getHighBid() + " by " + makePlayerName(bidPlayer)));
                 }
                 return sb.toString();
             }
@@ -786,7 +847,7 @@ public class BoardActivity extends FragmentActivity {
                             return;
                         }
                         // find in player list
-                        for (int i = 0; i < 4; i++) {
+                        for (int i = 0; i < BoardViewPiece.MAX_PLAYERS; i++) {
                             if (playerIds[i] == playerId) {
                                 found = true;
                             }
@@ -804,7 +865,7 @@ public class BoardActivity extends FragmentActivity {
                                 case CONFIG:
                                 case INIT:
                                     // add to player list
-                                    for (int i = 0; i < 4; i++) {
+                                    for (int i = 0; i < BoardViewPiece.MAX_PLAYERS; i++) {
                                         if (playerIds[i] == 0) {
                                             playerIds[i] = playerId;
                                             isJoin = true;
@@ -877,7 +938,7 @@ public class BoardActivity extends FragmentActivity {
                     @Override
                     public void run() {
                         boolean deleted = false;
-                        for (int i = 0; i < 4; i++) {
+                        for (int i = 0; i < BoardViewPiece.MAX_PLAYERS; i++) {
                             if (playerIds[i] == playerId) {
                                 deleted = true;
                             }
@@ -889,7 +950,7 @@ public class BoardActivity extends FragmentActivity {
                                     /*for (int j = 0; j < players.size(); j++) {
                                         int playerIdJ = players.keyAt(j);
                                         boolean foundPlayerJ = false;
-                                        for (int k = 0; k < 4; k++) {
+                                        for (int k = 0; k < BoardViewPiece.MAX_PLAYERS; k++) {
                                             if (playerIdJ == playerIds[k] || players.get(playerIdJ).getNick().equals("_metaserver_")) {
                                                 foundPlayerJ = true;
                                             }
@@ -1001,6 +1062,33 @@ public class BoardActivity extends FragmentActivity {
             }
 
             @Override
+            public void onConfigUpdate(final int configId, HashMap<String, String> data) {
+                Log.v("monopd", "net: Received onConfigUpdate() from MonoProtocolHandler");
+                final HashMap<String, String> map = new HashMap<String, String>(data);
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        Configurable config;
+                        config = configurables.get(Integer.toString(configId));
+                        if (config == null) {
+                            config = new Configurable(configId);
+                        }
+                        for (String key : map.keySet()) {
+                            String value = map.get(key);
+                            XmlAttribute attr = BoardActivity.configurableAttributes.get(key);
+                            if (attr == null) {
+                                Log.w("monopd", "configurable." + key + " was unknown. Value = " + value);
+                            } else {
+                                attr.set(config, value);
+                            }
+                        }
+                        configurables.put(Integer.toString(configId), config);
+                        boardView.redrawOverlay();
+                    }
+                });                
+            }
+
+            @Override
             public void onConfigUpdate(ArrayList<Configurable> configList) {
                 Log.v("monopd", "net: Received onConfigUpdate() from MonoProtocolHandler");
                 final ArrayList<Configurable> configurables = new ArrayList<Configurable>(configList);
@@ -1009,14 +1097,8 @@ public class BoardActivity extends FragmentActivity {
                     @Override
                     public void run() {
                         boolean fullList = false;
-                        nextItem: for (Configurable toAdd : configurables) {
-                            for (int i = 0; i < BoardActivity.this.configurables.size(); i++) {
-                                if (toAdd.getCommand().equals(BoardActivity.this.configurables.get(i).getCommand())) {
-                                    BoardActivity.this.configurables.set(i, toAdd);
-                                    continue nextItem;
-                                }
-                            }
-                            BoardActivity.this.configurables.add(toAdd);
+                        for (Configurable toAdd : configurables) {
+                            BoardActivity.this.configurables.put(toAdd.getCommand(), toAdd);
                             fullList = true;
                         }
                         if (boardView.isRunning()) {
@@ -1204,7 +1286,7 @@ public class BoardActivity extends FragmentActivity {
                 /*if (type.equals("full")) {
                     //Log.d("monopd", "players: Full list update");
                     final int[] newPlayerIds = new int[4];
-                    for (int i = 0; i < list.size() && i < 4; i++) {
+                    for (int i = 0; i < list.size() && i < BoardViewPiece.MAX_PLAYERS; i++) {
                         newPlayerIds[i] = list.get(i).getPlayerId();
                     }
                     BoardActivity.this.runOnUiThread(new Runnable() {
@@ -1229,7 +1311,7 @@ public class BoardActivity extends FragmentActivity {
                     // list.get(0).getNick());
                     final int[] newPlayerIds = BoardActivity.this.playerIds;
                     for (int i = 0; i < list.size(); i++) {
-                        for (int j = 0; j < 4; j++) {
+                        for (int j = 0; j < BoardViewPiece.MAX_PLAYERS; j++) {
                             final int playerId = list.get(i).getPlayerId();
                             if (newPlayerIds[j] == 0 || newPlayerIds[j] == playerId) {
                                 BoardActivity.this.runOnUiThread(new Runnable() {
@@ -1257,7 +1339,7 @@ public class BoardActivity extends FragmentActivity {
                     final int[] newPlayerIds = BoardActivity.this.playerIds;
                     for (int i = 0; i < list.size(); i++) {
                         boolean moveBack = false;
-                        for (int j = 0; j < 4; j++) {
+                        for (int j = 0; j < BoardViewPiece.MAX_PLAYERS; j++) {
                             if (!moveBack && newPlayerIds[j] == list.get(i).getPlayerId()) {
                                 final int playerIdClosure = newPlayerIds[j];
                                 BoardActivity.this.runOnUiThread(new Runnable() {
@@ -1321,22 +1403,6 @@ public class BoardActivity extends FragmentActivity {
         this.setTitle(String.format(this.getString(R.string.title_activity_board), gameItem.getDescription()));
     }
     
-    private String getHtmlColor(int color) {
-        String r = Integer.toHexString(Color.red(color));
-        if (r.length() == 1) {
-            r = '0' + r;
-        }
-        String g = Integer.toHexString(Color.green(color));
-        if (g.length() == 1) {
-            g = '0' + g;
-        }
-        String b = Integer.toHexString(Color.blue(color));
-        if (b.length() == 1) {
-            b = '0' + b;
-        }
-        return r + g + b;
-    }
-
     public void onPlayer1Click(View v) {
         this.boardView.overlayPlayerInfo(playerIds[0]);
     }
@@ -1351,6 +1417,22 @@ public class BoardActivity extends FragmentActivity {
     
     public void onPlayer4Click(View v) {
         this.boardView.overlayPlayerInfo(playerIds[3]);
+    }
+    
+    public void onPlayer5Click(View v) {
+        this.boardView.overlayPlayerInfo(playerIds[4]);
+    }
+    
+    public void onPlayer6Click(View v) {
+        this.boardView.overlayPlayerInfo(playerIds[5]);
+    }
+    
+    public void onPlayer7Click(View v) {
+        this.boardView.overlayPlayerInfo(playerIds[6]);
+    }
+    
+    public void onPlayer8Click(View v) {
+        this.boardView.overlayPlayerInfo(playerIds[7]);
     }
 
     @Override
@@ -1441,7 +1523,7 @@ public class BoardActivity extends FragmentActivity {
         int end = player.getLocation();
         boolean directMove = player.getDirectMove();
         int playerIndex = 0;
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < BoardViewPiece.MAX_PLAYERS; i++) {
             if (BoardViewPiece.pieces[i].getPlayerId() == player.getPlayerId()) {
                 playerIndex = i;
                 break;
@@ -1469,8 +1551,12 @@ public class BoardActivity extends FragmentActivity {
 
                 BoardViewPiece.pieces[playerIndex].setProgressEstate((i - 1) % 40);
                 BoardViewPiece.pieces[playerIndex].setCurrentEstate(i % 40);
-                for (int j = 0; j < BoardViewSurfaceThread.animationSteps; j++) {
-                    BoardViewPiece.pieces[playerIndex].setProgressEstateDelta(j);
+                for (int j = 0; j <= BoardViewSurfaceThread.animationSteps; j++) {
+                    if (j == BoardViewSurfaceThread.animationSteps) {
+                        BoardViewPiece.pieces[playerIndex].setProgressEstateDelta(0);
+                    } else {
+                        BoardViewPiece.pieces[playerIndex].setProgressEstateDelta(j);
+                    }
                     boardView.drawPieces(estates, playerIds, players);
                     boardView.waitDraw();
                 }
@@ -1500,6 +1586,10 @@ public class BoardActivity extends FragmentActivity {
         this.playerView[1] = (LinearLayout) this.findViewById(R.id.board_player_item_2);
         this.playerView[2] = (LinearLayout) this.findViewById(R.id.board_player_item_3);
         this.playerView[3] = (LinearLayout) this.findViewById(R.id.board_player_item_4);
+        this.playerView[4] = (LinearLayout) this.findViewById(R.id.board_player_item_5);
+        this.playerView[5] = (LinearLayout) this.findViewById(R.id.board_player_item_6);
+        this.playerView[6] = (LinearLayout) this.findViewById(R.id.board_player_item_7);
+        this.playerView[7] = (LinearLayout) this.findViewById(R.id.board_player_item_8);
     }
 
     private void sendCommand(String text) {
@@ -1559,7 +1649,7 @@ public class BoardActivity extends FragmentActivity {
      * Updates the player view with new data from the player list.
      */
     private void updatePlayerView() {
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < BoardViewPiece.MAX_PLAYERS; i++) {
             if (this.playerIds[i] == 0) {
                 this.playerView[i].setVisibility(View.GONE);
             } else {
@@ -1732,5 +1822,51 @@ public class BoardActivity extends FragmentActivity {
             break;
         }
         return true;
+    }
+
+    /**
+     * Make a universal string used for representing a number of houses.
+     * @param houses The number of houses.
+     * @return An HTML formatted string.
+     */
+    public static String makeHouseCount(int houses) {
+        return "<b><font color=\"" + Estate.getHouseHtmlColor(houses) + "\">" +
+        houses + "</font></b>";
+    }
+
+    /**
+     * Make a universal string used for representing an Estate by name and color.
+     * @param estate The estate.
+     * @return An HTML formatted string.
+     */
+    public static String makeEstateName(Estate estate) {
+        return "<b><font color=\"" + estate.getHtmlColor() + "\">" +
+        estate.getName() + "</font></b>";
+    }
+
+    /**
+     * Make a universal string used for representing a Player by name and color.
+     * @param player The player.
+     * @return An HTML formatted string.
+     */
+    public static String makePlayerName(Player player) {
+        BoardViewPiece piece = BoardViewPiece.getPiece(player.getPlayerId());
+        int color = Color.WHITE;
+        if (piece != null) {
+            color = piece.getColor();
+        }
+        
+        return "<b><font color=\"" + Estate.getHtmlColor(color) + "\">" +
+        player.getName() + "</font></b>";
+    }
+
+    /**
+     * Make a key-value pair line used universally.
+     * @param key The bolded part before the colon.
+     * @param value Any text to put after the colon.
+     * @return An HTML formatted string. Ends with a line break.
+     */
+    public static String makeFieldLine(String key, String value) {
+        return "<b>" + key + "</b>: " + value + "<br>";
     }
 }

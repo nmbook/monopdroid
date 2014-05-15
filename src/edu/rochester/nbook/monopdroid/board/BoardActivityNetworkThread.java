@@ -74,7 +74,7 @@ public class BoardActivityNetworkThread implements Runnable {
             public void handleMessage(Message msg) {
                 Bundle rState = msg.getData();
                 BoardNetworkAction action = BoardNetworkAction.fromWhat(msg.what);
-                Log.v("monopd", "net: Received message " + action.toString());
+                //Log.v("monopd", "net: Received message " + action.toString());
                 switch (action) {
                 // error
                 case MSG_UNKNOWN:

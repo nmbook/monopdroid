@@ -6,6 +6,10 @@
     <item name="board_player_item_2" type="id">202</item>
     <item name="board_player_item_3" type="id">203</item>
     <item name="board_player_item_4" type="id">204</item>
+    <item name="board_player_item_5" type="id">205</item>
+    <item name="board_player_item_6" type="id">206</item>
+    <item name="board_player_item_7" type="id">207</item>
+    <item name="board_player_item_8" type="id">208</item>
     <item name="board_ui" type="id">205</item>
     <item name="board_chat_list" type="id">206</item>
     <item name="board_chat_box" type="id">207</item>

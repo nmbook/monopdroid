@@ -1,13 +1,13 @@
 package edu.rochester.nbook.monopdroid.board.surface;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 
 import edu.rochester.nbook.monopdroid.board.Button;
 import edu.rochester.nbook.monopdroid.board.Configurable;
 import edu.rochester.nbook.monopdroid.board.Estate;
 import edu.rochester.nbook.monopdroid.board.GameStatus;
 import edu.rochester.nbook.monopdroid.board.Player;
-
 import android.content.Context;
 import android.util.AttributeSet;
 import android.util.Log;
@@ -229,7 +229,7 @@ public class BoardView extends SurfaceView {
         }
     }
 
-    public void drawConfigRegions(ArrayList<Configurable> configurables, boolean isMaster) {
+    public void drawConfigRegions(HashMap<String, Configurable> configurables, boolean isMaster) {
         if (surfaceRunner.getStatus() == GameStatus.CONFIG) {
             surfaceRunner.beginRegions(BoardViewSurfaceThread.LAYER_BACKGROUND);
             surfaceRunner.addConfigurableRegions(configurables);
@@ -238,7 +238,7 @@ public class BoardView extends SurfaceView {
         }
     }
 
-    public void redrawConfigRegions(ArrayList<Configurable> configurables, boolean isMaster) {
+    public void redrawConfigRegions(HashMap<String, Configurable> configurables, boolean isMaster) {
         if (surfaceRunner.getStatus() == GameStatus.CONFIG) {
             surfaceRunner.updateConfigurableRegions(configurables);
             surfaceRunner.updateStartButtonRegions(isMaster);
