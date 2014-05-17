@@ -1,7 +1,21 @@
 package edu.rochester.nbook.monopdroid.board;
 
+import java.util.HashMap;
+
 public class Auction {
-    // estate data
+    public static final HashMap<String, XmlAttribute> auctionAttributes = new HashMap<String, XmlAttribute>() {
+        private static final long serialVersionUID = 2978911583408943533L;
+
+        {
+            this.put("actor", new XmlAttribute(Auction.class, "setActorId", XmlAttributeType.INT));
+            this.put("estateid", new XmlAttribute(Auction.class, "setEstateId", XmlAttributeType.INT));
+            this.put("status", new XmlAttribute(Auction.class, "setStatus", XmlAttributeType.INT));
+            this.put("highbid", new XmlAttribute(Auction.class, "setHighBid", XmlAttributeType.INT));
+            this.put("highbidder", new XmlAttribute(Auction.class, "setHighBidder", XmlAttributeType.INT));
+        }
+    };
+    
+    // auction object data
     private int auctionId;
     private int actorId;
     private int estateId;

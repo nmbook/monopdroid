@@ -1,7 +1,37 @@
 package edu.rochester.nbook.monopdroid.board;
 
+import java.util.HashMap;
+
 public class Player {
-    // player data
+    public static final HashMap<String, XmlAttribute> playerAttributes = new HashMap<String, XmlAttribute>() {
+        private static final long serialVersionUID = 1431923100451372984L;
+    
+        {
+            this.put("name", new XmlAttribute(Player.class, "setName", XmlAttributeType.STRING));
+            this.put("host", new XmlAttribute(Player.class, "setHost", XmlAttributeType.STRING));
+            this.put("master", new XmlAttribute(Player.class, "setMaster", XmlAttributeType.BOOLEAN));
+            this.put("money", new XmlAttribute(Player.class, "setMoney", XmlAttributeType.INT));
+            this.put("doublecount", new XmlAttribute(Player.class, "setDoubleCount", XmlAttributeType.INT));
+            this.put("jailcount", new XmlAttribute(Player.class, "setJailCount", XmlAttributeType.INT));
+            this.put("bankrupt", new XmlAttribute(Player.class, "setBankrupt", XmlAttributeType.BOOLEAN));
+            this.put("jailed", new XmlAttribute(Player.class, "setJailed", XmlAttributeType.BOOLEAN));
+            this.put("hasturn", new XmlAttribute(Player.class, "setHasTurn", XmlAttributeType.BOOLEAN));
+            this.put("spectator", new XmlAttribute(Player.class, "setSpectator", XmlAttributeType.BOOLEAN));
+            this.put("can_roll", new XmlAttribute(Player.class, "setCanRoll", XmlAttributeType.BOOLEAN));
+            this.put("canrollagain", new XmlAttribute(Player.class, "setCanRollAgain", XmlAttributeType.BOOLEAN));
+            this.put("can_buyestate", new XmlAttribute(Player.class, "setCanBuyEstate", XmlAttributeType.BOOLEAN));
+            this.put("canauction", new XmlAttribute(Player.class, "setCanAuction", XmlAttributeType.BOOLEAN));
+            this.put("canusecard", new XmlAttribute(Player.class, "setCanUseCard", XmlAttributeType.BOOLEAN));
+            this.put("hasdebt", new XmlAttribute(Player.class, "setHasDebt", XmlAttributeType.BOOLEAN));
+            this.put("location", new XmlAttribute(Player.class, "setLocation", XmlAttributeType.INT));
+            this.put("directmove", new XmlAttribute(Player.class, "setDirectMove", XmlAttributeType.BOOLEAN));
+            this.put("game", new XmlAttribute(Player.class, "setGameId", XmlAttributeType.INT));
+            this.put("cookie", new XmlAttribute(Player.class, null, XmlAttributeType.STRING));
+            this.put("image", new XmlAttribute(Player.class, null, XmlAttributeType.STRING));
+        }
+    };
+
+    // player object data
     private String name;
     private String host;
     private String cookie;

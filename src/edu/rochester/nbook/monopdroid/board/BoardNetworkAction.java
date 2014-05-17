@@ -91,11 +91,54 @@ public enum BoardNetworkAction {
      */
     MSG_ESTATE_SELLHOUSE(42),
     /**
+     * Send to sell an estate back to the bank.
+     * Argument int "estateId": The estate.
+     */
+    MSG_ESTATE_SELL(43),
+    /**
      * Send to bid in the auction of an estate.
      * Argument int "auctionId": The auction (always 0).
      * Argument int "bid": The amount to bid.
      */
-    MSG_AUCTION_BID(50);
+    MSG_AUCTION_BID(50),
+    /**
+     * Send to begin a trade with a player.
+     * Argument int "playerId": The other player in the trade.
+     */
+    MSG_TRADE_NEW(60),
+    /**
+     * Send to reject a trade with a player.
+     * Argument int "tradeId": The trade ID.
+     */
+    MSG_TRADE_REJECT(61),
+    /**
+     * Send to accept a trade with a player.
+     * Argument int "tradeId": The trade ID.
+     * Argument int "revision": The current revision, as seen by this client.
+     */
+    MSG_TRADE_ACCEPT(62),
+    /**
+     * Send to suggest a money amount to trade.
+     * Argument int "tradeId": The trade ID.
+     * Argument int "playerIdFrom": The player to send the money.
+     * Argument int "playerIdTo": The player to receive the money.
+     * Argument int "amount": The amount of money to offer (set to 0 to cancel).
+     */
+    MSG_TRADE_MONEY(63),
+    /**
+     * Send to suggest an estate to trade.
+     * Argument int "tradeId": The trade ID.
+     * Argument int "playerIdTo": The player to receive the estate (set to current owner to cancel).
+     * Argument int "estateId": The estate to send.
+     */
+    MSG_TRADE_ESTATE(64),
+    /**
+     * Send to suggest a card to trade.
+     * Argument int "tradeId": The trade ID.
+     * Argument int "playerIdTo": The player to receive the card (set to current owner to cancel).
+     * Argument int "cardId": The card to send.
+     */
+    MSG_TRADE_CARD(65);
     
     private int msgWhat;
     

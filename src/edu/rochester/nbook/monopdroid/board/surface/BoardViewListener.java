@@ -35,5 +35,7 @@ public interface BoardViewListener {
 
     public String getAuctionBodyText(int auctionId);
 
+    public String getTradeBodyText(int tradeId);
+
     public void onButtonCommand(String command);
 }

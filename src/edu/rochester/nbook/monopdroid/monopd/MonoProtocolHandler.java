@@ -16,11 +16,15 @@ import org.xmlpull.v1.XmlPullParserException;
 import org.xmlpull.v1.XmlPullParserFactory;
 
 import edu.rochester.nbook.monopdroid.board.Button;
+import edu.rochester.nbook.monopdroid.board.CardTradeOffer;
 import edu.rochester.nbook.monopdroid.board.Configurable;
+import edu.rochester.nbook.monopdroid.board.EstateTradeOffer;
+import edu.rochester.nbook.monopdroid.board.MoneyTradeOffer;
 import edu.rochester.nbook.monopdroid.board.Player;
+import edu.rochester.nbook.monopdroid.board.TradePlayer;
+import edu.rochester.nbook.monopdroid.board.TradeUpdateSubject;
 import edu.rochester.nbook.monopdroid.gamelist.GameItem;
 import edu.rochester.nbook.monopdroid.gamelist.ServerItem;
-
 import android.util.Log;
 
 public class MonoProtocolHandler {
@@ -213,6 +217,83 @@ public class MonoProtocolHandler {
             this.listener.onClose(true);
         }
     }
+    
+    /**
+     * This is a shared list used to parse the XML sent by a MONOPD server.
+     * Items are added until an outer tag is reached. Then the sets of items
+     * can be sent together to the rest of the app, after which they are
+     * cleared from this object.
+     * 
+     * It tries to maintain minimal type safety, but cannot safely validate
+     * things coming in due to Java's generic-erasure. 
+     * 
+     * @author Nate Book
+     *
+     */
+    private final class SharedList {
+        private ArrayList<Object> list = new ArrayList<Object>();
+        //private Class type = Object.class;
+        private int mostRecentId = 0;
+        
+        /**
+         * Gets the most recently stored unique object ID. See {@code setMostRecentId}.
+         * @return The most recently stored unique object ID.
+         */
+        public int getMostRecentId() {
+            return mostRecentId;
+        }
+        
+        /**
+         * Only used by some XML parsed nodes, this allows a number to be stored
+         * per collected list if a unique object ID is not provided. 
+         * @param mostRecentId The number.
+         */
+        public void setMostRecentId(int mostRecentId) {
+            this.mostRecentId = mostRecentId;
+        }
+        
+        /**
+         * Make a type-safe copy of the current list of objects with the given type.
+         * @return Returns an ArrayList of the given type. 
+         * @exception ClassCastException Will be thrown if the objects inside do not
+         * subclass the given type.
+         */
+        @SuppressWarnings("unchecked")
+        public <E> ArrayList<E> getAs() {
+            ArrayList<E> listCopy = new ArrayList<E>(list.size());
+            for (Object element : listCopy) {
+                listCopy.add((E) element);
+            }
+            return listCopy;
+        }
+        
+        /**
+         * Put the item into the list.
+         * @param item The item.
+         */
+        public <E> void add(E item) {
+            //assert item.getClass().isAssignableFrom(type);
+            list.add(item);
+            //type = item.getClass();
+        }
+        
+        /**
+         * Clear and reset the list.
+         */
+        public void clear() {
+            list.clear();
+            //type = Object.class;
+            mostRecentId = 0;
+        }
+
+        /**
+         * Get the current size of the list.
+         * @return The list size.
+         */
+        public int size() {
+            return list.size();
+        }
+    }
 
     /**
      * Handles a line of XML. Must be a single complete tag.
@@ -226,7 +307,7 @@ public class MonoProtocolHandler {
         XmlNodeType prevReadNodeType = XmlNodeType.NONE;
         String attr, val;
         HashMap<String, String> data = new HashMap<String, String>();
-        ArrayList<Object> l = new ArrayList<Object>();
+        SharedList sharedList = new SharedList();
 
         try {
             eventType = this.parser.getEventType();
@@ -244,9 +325,9 @@ public class MonoProtocolHandler {
 
         while (eventType != XmlPullParser.END_DOCUMENT) {
             if (eventType == XmlPullParser.START_DOCUMENT) {
-                Log.v("monopd", "xml: START DOCUMENT");
+                //Log.v("monopd", "xml: START DOCUMENT");
             } else if (eventType == XmlPullParser.START_TAG) {
-                Log.v("monopd", "xml: START TAG " + this.parser.getName());
+                //Log.v("monopd", "xml: START TAG " + this.parser.getName());
                 nodeType = nodeByName.get(this.parser.getName());
                 for (int index = 0; index < this.parser.getAttributeCount(); index++) {
                     attr = this.parser.getAttributeName(index);
@@ -254,16 +335,16 @@ public class MonoProtocolHandler {
                     data.put(attr, val);
                 }
             } else if (eventType == XmlPullParser.END_TAG) {
-                Log.v("monopd", "xml: END TAG " + this.parser.getName());
+                //Log.v("monopd", "xml: END TAG " + this.parser.getName());
                 nodeType = nodeByName.get(this.parser.getName());
                 if (nodeType == null) {
                     Log.w("monopd", "Unhandled tag type: " + this.parser.getName());
                 } else {
-                    this.handleNode(nodeType, prevReadNodeType, data, l);
+                    this.handleNode(nodeType, prevReadNodeType, data, sharedList);
                 }
                 prevReadNodeType = nodeType;
             } else if (eventType == XmlPullParser.TEXT) {
-                Log.v("monopd", "xml: TEXT TAG " + this.parser.getText());
+                //Log.v("monopd", "xml: TEXT TAG " + this.parser.getText());
             }
             try {
                 eventType = this.parser.next();
@@ -275,7 +356,7 @@ public class MonoProtocolHandler {
                 return;
             }
         }
-        Log.v("monopd", "xml: END DOCUMENT");
+        //Log.v("monopd", "xml: END DOCUMENT");
 
         try {
             this.parser.setInput(null);
@@ -303,7 +384,7 @@ public class MonoProtocolHandler {
      *            listener and the data is no longer needed.
      */
     private void handleNode(XmlNodeType nodeType, XmlNodeType prevReadNodeType, HashMap<String, String> data,
-            ArrayList<Object> currentList) {
+            SharedList list) {
         MonoProtocolGameListener glistener = null;
         MonoProtocolMetaListener mlistener = null;
         if (this.type == MonoProtocolType.META) {
@@ -316,18 +397,18 @@ public class MonoProtocolHandler {
             Log.w("monopd", "Unhandled tag " + nodeType.toString());
             break;
         case META_ATLANTIC:
-            this.handleNodeMetaAtlantic(nodeType, prevReadNodeType, data, mlistener, currentList);
+            this.handleNodeMetaAtlantic(nodeType, prevReadNodeType, data, mlistener, list);
             break;
         case METASERVER:
             this.handleNodeMetaServer(nodeType, data, mlistener);
             break;
         case SERVERGAMELIST:
-            this.handleNodeServerGameList(nodeType, data, mlistener, currentList);
+            this.handleNodeServerGameList(nodeType, data, mlistener, list);
             break;
         case GAME:
             if (this.type == MonoProtocolType.META) {
                 // meta game list item
-                this.handleNodeGameItem(nodeType, data, mlistener, currentList);
+                this.handleNodeGameItem(nodeType, data, mlistener, list);
             } else {
                 // in-game game update notification
                 this.handleNodeGame(nodeType, data, glistener);
@@ -339,7 +420,7 @@ public class MonoProtocolHandler {
         case SERVER:
             if (this.type == MonoProtocolType.META) {
                 // meta server list item
-                this.handleNodeServerItem(nodeType, data, mlistener, currentList);
+                this.handleNodeServerItem(nodeType, data, mlistener, list);
             } else {
                 // game server identification
                 this.handleNodeServer(nodeType, data, glistener);
@@ -355,25 +436,25 @@ public class MonoProtocolHandler {
             this.handleNodeGameUpdate(nodeType, data, glistener);
             break;
         case CONFIGUPDATE:
-            this.handleNodeConfigUpdate(nodeType, data, glistener, currentList);
+            this.handleNodeConfigUpdate(nodeType, data, glistener, list);
             break;
         case OPTION:
-            this.handleNodeOption(nodeType, data, glistener, currentList);
+            this.handleNodeOption(nodeType, data, glistener, list);
             break;
         case MSG:
             this.handleNodeMessage(nodeType, data, glistener);
             break;
         case DISPLAY:
-            this.handleNodeDisplay(nodeType, data, glistener, currentList);
+            this.handleNodeDisplay(nodeType, data, glistener, list);
             break;
         case BUTTON:
-            this.handleNodeButton(nodeType, data, glistener, currentList);
+            this.handleNodeButton(nodeType, data, glistener, list);
             break;
         case PLAYER:
-            this.handleNodePlayer(nodeType, data, glistener, currentList);
+            this.handleNodePlayer(nodeType, data, glistener, list);
             break;
         case UPDATEPLAYERLIST:
-            this.handleNodeUpdatePlayerList(nodeType, data, glistener, currentList);
+            this.handleNodeUpdatePlayerList(nodeType, data, glistener, list);
             break;
         case ESTATEUPDATE:
             this.handleNodeEstateUpdate(nodeType, data, glistener);
@@ -386,6 +467,21 @@ public class MonoProtocolHandler {
             break;
         case AUCTIONUPDATE:
             this.handleNodeAuctionUpdate(nodeType, data, glistener);
+            break;
+        case TRADEUPDATE:
+            this.handleNodeTradeUpdate(nodeType, data, glistener, list);
+            break;
+        case TRADEPLAYER:
+            this.handleNodeTradePlayer(nodeType, data, glistener, list);
+            break;
+        case TRADEMONEY:
+            this.handleNodeTradeMoney(nodeType, data, glistener, list);
+            break;
+        case TRADEESTATE:
+            this.handleNodeTradeEstate(nodeType, data, glistener, list);
+            break;
+        case TRADECARD:
+            this.handleNodeTradeCard(nodeType, data, glistener, list);
             break;
         case UPDATEGAMELIST:
             // do nothing, the contained <game> nodes will be parsed
@@ -457,13 +553,12 @@ public class MonoProtocolHandler {
         return this.getAttributeAsInt(map, attr) != 0;
     }
 
-    @SuppressWarnings({ "unchecked", "rawtypes" })
     private void handleNodeMetaAtlantic(XmlNodeType nodeType, XmlNodeType prevReadNodeType,
-            HashMap<String, String> data, MonoProtocolMetaListener mlistener, ArrayList list) {
+            HashMap<String, String> data, MonoProtocolMetaListener mlistener, SharedList list) {
         if (prevReadNodeType == XmlNodeType.SERVERGAMELIST) {
             mlistener.onServerGameListEnd();
         } else if (prevReadNodeType == XmlNodeType.SERVERGAMELIST) {
-            mlistener.onServerList(list);
+            mlistener.onServerList(list.<ServerItem>getAs());
             data.clear();
         } else {
             // was server identification, do not close
@@ -488,20 +583,18 @@ public class MonoProtocolHandler {
         data.clear();
     }
 
-    @SuppressWarnings({ "rawtypes", "unchecked" })
     private void handleNodeServerGameList(XmlNodeType nodeType, HashMap<String, String> data,
-            MonoProtocolMetaListener mlistener, ArrayList list) {
+            MonoProtocolMetaListener mlistener, SharedList list) {
         // <servergamelist host="monopd.gradator.net" port="#"
         // version="#.#.#"><game>[...]</servergamelist>
         mlistener.onServerGameList(this.getAttributeAsString(data, "host"), this.getAttributeAsInt(data, "port"),
-                this.getAttributeAsString(data, "version"), list);
+                this.getAttributeAsString(data, "version"), list.<GameItem>getAs());
         list.clear();
         data.clear();
     }
 
-    @SuppressWarnings({ "unchecked", "rawtypes" })
     private void handleNodeGameItem(XmlNodeType nodeType, HashMap<String, String> data,
-            MonoProtocolMetaListener mlistener, ArrayList list) {
+            MonoProtocolMetaListener mlistener, SharedList list) {
         // <game id="162" players="1" gametype="city" name="Monopoly"
         // description="Ribose2's game" canbejoined="1"/>
         if (!data.containsKey("players")) {
@@ -537,9 +630,8 @@ public class MonoProtocolHandler {
         data.remove("canbejoined");
     }
 
-    @SuppressWarnings({ "rawtypes", "unchecked" })
     private void handleNodeServerItem(XmlNodeType nodeType, HashMap<String, String> data,
-            MonoProtocolMetaListener mlistener, ArrayList list) {
+            MonoProtocolMetaListener mlistener, SharedList list) {
         // <meta_server><server>[]</meta_server>
         // <server host="monopd.gradator.net" port="1230" version="0.8.3"
         // users="0" />
@@ -590,14 +682,19 @@ public class MonoProtocolHandler {
     }
 
     private void handleNodeOption(XmlNodeType nodeType, HashMap<String, String> data,
-            MonoProtocolGameListener glistener, ArrayList<Object> list) {
+            MonoProtocolGameListener glistener, SharedList list) {
         String title = this.getAttributeAsString(data, "title");
         String type = this.getAttributeAsString(data, "type");
         String command = this.getAttributeAsString(data, "command");
         String value = this.getAttributeAsString(data, "value");
         boolean editable = this.getAttributeAsBoolean(data, "edit");
+        int configId = -9999;
+        if (list.size() > 0) {
+            configId = list.getMostRecentId() + 1;
+        }
+        list.setMostRecentId(configId);
 
-        list.add(new Configurable(title, type, command, value, editable));
+        list.add(new Configurable(configId, title, type, command, value, editable));
 
         data.remove("title");
         data.remove("type");
@@ -606,17 +703,17 @@ public class MonoProtocolHandler {
         data.remove("editable");
     }
 
-    @SuppressWarnings({ "unchecked", "rawtypes" })
     private void handleNodeConfigUpdate(XmlNodeType nodeType, HashMap<String, String> data,
-            MonoProtocolGameListener glistener, ArrayList list) {
+            MonoProtocolGameListener glistener, SharedList list) {
         if (data.containsKey("configid")) {
             int configId = this.getAttributeAsInt(data, "configid");
             data.remove("configid");
+            data.remove("gameid");
             glistener.onConfigUpdate(configId, data);
             data.clear();
         } else {
             // handle older style options <configupdate gameid="#"><option>...</configupdate>
-            glistener.onConfigUpdate(list);
+            glistener.onConfigUpdate(list.<Configurable>getAs());
             list.clear();
             data.clear();
         }
@@ -639,30 +736,27 @@ public class MonoProtocolHandler {
         }
     }
 
-    @SuppressWarnings({ "rawtypes", "unchecked" })
     private void handleNodeDisplay(XmlNodeType nodeType, HashMap<String, String> data,
-            MonoProtocolGameListener glistener, ArrayList list) {
+            MonoProtocolGameListener glistener, SharedList list) {
         int estateId = this.getAttributeAsInt(data, "estateid");
         String text = this.getAttributeAsString(data, "text");
         boolean clearText = this.getAttributeAsBoolean(data, "cleartext");
         boolean clearButtons = this.getAttributeAsBoolean(data, "clearbuttons");
-        glistener.onDisplayMessage(estateId, text, clearText, clearButtons, list);
+        glistener.onDisplayMessage(estateId, text, clearText, clearButtons, list.<Button>getAs());
         list.clear();
         data.clear();
     }
 
-    @SuppressWarnings({ "rawtypes", "unchecked" })
     private void handleNodeUpdatePlayerList(XmlNodeType nodeType, HashMap<String, String> data,
-            MonoProtocolGameListener glistener, ArrayList list) {
+            MonoProtocolGameListener glistener, SharedList list) {
         String type = this.getAttributeAsString(data, "type");
-        glistener.onPlayerListUpdate(type, list);
+        glistener.onPlayerListUpdate(type, list.<Player>getAs());
         list.clear();
         data.clear();
     }
 
-    @SuppressWarnings({ "rawtypes", "unchecked" })
     private void handleNodePlayer(XmlNodeType nodeType, HashMap<String, String> data,
-            MonoProtocolGameListener glistener, ArrayList list) {
+            MonoProtocolGameListener glistener, SharedList list) {
         // <player playerid="680" name="Ribose"
         // host="dynamic-addr-90-116.resnet.rochester.edu" master="1" />
         int playerId = this.getAttributeAsInt(data, "playerid");
@@ -719,9 +813,89 @@ public class MonoProtocolHandler {
         glistener.onAuctionUpdate(auctionId, data);
         data.clear();
     }
+
+    private void handleNodeTradeUpdate(XmlNodeType nodeType,
+            HashMap<String, String> data, MonoProtocolGameListener glistener,
+            SharedList list) {
+        int tradeId = this.getAttributeAsInt(data, "tradeid");
+        data.remove("tradeid");
+        glistener.onTradeUpdate(tradeId, data);
+        if (list.size() > 0) {
+            for (Object item : list.<TradeUpdateSubject>getAs()) {
+                if (item instanceof TradePlayer) {
+                    TradePlayer player = (TradePlayer) item;
+                    glistener.onTradePlayer(tradeId, player);
+                } else if (item instanceof MoneyTradeOffer) {
+                    MoneyTradeOffer offer = (MoneyTradeOffer) item;
+                    glistener.onTradeMoney(tradeId, offer);
+                } else if (item instanceof EstateTradeOffer) {
+                    EstateTradeOffer offer = (EstateTradeOffer) item;
+                    glistener.onTradeEstate(tradeId, offer);
+                } else if (item instanceof CardTradeOffer) {
+                    CardTradeOffer offer = (CardTradeOffer) item;
+                    glistener.onTradeCard(tradeId, offer);
+                }
+            }
+        }
+        list.clear();
+        data.clear();
+    }
+
+    private void handleNodeTradePlayer(XmlNodeType nodeType,
+            HashMap<String, String> data, MonoProtocolGameListener glistener,
+            SharedList list) {
+        // <player playerid="680" name="Ribose"
+        // host="dynamic-addr-90-116.resnet.rochester.edu" master="1" />
+        int playerId = this.getAttributeAsInt(data, "playerid");
+        boolean accepted = this.getAttributeAsBoolean(data, "accepted");
+
+        TradePlayer player = new TradePlayer(playerId, accepted);
+        list.add(player);
+        data.clear();
+    }
+
+    private void handleNodeTradeMoney(XmlNodeType nodeType,
+            HashMap<String, String> data, MonoProtocolGameListener glistener,
+            SharedList list) {
+        // <player playerid="680" name="Ribose"
+        // host="dynamic-addr-90-116.resnet.rochester.edu" master="1" />
+        int playerIdFrom = this.getAttributeAsInt(data, "playeridfrom");
+        int playerIdTo = this.getAttributeAsInt(data, "playeridto");
+        int amount = this.getAttributeAsInt(data, "amount");
+
+        MoneyTradeOffer offer = new MoneyTradeOffer(playerIdFrom, playerIdTo, amount);
+        list.add(offer);
+        data.clear();
+    }
+
+    private void handleNodeTradeEstate(XmlNodeType nodeType,
+            HashMap<String, String> data, MonoProtocolGameListener glistener,
+            SharedList list) {
+        // <player playerid="680" name="Ribose"
+        // host="dynamic-addr-90-116.resnet.rochester.edu" master="1" />
+        int playerIdTo = this.getAttributeAsInt(data, "playeridto");
+        int estateId = this.getAttributeAsInt(data, "estateid");
+
+        EstateTradeOffer offer = new EstateTradeOffer(glistener.getEstateOwner(estateId), playerIdTo, estateId);
+        list.add(offer);
+        data.clear();
+    }
+
+    private void handleNodeTradeCard(XmlNodeType nodeType,
+            HashMap<String, String> data, MonoProtocolGameListener glistener,
+            SharedList list) {
+        // <player playerid="680" name="Ribose"
+        // host="dynamic-addr-90-116.resnet.rochester.edu" master="1" />
+        int playerIdTo = this.getAttributeAsInt(data, "playeridto");
+        int cardId = this.getAttributeAsInt(data, "cardid");
+
+        EstateTradeOffer offer = new EstateTradeOffer(glistener.getCardOwner(cardId), playerIdTo, cardId);
+        list.add(offer);
+        data.clear();
+    }
     
     private void handleNodeButton(XmlNodeType nodeType, HashMap<String, String> data,
-            MonoProtocolGameListener glistener, ArrayList<Object> list) {
+            MonoProtocolGameListener glistener, SharedList list) {
         String caption = this.getAttributeAsString(data, "caption");
         String command = this.getAttributeAsString(data, "command");
         boolean enabled = this.getAttributeAsBoolean(data, "enabled");
@@ -834,7 +1008,35 @@ public class MonoProtocolHandler {
         this.sendCommand(".hs" + estateId);
     }
 
+    public void sendSellEstate(int estateId) {
+        this.sendCommand(".es" + estateId);
+    }
+
     public void sendAuctionBid(int auctionId, int bid) {
         this.sendCommand(".ab" + auctionId + ":" + bid);
+    }
+
+    public void sendTradeNew(int playerId) {
+        this.sendCommand(".Tn" + playerId);
+    }
+
+    public void sendTradeReject(int tradeId) {
+        this.sendCommand(".Tr" + tradeId);
+    }
+
+    public void sendTradeAccept(int tradeId, int revision) {
+        this.sendCommand(".Ta" + tradeId + ":" + revision);
+    }
+
+    public void sendTradeMoney(int tradeId, int playerIdFrom, int playerIdTo, int amount) {
+        this.sendCommand(".Tm" + tradeId + ":" + playerIdFrom + ":" + playerIdTo + ":" + amount);
+    }
+
+    public void sendTradeEstate(int tradeId, int playerIdTo, int estateId) {
+        this.sendCommand(".Te" + tradeId + ":" + playerIdTo + ":" + estateId);        
+    }
+
+    public void sendTradeCard(int tradeId, int playerIdTo, int cardId) {
+        this.sendCommand(".Tc" + tradeId + ":" + playerIdTo + ":" + cardId);        
     }
 }

@@ -1,8 +1,6 @@
 package edu.rochester.nbook.monopdroid.board.surface;
 
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map.Entry;
 
 import org.xml.sax.XMLReader;
 
@@ -83,9 +81,9 @@ public class BoardViewSurfaceThread implements Runnable {
     private static final int DRAW_POINT_BOARD_ESTATE_HOUSE_RADIUS = 162;
     private static final int DRAW_POINT_BOARD_COUNT = 163;
     
-    private static final int DPI_SIZE_TEXT = 24;
-    private static final int DPI_LINE_HEIGHT = 32;
-    private static final int DPI_BUTTON_HEIGHT = 48;
+    private static final int DPI_SIZE_TEXT = 21;
+    private static final int DPI_LINE_HEIGHT = 28;
+    private static final int DPI_BUTTON_HEIGHT = 42;
 
     /**
      * Approximation of mathematical constant PHI.
@@ -138,7 +136,7 @@ public class BoardViewSurfaceThread implements Runnable {
     public static Paint overlayPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     public static Paint playerPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     
-    private ArrayList<String> configIndexMap = null; 
+    private ArrayList<Integer> configIndexMap = null; 
     
     // whether we are in the foreground
     private boolean running = false;
@@ -783,16 +781,17 @@ public class BoardViewSurfaceThread implements Runnable {
         layers.get(LAYER_BACKGROUND).addDrawable(text);
     }
 
-    public void addConfigurableRegions(final HashMap<String, Configurable> configurables) {
+    public void addConfigurableRegions(final SparseArray<Configurable> configurables) {
         if (drawState == DrawState.NOTREADY) {
             return;
         }
         int index = 0;
-        configIndexMap = new ArrayList<String>();
-        for (final Entry<String, Configurable> kvp : configurables.entrySet()) {
-            final String configKey = kvp.getKey();
-            Configurable config = kvp.getValue();
-            configIndexMap.add(configKey);
+        configIndexMap = new ArrayList<Integer>();
+        for (int i = 0; i < configurables.size(); i++) {
+            final int configId = configurables.keyAt(i);
+            Configurable config = configurables.valueAt(i);
+            index = configIndexMap.size();
+            configIndexMap.add(configId);
             Rect encl = new Rect(drawRegions[DRAW_REGION_CONFIG_CHECK_BOX_BOUNDS + index]);
             encl.union(drawRegions[DRAW_REGION_CONFIG_CHECK_TEXT_BOUNDS + index]);
             CheckboxDrawable checkbox = new CheckboxDrawable(context);
@@ -817,11 +816,12 @@ public class BoardViewSurfaceThread implements Runnable {
                         @Override
                         public void onGestureRegionClick(GestureRegion region) {
                             if (listener != null) {
-                                for (Entry<String, Configurable> kvp : configurables.entrySet()) {
-                                    Configurable currentConfigurable = kvp.getValue();
-                                    if (kvp.getKey().equals(configKey)) {
-                                        listener.onConfigChange(currentConfigurable.getCommand(),
-                                                currentConfigurable.getValue().equals("0") ? "1" : "0");
+                                for (int i = 0; i < configurables.size(); i++) {
+                                    final int possibleConfigId = configurables.keyAt(i);
+                                    Configurable possibleConfig = configurables.valueAt(i);
+                                    if (possibleConfigId == configId) {
+                                        listener.onConfigChange(possibleConfig.getCommand(),
+                                                possibleConfig.getValue().equals("0") ? "1" : "0");
                                     }
                                 }
                             }
@@ -846,23 +846,24 @@ public class BoardViewSurfaceThread implements Runnable {
         }
     }
 
-    public void updateConfigurableRegions(HashMap<String, Configurable> configurables) {
-        for (Entry<String, Configurable> kvp : configurables.entrySet()) {
-            Configurable config = kvp.getValue();
-            int configIndex = configIndexMap.indexOf(config.getCommand());
-            if (configIndex >= 0) {
-                GestureRegion region = layers.get(LAYER_BACKGROUND).getGestureRegion(TAG_CONFIG_ITEM_CHECK + configIndex);
-                if (config.isEditable()) {
-                    region.enable();
-                } else {
-                    region.disable();
-                }
-                if (config.getValue().equals("0")) {
-                    region.uncheck();
-                } else {
-                    region.check();
-                }
+    public void updateConfigurableRegions(SparseArray<Configurable> configurables) {
+        for (int i = 0; i < configurables.size(); i++) {
+            final int configId = configurables.keyAt(i);
+            Configurable config = configurables.valueAt(i);
+            int configIndex = configIndexMap.indexOf(configId);
+            //if (configIndex >= 0) {
+            GestureRegion region = layers.get(LAYER_BACKGROUND).getGestureRegion(TAG_CONFIG_ITEM_CHECK + configIndex);
+            if (config.isEditable()) {
+                region.enable();
+            } else {
+                region.disable();
             }
+            if (config.getValue().equals("0")) {
+                region.uncheck();
+            } else {
+                region.check();
+            }
+            //}
         }
         hasChanges = true;
     }
@@ -1221,7 +1222,16 @@ public class BoardViewSurfaceThread implements Runnable {
         grOverlay.setSize(width, height);
         grOverlay.setGradientRadius(width / 2f);
         grOverlay.setBounds(0, 0, width, height);
-        layers.get(LAYER_OVERLAY).addDrawable(grOverlay);
+        TextDrawable closeText = new TextDrawable(
+                "<i>(tap anywhere to close overlay)</i>",
+                getPixelSize(DPI_SIZE_TEXT),
+                Color.WHITE, Color.WHITE,
+                Alignment.ALIGN_OPPOSITE,
+                VerticalAlignment.VALIGN_TOP,
+                tagHandler);
+        Rect ctBounds = new Rect(drawRegions[DRAW_REGION_CENTER_BOUNDS]);
+        ctBounds = new Rect(ctBounds.left, ctBounds.bottom, ctBounds.right, height);
+        closeText.setBounds(ctBounds);
         GestureRegion region = new GestureRegion(
                 new Rect(0, 0, width, height),
                 TAG_OVERLAY,
@@ -1236,9 +1246,11 @@ public class BoardViewSurfaceThread implements Runnable {
                         listener.onCloseOverlay();
                     }
                 });
-       layers.get(LAYER_OVERLAY).addGestureRegion(region);
        RectDrawable windowPane = new RectDrawable(Color.argb(128, 32, 32, 32), Color.argb(192, 64, 64, 64), 2);
        windowPane.setBounds(drawRegions[DRAW_REGION_CENTER_BOUNDS]);
+       layers.get(LAYER_OVERLAY).addDrawable(grOverlay);
+       layers.get(LAYER_OVERLAY).addDrawable(closeText);
+       layers.get(LAYER_OVERLAY).addGestureRegion(region);
        layers.get(LAYER_OVERLAY).addDrawable(windowPane);
         //overlayPaint.setShader(
         //        new RadialGradient(width / 2, height / 2, width / 4, Color.argb(128, 0, 0, 0), Color.argb(0, 0, 0, 0), Shader.TileMode.CLAMP));
@@ -1260,6 +1272,9 @@ public class BoardViewSurfaceThread implements Runnable {
             break;
         case OVERLAY_AUCTION:
             bodyText = listener.getAuctionBodyText(overlayObjectIndex);
+            break;
+        case OVERLAY_TRADE:
+            bodyText = listener.getTradeBodyText(overlayObjectIndex);
             break;
         }
         overlayBody = new TextDrawable(
@@ -1473,16 +1488,16 @@ public class BoardViewSurfaceThread implements Runnable {
         }
         for (int playerId : playerIds) {
             if (playerId > 0) {
-                final Player player = players.get(playerId);
-                Rect bounds = new Rect(drawRegions[DRAW_REGION_CENTER_BOUNDS]);
-                bounds.inset(width / 16 + 6, height / 16 + 6);
-                int lineHeight = (int) getPixelSize(DPI_LINE_HEIGHT);
-                int buttonHeight = (int) getPixelSize(DPI_BUTTON_HEIGHT);
-                Rect textBounds = new Rect(bounds.left, bounds.top, bounds.right, bounds.top + lineHeight * 3);
-                Rect btn1Bounds = new Rect(bounds.left, bounds.top + lineHeight * 3, bounds.right, bounds.top + lineHeight * 3 + buttonHeight);
-                Rect btn2Bounds = new Rect(bounds.left, bounds.top + lineHeight * 3 + buttonHeight, bounds.right, bounds.top + lineHeight * 3 + buttonHeight * 2);
-                Rect btn3Bounds = new Rect(bounds.left, bounds.top + lineHeight * 3 + buttonHeight * 2, bounds.right, bounds.top + lineHeight * 3 + buttonHeight * 3); 
+                final Player player = players.get(playerId); 
                 if (player.isTurn()) {
+                    Rect bounds = new Rect(drawRegions[DRAW_REGION_CENTER_BOUNDS]);
+                    bounds.inset(width / 16 + 6, height / 16 + 6);
+                    int lineHeight = (int) getPixelSize(DPI_LINE_HEIGHT);
+                    int buttonHeight = (int) getPixelSize(DPI_BUTTON_HEIGHT);
+                    Rect textBounds = new Rect(bounds.left, bounds.top, bounds.right, bounds.top + lineHeight * 3);
+                    Rect btn1Bounds = new Rect(bounds.left, bounds.top + lineHeight * 3, bounds.right, bounds.top + lineHeight * 3 + buttonHeight);
+                    Rect btn2Bounds = new Rect(bounds.left, bounds.top + lineHeight * 3 + buttonHeight, bounds.right, bounds.top + lineHeight * 3 + buttonHeight * 2);
+                    Rect btn3Bounds = new Rect(bounds.left, bounds.top + lineHeight * 3 + buttonHeight * 2, bounds.right, bounds.top + lineHeight * 3 + buttonHeight * 3);
                     Estate estate = estates.get(player.getLocation());
                     String location = "On " + BoardActivity.makeEstateName(estate);
                     if (player.isJailed()) {
@@ -1494,19 +1509,19 @@ public class BoardViewSurfaceThread implements Runnable {
                         if (player.getPlayerId() == selfPlayerId) {
                             actionText += "Roll the dice:";
                         } else {
-                            actionText += "Player is rolling the dice.";
+                            actionText += "Player may roll the dice.";
                         }
                     } else if (player.canBuyEstate()) {
                         if (player.getPlayerId() == selfPlayerId) {
                             actionText += "Buy estate for $" + estates.get(player.getLocation()).getPrice() + "?:";
                         } else {
-                            actionText += "Player can choose to buy the estate.";
+                            actionText += "Player may buy the estate.";
                         }
                     } else if (buttons.size() > 0) {
                         if (player.getPlayerId() == selfPlayerId) {
                             actionText += "Choose an action:";
                         } else {
-                            actionText += "Player is choosing an action.";
+                            actionText += "Player may choose an action.";
                         }
                     } else if (player.isInDebt()) {
                         if (player.getPlayerId() == selfPlayerId) {
@@ -1564,7 +1579,7 @@ public class BoardViewSurfaceThread implements Runnable {
                         
                         index++;
                     }
-                    if (player.canRoll() && player.getPlayerId() == selfPlayerId) {
+                    if (player.canRoll() && playerId == selfPlayerId) {
                         addButton(
                                 LAYER_TURN,
                                 btn1Bounds,
@@ -1637,6 +1652,7 @@ public class BoardViewSurfaceThread implements Runnable {
                                     }
                                 });
                     }*/
+                    break;
                 }
             }
         }

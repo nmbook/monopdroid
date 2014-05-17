@@ -185,10 +185,48 @@ public class BoardActivityNetworkThread implements Runnable {
                     monopd.sendSellHouse(
                             rState.getInt("estateId"));
                     break;
+                case MSG_ESTATE_SELL:
+                    monopd.sendSellEstate(
+                            rState.getInt("estateId"));
+                    break;
                 case MSG_AUCTION_BID:
                     monopd.sendAuctionBid(
                             rState.getInt("auctionId"),
                             rState.getInt("bid"));
+                    break;
+                case MSG_TRADE_NEW:
+                    monopd.sendTradeNew(
+                            rState.getInt("playerId"));
+                    break;
+                case MSG_TRADE_REJECT:
+                    monopd.sendTradeReject(
+                            rState.getInt("tradeId"));
+                    break;
+                case MSG_TRADE_ACCEPT:
+                    monopd.sendTradeAccept(
+                            rState.getInt("tradeId"),
+                            rState.getInt("revision"));
+                    break;
+                case MSG_TRADE_MONEY:
+                    monopd.sendTradeMoney(
+                            rState.getInt("tradeId"),
+                            rState.getInt("playerIdFrom"),
+                            rState.getInt("playerIdTo"),
+                            rState.getInt("amount"));
+                    break;
+                case MSG_TRADE_ESTATE:
+                    monopd.sendTradeEstate(
+                            rState.getInt("tradeId"),
+                            rState.getInt("playerIdTo"),
+                            rState.getInt("estateId"));
+                    break;
+                case MSG_TRADE_CARD:
+                    monopd.sendTradeEstate(
+                            rState.getInt("tradeId"),
+                            rState.getInt("playerIdTo"),
+                            rState.getInt("cardId"));
+                    break;
+                default:
                     break;
                 }
                 msg.recycle();

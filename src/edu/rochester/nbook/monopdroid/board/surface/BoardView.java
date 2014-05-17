@@ -1,7 +1,6 @@
 package edu.rochester.nbook.monopdroid.board.surface;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 
 import edu.rochester.nbook.monopdroid.board.Button;
 import edu.rochester.nbook.monopdroid.board.Configurable;
@@ -77,12 +76,27 @@ public class BoardView extends SurfaceView {
         // spaces = new ArrayList<BoardView.Space>(40);
         scrollDetector = new GestureDetector(this.getContext(),
                 new SimpleOnGestureListener() {
-            
                     @Override
-                    public boolean onSingleTapConfirmed(MotionEvent e) {
+                    public boolean onSingleTapUp(MotionEvent e) {
+                        //if (surfaceRunner.isFixed()) {
                         int x = (int) e.getX();
                         int y = (int) e.getY();
                         return surfaceRunner.onSingleTapUp(x, y);
+                        //} else {
+                        //    return false;
+                        //}
+                    }
+            
+                    @Override
+                    public boolean onSingleTapConfirmed(MotionEvent e) {
+                        //if (!surfaceRunner.isFixed()) {
+                        //    int x = (int) e.getX();
+                        //    int y = (int) e.getY();
+                        //    return surfaceRunner.onSingleTapUp(x, y);
+                        //} else {
+                        //    return false;
+                        //}
+                        return false;
                     }
         
                     @Override
@@ -229,7 +243,7 @@ public class BoardView extends SurfaceView {
         }
     }
 
-    public void drawConfigRegions(HashMap<String, Configurable> configurables, boolean isMaster) {
+    public void drawConfigRegions(SparseArray<Configurable> configurables, boolean isMaster) {
         if (surfaceRunner.getStatus() == GameStatus.CONFIG) {
             surfaceRunner.beginRegions(BoardViewSurfaceThread.LAYER_BACKGROUND);
             surfaceRunner.addConfigurableRegions(configurables);
@@ -238,7 +252,7 @@ public class BoardView extends SurfaceView {
         }
     }
 
-    public void redrawConfigRegions(HashMap<String, Configurable> configurables, boolean isMaster) {
+    public void redrawConfigRegions(SparseArray<Configurable> configurables, boolean isMaster) {
         if (surfaceRunner.getStatus() == GameStatus.CONFIG) {
             surfaceRunner.updateConfigurableRegions(configurables);
             surfaceRunner.updateStartButtonRegions(isMaster);

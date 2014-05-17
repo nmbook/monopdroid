@@ -54,106 +54,6 @@ import android.widget.ListView;
 import android.widget.TextView;
 
 public class BoardActivity extends FragmentActivity {
-    
-    private static final HashMap<String, XmlAttribute> playerAttributes = new HashMap<String, XmlAttribute>() {
-        private static final long serialVersionUID = 1431923100451372984L;
-
-        {
-            this.put("name", new XmlAttribute(Player.class, "setName", XmlAttributeType.STRING));
-            this.put("host", new XmlAttribute(Player.class, "setHost", XmlAttributeType.STRING));
-            this.put("master", new XmlAttribute(Player.class, "setMaster", XmlAttributeType.BOOLEAN));
-            this.put("money", new XmlAttribute(Player.class, "setMoney", XmlAttributeType.INT));
-            this.put("doublecount", new XmlAttribute(Player.class, "setDoubleCount", XmlAttributeType.INT));
-            this.put("jailcount", new XmlAttribute(Player.class, "setJailCount", XmlAttributeType.INT));
-            this.put("bankrupt", new XmlAttribute(Player.class, "setBankrupt", XmlAttributeType.BOOLEAN));
-            this.put("jailed", new XmlAttribute(Player.class, "setJailed", XmlAttributeType.BOOLEAN));
-            this.put("hasturn", new XmlAttribute(Player.class, "setHasTurn", XmlAttributeType.BOOLEAN));
-            this.put("spectator", new XmlAttribute(Player.class, "setSpectator", XmlAttributeType.BOOLEAN));
-            this.put("can_roll", new XmlAttribute(Player.class, "setCanRoll", XmlAttributeType.BOOLEAN));
-            this.put("canrollagain", new XmlAttribute(Player.class, "setCanRollAgain", XmlAttributeType.BOOLEAN));
-            this.put("can_buyestate", new XmlAttribute(Player.class, "setCanBuyEstate", XmlAttributeType.BOOLEAN));
-            this.put("canauction", new XmlAttribute(Player.class, "setCanAuction", XmlAttributeType.BOOLEAN));
-            this.put("canusecard", new XmlAttribute(Player.class, "setCanUseCard", XmlAttributeType.BOOLEAN));
-            this.put("hasdebt", new XmlAttribute(Player.class, "setHasDebt", XmlAttributeType.BOOLEAN));
-            this.put("location", new XmlAttribute(Player.class, "setLocation", XmlAttributeType.INT));
-            this.put("directmove", new XmlAttribute(Player.class, "setDirectMove", XmlAttributeType.BOOLEAN));
-            this.put("game", new XmlAttribute(Player.class, "setGameId", XmlAttributeType.INT));
-            this.put("cookie", new XmlAttribute(Player.class, null, XmlAttributeType.STRING));
-            this.put("image", new XmlAttribute(Player.class, null, XmlAttributeType.STRING));
-        }
-    };
-    
-    private static final HashMap<String, XmlAttribute> estateAttributes = new HashMap<String, XmlAttribute>() {
-        private static final long serialVersionUID = -1649097477143814788L;
-
-        {
-            this.put("name", new XmlAttribute(Estate.class, "setName", XmlAttributeType.STRING));
-            this.put("houses", new XmlAttribute(Estate.class, "setHouses", XmlAttributeType.INT));
-            this.put("money", new XmlAttribute(Estate.class, "setMoney", XmlAttributeType.INT));
-            this.put("price", new XmlAttribute(Estate.class, "setPrice", XmlAttributeType.INT));
-            this.put("mortgageprice", new XmlAttribute(Estate.class, "setMortgagePrice", XmlAttributeType.INT));
-            this.put("unmortgageprice", new XmlAttribute(Estate.class, "setUnmortgagePrice", XmlAttributeType.INT));
-            this.put("sellhouseprice", new XmlAttribute(Estate.class, "setSellHousePrice", XmlAttributeType.INT));
-            this.put("mortgaged", new XmlAttribute(Estate.class, "setMortgaged", XmlAttributeType.BOOLEAN));
-            this.put("color", new XmlAttribute(Estate.class, "setColor", XmlAttributeType.COLOR));
-            this.put("bgcolor", new XmlAttribute(Estate.class, "setBgColor", XmlAttributeType.COLOR));
-            this.put("owner", new XmlAttribute(Estate.class, "setOwner", XmlAttributeType.INT));
-            this.put("houseprice", new XmlAttribute(Estate.class, "setHousePrice", XmlAttributeType.INT));
-            this.put("groupid", new XmlAttribute(Estate.class, "setEstateGroup", XmlAttributeType.INT));
-            this.put("group", this.get("groupid"));
-            this.put("can_be_owned", new XmlAttribute(Estate.class, "setCanBeOwned", XmlAttributeType.BOOLEAN));
-            this.put("can_toggle_mortgage", new XmlAttribute(Estate.class, "setCanToggleMortgage", XmlAttributeType.BOOLEAN));
-            this.put("can_buy_houses", new XmlAttribute(Estate.class, "setCanBuyHouses", XmlAttributeType.BOOLEAN));
-            this.put("can_sell_houses", new XmlAttribute(Estate.class, "setCanSellHouses", XmlAttributeType.BOOLEAN));
-            this.put("rent0", new XmlAttribute(Estate.class, "setRent0", XmlAttributeType.RENT));
-            this.put("rent1", new XmlAttribute(Estate.class, "setRent1", XmlAttributeType.RENT));
-            this.put("rent2", new XmlAttribute(Estate.class, "setRent2", XmlAttributeType.RENT));
-            this.put("rent3", new XmlAttribute(Estate.class, "setRent3", XmlAttributeType.RENT));
-            this.put("rent4", new XmlAttribute(Estate.class, "setRent4", XmlAttributeType.RENT));
-            this.put("rent5", new XmlAttribute(Estate.class, "setRent5", XmlAttributeType.RENT));
-            this.put("passmoney", new XmlAttribute(Estate.class, "setPassMoney", XmlAttributeType.INT));
-            this.put("taxpercentage", new XmlAttribute(Estate.class, "setTaxPercentage", XmlAttributeType.INT));
-            this.put("tax", new XmlAttribute(Estate.class, "setTax", XmlAttributeType.INT));
-            this.put("icon", new XmlAttribute(Estate.class, "setIcon", XmlAttributeType.STRING));
-            this.put("jail", new XmlAttribute(Estate.class, "setIsJail", XmlAttributeType.BOOLEAN));
-            this.put("payamount", new XmlAttribute(Estate.class, "setPayAmount", XmlAttributeType.INT));
-            this.put("tojail", new XmlAttribute(Estate.class, "setIsToJail", XmlAttributeType.BOOLEAN));
-        }
-    };
-    
-    private static final HashMap<String, XmlAttribute> estateGroupAttributes = new HashMap<String, XmlAttribute>() {
-        private static final long serialVersionUID = -4145245059753235694L;
-
-        {
-            this.put("name", new XmlAttribute(EstateGroup.class, "setName", XmlAttributeType.STRING));
-        }
-    };
-    
-    private static final HashMap<String, XmlAttribute> auctionAttributes = new HashMap<String, XmlAttribute>() {
-        private static final long serialVersionUID = 2978911583408943533L;
-
-        {
-            this.put("actor", new XmlAttribute(Auction.class, "setActorId", XmlAttributeType.INT));
-            this.put("estateid", new XmlAttribute(Auction.class, "setEstateId", XmlAttributeType.INT));
-            this.put("status", new XmlAttribute(Auction.class, "setStatus", XmlAttributeType.INT));
-            this.put("highbid", new XmlAttribute(Auction.class, "setHighBid", XmlAttributeType.INT));
-            this.put("highbidder", new XmlAttribute(Auction.class, "setHighBidder", XmlAttributeType.INT));
-        }
-    };
-    
-    private static final HashMap<String, XmlAttribute> configurableAttributes = new HashMap<String, XmlAttribute>() {
-        private static final long serialVersionUID = 2978911583408943533L;
-
-        {
-            this.put("configid", new XmlAttribute(Auction.class, "setConfigId", XmlAttributeType.INT));
-            this.put("name", new XmlAttribute(Auction.class, "setName", XmlAttributeType.STRING));
-            this.put("description", new XmlAttribute(Auction.class, "setDescription", XmlAttributeType.STRING));
-            this.put("type", new XmlAttribute(Auction.class, "setType", XmlAttributeType.STRING));
-            this.put("edit", new XmlAttribute(Auction.class, "setEditable", XmlAttributeType.BOOLEAN));
-            this.put("value", new XmlAttribute(Auction.class, "setValue", XmlAttributeType.STRING));
-        }
-    };
-    
     /**
      * The Board UI. Do not access from networking thread.
      */
@@ -211,7 +111,7 @@ public class BoardActivity extends FragmentActivity {
     /**
      * List of options.
      */
-    private HashMap<String, Configurable> configurables = new HashMap<String, Configurable>();
+    private SparseArray<Configurable> configurables = new SparseArray<Configurable>();
     /**
      * List of buttons.
      */
@@ -376,7 +276,7 @@ public class BoardActivity extends FragmentActivity {
         public GameItem gameItem;
         public SparseArray<Player> players;
         public ArrayList<Estate> estates;
-        public HashMap<String, Configurable> configurables;
+        public SparseArray<Configurable> configurables;
         public int playerId;
         public String cookie;
         public GameStatus status;
@@ -490,7 +390,9 @@ public class BoardActivity extends FragmentActivity {
 
             @Override
             public void onOpenTradeWindow(int playerId) {
-                // TODO: implement trade
+                Bundle args = new Bundle();
+                args.putInt("playerId", playerId);
+                sendToNetThread(BoardNetworkAction.MSG_TRADE_NEW, args);
             }
 
             @Override
@@ -561,56 +463,57 @@ public class BoardActivity extends FragmentActivity {
                 }
                 if (status == GameStatus.RUN) {
                     Estate estate = estates.get(player.getLocation());
-                    sb.append(makeFieldLine("Money", 
-                            "$" + player.getMoney()));
                     sb.append(makeFieldLine("On estate", 
                             makeEstateName(estate)));
+                    sb.append(makeFieldLine("Money", 
+                            "$" + player.getMoney()));
+                    
+                    // assets is: money + sale price of houses + unmortgaged value of estates
+                    int assets = player.getMoney();
                     int owned = 0;
                     int mortgaged = 0;
                     int houses = 0;
                     int hotels = 0;
                     int completeGroups = 0;
-                    SparseIntArray incompleteGroupMap = new SparseIntArray();
-                    SparseIntArray groupMap = new SparseIntArray();
+                    
+                    SparseIntArray estateGroupMap = new SparseIntArray();
                     for (Estate est : estates) {
                         int groupId = est.getEstateGroup();
-                        EstateGroup group = estateGroups.get(groupId);
-                        if (group != null) {
-                            groupMap.put(groupId, groupMap.get(groupId) + 1);
-                        }
+                        estateGroupMap.put(groupId, estateGroupMap.get(groupId) + 1);
                     }
                     for (Estate est : estates) {
-                        int groupId = est.getEstateGroup();
-                        EstateGroup group = estateGroups.get(groupId);
-                        if (group != null) {
-                            int subsetOwned = incompleteGroupMap.get(groupId);
-                            incompleteGroupMap.put(groupId, subsetOwned++);
-                            if (subsetOwned == groupMap.get(groupId)) {
+                        if (est.getOwner() == player.getPlayerId()) {
+                            int groupId = est.getEstateGroup();
+                            estateGroupMap.put(groupId, estateGroupMap.get(groupId) - 1);
+                            if (estateGroupMap.get(groupId) > 0) {
                                 completeGroups++;
                             }
-                        }
-                        if (est.getOwner() == player.getPlayerId()) {
                             owned++;
-                            if (est.getHouses() < 5) {
-                                houses += est.getHouses();
-                            } else {
-                                hotels++;
-                            }
                             if (est.isMortgaged()) {
                                 mortgaged++;
+                            } else {
+                                assets += est.getMortgagePrice() + (est.getHouses() * est.getSellHousePrice());
+                                if (est.getHouses() < 5) {
+                                    houses += est.getHouses();
+                                } else {
+                                    hotels++;
+                                }
                             }
                         }
                     }
+                    sb.append(makeFieldLine("Assets total", 
+                            "$" + assets));
+                    sb.append("<br>");
                     sb.append(makeFieldLine("Owned estates", 
                             Integer.toString(owned)));
                     sb.append(makeFieldLine("Owned estates mortgaged", 
                             Integer.toString(mortgaged)));
-                    sb.append(makeFieldLine("Owned complete estate sets", 
-                            Integer.toString(completeGroups)));
                     sb.append(makeFieldLine("Owned houses", 
                             Integer.toString(houses)));
                     sb.append(makeFieldLine("Owned hotels", 
                             Integer.toString(hotels)));
+                    sb.append(makeFieldLine("Owned complete estate sets", 
+                            Integer.toString(completeGroups)));
                 }
                 return sb.toString();
             }
@@ -624,17 +527,71 @@ public class BoardActivity extends FragmentActivity {
                 //sb.append("Estate ID: " + estate.getEstateId() + "\n");
                 //EstateGroup group = estateGroups.get(estate.getEstateGroup());
                 if (estate.canBeOwned()) {
+                    sb.append(makeFieldLine("Group", estateGroups.get(estate.getEstateGroup()).getName()));
                     if (estate.getOwner() <= 0) {
                         sb.append(makeFieldLine("Current owner", "<i>none</i>"));
                     } else {
                         Player player = players.get(estate.getOwner());
                         sb.append(makeFieldLine("Current owner", 
                                 makePlayerName(player)));
+                        if (estate.getColor() != 0) {
+                            sb.append(makeFieldLine("Current houses",
+                                    makeHouseCount(estate.getHouses())));
+                        }
+                        
+                        if (estateGroups.get(estate.getEstateGroup()).getEstateGroupId() == 8) { // RAILROAD
+                            int railCost = 25;
+                            int railMult = 1;
+                            for (Estate otherEstate : estates) {
+                                if (otherEstate.getEstateGroup() == estate.getEstateGroup() &&
+                                        otherEstate.getOwner() == estate.getOwner() &&
+                                        otherEstate.getEstateId() != estate.getEstateId()) {
+                                    railCost *= 2;
+                                    railMult++;
+                                }
+                            }
+                            if (estate.isMortgaged()) {
+                                sb.append(makeFieldLine("Current rent",
+                                        "<i>mortgaged</i>"));
+                            } else {
+                                sb.append(makeFieldLine("Current rent",
+                                        "$" + railCost));
+                            }
+                            sb.append(makeFieldLine("Railroads owned by " +
+                                    BoardActivity.makePlayerName(player),
+                                    Integer.toString(railMult)));
+                        } else if (estateGroups.get(estate.getEstateGroup()).getEstateGroupId() == 9) { // UTILITIES
+                            int utilCost = 4;
+                            int utilMult = 1;
+                            for (Estate otherEstate : estates) {
+                                if (otherEstate.getEstateGroup() == estate.getEstateGroup() &&
+                                        otherEstate.getOwner() == estate.getOwner() &&
+                                        otherEstate.getEstateId() != estate.getEstateId()) {
+                                    utilCost += 6;
+                                    utilMult++;
+                                }
+                            }
+                            if (estate.isMortgaged()) {
+                                sb.append(makeFieldLine("Current rent",
+                                        "<i>mortgaged</i>"));
+                            } else {
+                                sb.append(makeFieldLine("Current rent",
+                                        "$" + utilCost + " × DICE ROLL TOTAL"));
+                            }
+                            sb.append(makeFieldLine("Utilities owned by " +
+                                    BoardActivity.makePlayerName(player),
+                                    Integer.toString(utilMult)));
+                        } else {
+                            if (estate.isMortgaged()) {
+                                sb.append(makeFieldLine("Current rent",
+                                        "<i>mortgaged</i>"));
+                            } else {
+                                sb.append(makeFieldLine("Current rent",
+                                        "$" + estate.getRent(estate.getHouses())));
+                            }
+                        }
                     }
-                    if (estate.getColor() != 0) {
-                        sb.append(makeFieldLine("Current houses",
-                                makeHouseCount(estate.getHouses())));
-                    }
+                    
                     sb.append("<br>");
                     sb.append(makeFieldLine("Price to buy",
                             "$" + estate.getPrice()));
@@ -739,6 +696,12 @@ public class BoardActivity extends FragmentActivity {
                 args.putString("command", command);
                 sendToNetThread(BoardNetworkAction.MSG_BUTTON_COMMAND, args);
             }
+
+            @Override
+            public String getTradeBodyText(int tradeId) {
+                // TODO Auto-generated method stub
+                return null;
+            }
         });
         this.chatSendBox.setOnKeyListener(new OnKeyListener() {
 
@@ -795,7 +758,7 @@ public class BoardActivity extends FragmentActivity {
             }
 
             @Override
-            public void onPlayerUpdate(final int playerId, HashMap<String, String> data) {
+            public void onPlayerUpdate(final int updatePlayerId, HashMap<String, String> data) {
                 Log.v("monopd", "net: Received onPlayerUpdate() from MonoProtocolHandler");
                 final HashMap<String, String> map = new HashMap<String, String>(data);
                 runOnUiThread(new Runnable() {
@@ -809,15 +772,15 @@ public class BoardActivity extends FragmentActivity {
                         boolean changingMaster = false;
                         boolean wasMaster = false;
                         // get player from internal data
-                        Player player = players.get(playerId);
+                        Player player = players.get(updatePlayerId);
                         // if not found, add internally
                         if (player == null) {
-                            player = new Player(playerId);
+                            player = new Player(updatePlayerId);
                         }
                         // update internal player data
                         for (String key : map.keySet()) {
                             String value = map.get(key);
-                            XmlAttribute attr = playerAttributes.get(key);
+                            XmlAttribute attr = Player.playerAttributes.get(key);
                             if (attr == null) {
                                 Log.w("monopd", "player." + key + " was unknown. Value = " + value);
                             } else {
@@ -840,7 +803,7 @@ public class BoardActivity extends FragmentActivity {
                             }
                         }
                         // put internal player data
-                        players.put(playerId, player);
+                        players.put(updatePlayerId, player);
                         // stop here if this player is not in this game (could be in the future)
                         if (player.getGameId() != gameItem.getGameId()) {
                             // this player is not in this game
@@ -848,7 +811,7 @@ public class BoardActivity extends FragmentActivity {
                         }
                         // find in player list
                         for (int i = 0; i < BoardViewPiece.MAX_PLAYERS; i++) {
-                            if (playerIds[i] == playerId) {
+                            if (playerIds[i] == updatePlayerId) {
                                 found = true;
                             }
                         }
@@ -867,7 +830,7 @@ public class BoardActivity extends FragmentActivity {
                                     // add to player list
                                     for (int i = 0; i < BoardViewPiece.MAX_PLAYERS; i++) {
                                         if (playerIds[i] == 0) {
-                                            playerIds[i] = playerId;
+                                            playerIds[i] = updatePlayerId;
                                             isJoin = true;
                                             break;
                                         }
@@ -891,18 +854,18 @@ public class BoardActivity extends FragmentActivity {
                             if (estates.size() == 0) {
                                 // indicate master
                                 if (player.isMaster()) {
-                                    writeMessage(player.getName() + " is in the game as game master.", Color.GRAY, playerId, -1);
+                                    writeMessage(player.getName() + " is in the game as game master.", Color.GRAY, updatePlayerId, -1);
                                     wasMaster = true;
                                 } else {
-                                    writeMessage(player.getName() + " is in the game.", Color.GRAY, playerId, -1);
+                                    writeMessage(player.getName() + " is in the game.", Color.GRAY, updatePlayerId, -1);
                                 }
                             } else {
                                 // normal join
-                                writeMessage(player.getName() + " joined the game.", Color.GRAY, playerId, -1);
+                                writeMessage(player.getName() + " joined the game.", Color.GRAY, updatePlayerId, -1);
                             }
                         } else if (oldNick != null) {
                             // nick changed
-                            writeMessage(oldNick + " is now known as " + player.getName() + ".", Color.GRAY, playerId, -1);
+                            writeMessage(oldNick + " is now known as " + player.getName() + ".", Color.GRAY, updatePlayerId, -1);
                         }
                         if (changingLocation) {
                             animateMove(player);
@@ -916,13 +879,13 @@ public class BoardActivity extends FragmentActivity {
                             }
                             if (player.isMaster() && !wasMaster) {
                                 if (playerLeavingNick != null) {
-                                    writeMessage(playerLeavingNick + " left the game giving game master to " + player.getName() + ".", Color.GRAY, playerId, -1);
+                                    writeMessage(playerLeavingNick + " left the game giving game master to " + player.getName() + ".", Color.GRAY, updatePlayerId, -1);
                                     playerLeavingNick = null;
                                 } else {
                                     if (master > 0) {
                                         playerLeavingNick = player.getName();
                                     } else {
-                                        writeMessage(player.getName() + " is game master.", Color.GRAY, playerId, -1);
+                                        writeMessage(player.getName() + " is game master.", Color.GRAY, updatePlayerId, -1);
                                     }
                                 }
                             }
@@ -1002,7 +965,7 @@ public class BoardActivity extends FragmentActivity {
                         }
                         for (String key : map.keySet()) {
                             String value = map.get(key);
-                            XmlAttribute attr = BoardActivity.estateAttributes.get(key);
+                            XmlAttribute attr = Estate.estateAttributes.get(key);
                             if (attr == null) {
                                 Log.w("monopd", "estate." + key + " was unknown. Value = " + value);
                             } else {
@@ -1069,21 +1032,21 @@ public class BoardActivity extends FragmentActivity {
                     @Override
                     public void run() {
                         Configurable config;
-                        config = configurables.get(Integer.toString(configId));
+                        config = configurables.get(configId);
                         if (config == null) {
                             config = new Configurable(configId);
                         }
                         for (String key : map.keySet()) {
                             String value = map.get(key);
-                            XmlAttribute attr = BoardActivity.configurableAttributes.get(key);
+                            XmlAttribute attr = Configurable.configurableAttributes.get(key);
                             if (attr == null) {
                                 Log.w("monopd", "configurable." + key + " was unknown. Value = " + value);
                             } else {
                                 attr.set(config, value);
                             }
                         }
-                        configurables.put(Integer.toString(configId), config);
-                        boardView.redrawOverlay();
+                        configurables.put(configId, config);
+                        boardView.redrawConfigRegions(BoardActivity.this.configurables, isMaster);
                     }
                 });                
             }
@@ -1098,7 +1061,7 @@ public class BoardActivity extends FragmentActivity {
                     public void run() {
                         boolean fullList = false;
                         for (Configurable toAdd : configurables) {
-                            BoardActivity.this.configurables.put(toAdd.getCommand(), toAdd);
+                            BoardActivity.this.configurables.put(toAdd.getConfigId(), toAdd);
                             fullList = true;
                         }
                         if (boardView.isRunning()) {
@@ -1127,7 +1090,7 @@ public class BoardActivity extends FragmentActivity {
                         }
                         for (String key : map.keySet()) {
                             String value = map.get(key);
-                            XmlAttribute attr = BoardActivity.estateGroupAttributes.get(key);
+                            XmlAttribute attr = EstateGroup.estateGroupAttributes.get(key);
                             if (attr == null) {
                                 Log.w("monopd", "estategroup." + key + " was unknown. Value = " + value);
                             } else {
@@ -1156,7 +1119,7 @@ public class BoardActivity extends FragmentActivity {
                         int orange = Color.rgb(255, 128, 0);
                         for (String key : map.keySet()) {
                             String value = map.get(key);
-                            XmlAttribute attr = BoardActivity.auctionAttributes.get(key);
+                            XmlAttribute attr = Auction.auctionAttributes.get(key);
                             if (attr == null) {
                                 Log.w("monopd", "auction." + key + " was unknown. Value = " + value);
                             } else {
@@ -1397,6 +1360,48 @@ public class BoardActivity extends FragmentActivity {
                     }
                     gameItem.setCanJoin(item.canJoin());
                 }
+            }
+
+            @Override
+            public void onTradeUpdate(int tradeId, HashMap<String, String> data) {
+                // TODO Auto-generated method stub
+                
+            }
+
+            @Override
+            public void onTradePlayer(int tradeId, TradePlayer player) {
+                // TODO Auto-generated method stub
+                
+            }
+
+            @Override
+            public void onTradeMoney(int tradeId, MoneyTradeOffer offer) {
+                // TODO Auto-generated method stub
+                
+            }
+
+            @Override
+            public void onTradeEstate(int tradeId, EstateTradeOffer offer) {
+                // TODO Auto-generated method stub
+                
+            }
+
+            @Override
+            public void onTradeCard(int tradeId, CardTradeOffer offer) {
+                // TODO Auto-generated method stub
+                
+            }
+
+            @Override
+            public int getEstateOwner(int estateId) {
+                return estates.get(estateId).getOwner();
+            }
+
+            @Override
+            public int getCardOwner(int cardId) {
+                // TODO: Card Object NYI.
+                // return cards.get(cardId).getOwner();
+                return -1;
             }
         });
         
@@ -1770,6 +1775,8 @@ public class BoardActivity extends FragmentActivity {
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         this.getMenuInflater().inflate(R.menu.board_activity, menu);
+        MenuItem mi = (MenuItem) menu.findItem(R.id.menu_bankrupt);
+        mi.setEnabled(status == GameStatus.RUN && players.get(playerId).isInDebt());
         return true;
     }
 
@@ -1777,7 +1784,7 @@ public class BoardActivity extends FragmentActivity {
     public boolean onMenuItemSelected(int featureId, MenuItem item) {
         switch (item.getItemId()) {
         case R.id.menu_bankrupt:
-            if (status == GameStatus.RUN) {
+            if (status == GameStatus.RUN && players.get(playerId).isInDebt()) {
                 sendToNetThread(BoardNetworkAction.MSG_DECLARE_BANKRUPCY, null);
             }
             break;

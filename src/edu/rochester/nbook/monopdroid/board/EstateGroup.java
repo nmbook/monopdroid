@@ -1,7 +1,17 @@
 package edu.rochester.nbook.monopdroid.board;
 
+import java.util.HashMap;
+
 public class EstateGroup {
-    // estate data
+    public static final HashMap<String, XmlAttribute> estateGroupAttributes = new HashMap<String, XmlAttribute>() {
+        private static final long serialVersionUID = -4145245059753235694L;
+
+        {
+            this.put("name", new XmlAttribute(EstateGroup.class, "setName", XmlAttributeType.STRING));
+        }
+    };
+    
+    // estate group object data
     private int estateGroupId;
     private String name;
 

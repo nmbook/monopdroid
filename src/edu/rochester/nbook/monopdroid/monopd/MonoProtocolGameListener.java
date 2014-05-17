@@ -4,8 +4,12 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 import edu.rochester.nbook.monopdroid.board.Button;
+import edu.rochester.nbook.monopdroid.board.CardTradeOffer;
 import edu.rochester.nbook.monopdroid.board.Configurable;
+import edu.rochester.nbook.monopdroid.board.EstateTradeOffer;
+import edu.rochester.nbook.monopdroid.board.MoneyTradeOffer;
 import edu.rochester.nbook.monopdroid.board.Player;
+import edu.rochester.nbook.monopdroid.board.TradePlayer;
 import edu.rochester.nbook.monopdroid.gamelist.GameItem;
 import android.os.Handler;
 
@@ -125,5 +129,56 @@ public interface MonoProtocolGameListener extends MonoProtocolListener {
      * @param data Key-Value set of object data.
      */
     public void onAuctionUpdate(int auctionId, HashMap<String, String> data);
+
+    /**
+     * Sent by the server to update a Trade object.
+     * @param tradeId Trade ID.
+     * @param data Key-Value set of object data.
+     */
+    public void onTradeUpdate(int tradeId, HashMap<String, String> data);
+
+    /**
+     * Sent by the server to update a player in a trade.
+     * @param tradeId The Trade ID.
+     * @param player The new TradePlayer object.
+     */
+    public void onTradePlayer(int tradeId, TradePlayer player);
+
+    /**
+     * Sent by the server to update a money offer in a trade. 
+     * @param tradeId The Trade ID.
+     * @param offer The new MoneyTradeOffer object.
+     */
+    public void onTradeMoney(int tradeId, MoneyTradeOffer offer);
+
+    /**
+     * Sent by the server to update an estate offer in a trade. 
+     * @param tradeId The Trade ID.
+     * @param offer The new EstateTradeOffer object.
+     */
+    public void onTradeEstate(int tradeId, EstateTradeOffer offer);
+
+    /**
+     * Sent by the server to update a card offer in a trade. 
+     * @param tradeId The Trade ID.
+     * @param offer The new CardTradeOffer object.
+     */
+    public void onTradeCard(int tradeId, CardTradeOffer offer);
+
+    /**
+     * The XML parser will call this during a received trade update to create
+     * a complete EstateTradeOffer object.
+     * @param estateId The estate to look up.
+     * @return The current owner of this estate.
+     */
+    public int getEstateOwner(int estateId);
+    
+    /**
+     * The XML parser will call this during a received trade update to create
+     * a complete CardTradeOffer object.
+     * @param cardId The card to look up.
+     * @return The current owner of this card.
+     */
+    public int getCardOwner(int cardId);
 
 }

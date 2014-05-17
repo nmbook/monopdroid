@@ -1,9 +1,49 @@
 package edu.rochester.nbook.monopdroid.board;
 
+import java.util.HashMap;
+
 import android.graphics.Color;
 
 public class Estate {
-    // estate data
+    public static final HashMap<String, XmlAttribute> estateAttributes = new HashMap<String, XmlAttribute>() {
+        private static final long serialVersionUID = -1649097477143814788L;
+
+        {
+            this.put("name", new XmlAttribute(Estate.class, "setName", XmlAttributeType.STRING));
+            this.put("houses", new XmlAttribute(Estate.class, "setHouses", XmlAttributeType.INT));
+            this.put("money", new XmlAttribute(Estate.class, "setMoney", XmlAttributeType.INT));
+            this.put("price", new XmlAttribute(Estate.class, "setPrice", XmlAttributeType.INT));
+            this.put("mortgageprice", new XmlAttribute(Estate.class, "setMortgagePrice", XmlAttributeType.INT));
+            this.put("unmortgageprice", new XmlAttribute(Estate.class, "setUnmortgagePrice", XmlAttributeType.INT));
+            this.put("sellhouseprice", new XmlAttribute(Estate.class, "setSellHousePrice", XmlAttributeType.INT));
+            this.put("mortgaged", new XmlAttribute(Estate.class, "setMortgaged", XmlAttributeType.BOOLEAN));
+            this.put("color", new XmlAttribute(Estate.class, "setColor", XmlAttributeType.COLOR));
+            this.put("bgcolor", new XmlAttribute(Estate.class, "setBgColor", XmlAttributeType.COLOR));
+            this.put("owner", new XmlAttribute(Estate.class, "setOwner", XmlAttributeType.INT));
+            this.put("houseprice", new XmlAttribute(Estate.class, "setHousePrice", XmlAttributeType.INT));
+            this.put("groupid", new XmlAttribute(Estate.class, "setEstateGroup", XmlAttributeType.INT));
+            this.put("group", this.get("groupid"));
+            this.put("can_be_owned", new XmlAttribute(Estate.class, "setCanBeOwned", XmlAttributeType.BOOLEAN));
+            this.put("can_toggle_mortgage", new XmlAttribute(Estate.class, "setCanToggleMortgage", XmlAttributeType.BOOLEAN));
+            this.put("can_buy_houses", new XmlAttribute(Estate.class, "setCanBuyHouses", XmlAttributeType.BOOLEAN));
+            this.put("can_sell_houses", new XmlAttribute(Estate.class, "setCanSellHouses", XmlAttributeType.BOOLEAN));
+            this.put("rent0", new XmlAttribute(Estate.class, "setRent0", XmlAttributeType.RENT));
+            this.put("rent1", new XmlAttribute(Estate.class, "setRent1", XmlAttributeType.RENT));
+            this.put("rent2", new XmlAttribute(Estate.class, "setRent2", XmlAttributeType.RENT));
+            this.put("rent3", new XmlAttribute(Estate.class, "setRent3", XmlAttributeType.RENT));
+            this.put("rent4", new XmlAttribute(Estate.class, "setRent4", XmlAttributeType.RENT));
+            this.put("rent5", new XmlAttribute(Estate.class, "setRent5", XmlAttributeType.RENT));
+            this.put("passmoney", new XmlAttribute(Estate.class, "setPassMoney", XmlAttributeType.INT));
+            this.put("taxpercentage", new XmlAttribute(Estate.class, "setTaxPercentage", XmlAttributeType.INT));
+            this.put("tax", new XmlAttribute(Estate.class, "setTax", XmlAttributeType.INT));
+            this.put("icon", new XmlAttribute(Estate.class, "setIcon", XmlAttributeType.STRING));
+            this.put("jail", new XmlAttribute(Estate.class, "setIsJail", XmlAttributeType.BOOLEAN));
+            this.put("payamount", new XmlAttribute(Estate.class, "setPayAmount", XmlAttributeType.INT));
+            this.put("tojail", new XmlAttribute(Estate.class, "setIsToJail", XmlAttributeType.BOOLEAN));
+        }
+    };
+    
+    // estate object data
     private int estateId;
     private String name;
     private String icon;

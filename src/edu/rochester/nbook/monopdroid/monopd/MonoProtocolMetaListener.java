@@ -8,7 +8,7 @@ import edu.rochester.nbook.monopdroid.gamelist.ServerItem;
 public interface MonoProtocolMetaListener extends MonoProtocolListener {
     public void onMetaServer(String version);
 
-    public void onServerGameList(String host, int port, String version, ArrayList<GameItem> games);
+    public void onServerGameList(String host, int port, String version, ArrayList<GameItem> arrayList);
 
     public void onServerGameListEnd();
 
