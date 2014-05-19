@@ -261,8 +261,10 @@ public class MonoProtocolHandler {
         @SuppressWarnings("unchecked")
         public <E> ArrayList<E> getAs() {
             ArrayList<E> listCopy = new ArrayList<E>(list.size());
-            for (Object element : listCopy) {
-                listCopy.add((E) element);
+            for (Object element : list) {
+                try {
+                    listCopy.add((E) element);
+                } catch (ClassCastException cex) {}
             }
             return listCopy;
         }
@@ -557,9 +559,6 @@ public class MonoProtocolHandler {
             HashMap<String, String> data, MonoProtocolMetaListener mlistener, SharedList list) {
         if (prevReadNodeType == XmlNodeType.SERVERGAMELIST) {
             mlistener.onServerGameListEnd();
-        } else if (prevReadNodeType == XmlNodeType.SERVERGAMELIST) {
-            mlistener.onServerList(list.<ServerItem>getAs());
-            data.clear();
         } else {
             // was server identification, do not close
             return;
