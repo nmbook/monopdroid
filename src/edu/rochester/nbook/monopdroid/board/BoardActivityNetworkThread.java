@@ -124,6 +124,7 @@ public class BoardActivityNetworkThread implements Runnable {
                     case JOIN:
                     case RECONNECT:
                     case CONFIG:
+                    case END:
                         monopd.sendClientHello();
                         monopd.sendChangeNick(nick, false);
                         monopd.sendJoinGame(gameId);
@@ -131,6 +132,8 @@ public class BoardActivityNetworkThread implements Runnable {
                     case INIT:
                     case RUN:
                         monopd.sendReconnect(cookie);
+                        break;
+                    default:
                         break;
                     }
                     break;

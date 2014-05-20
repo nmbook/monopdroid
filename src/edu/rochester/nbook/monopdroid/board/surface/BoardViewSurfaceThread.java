@@ -231,6 +231,7 @@ public class BoardViewSurfaceThread implements Runnable {
         // oPaint.setStyle(Paint.Style.STROKE);
         while (this.running) {
             if (this.surfaceHolder.getSurface().isValid() && hasChanges) {
+                Log.v("monopd", "surface: begin draw");
                 Canvas canvas = this.surfaceHolder.lockCanvas();
                 canvas.drawRect(new Rect(0, 0, canvas.getWidth(), canvas.getHeight()), bgPaint);
                 for (DrawLayer layer : this.layers) {
@@ -245,6 +246,7 @@ public class BoardViewSurfaceThread implements Runnable {
                 this.surfaceHolder.unlockCanvasAndPost(canvas);
                 hasChanges = false;
                 waitDraw = false;
+                Log.v("monopd", "surface: end draw");
             }
             try {
                 // 20 fps
@@ -613,7 +615,7 @@ public class BoardViewSurfaceThread implements Runnable {
         drawRegions[DRAW_REGION_TEXT_BOUNDS] = new Rect(0, 0, width, height);
         //float part = ((float)width / ((4f * phi) + 18f));
         drawRegions[DRAW_REGION_CENTER_BOUNDS] =
-                new Rect(width / 16, height / 16, width * 15 / 16, height * 15 / 16);
+                new Rect(width / 16 + 6, height / 16 + 6, width * 15 / 16 - 6, height * 15 / 16 - 6);
                 //new Rect((int)(2f * phi * part), (int)(2f * phi * part), (int)(width - 2f * phi * part), (int)(height - 2f * phi * part));
     }
     
@@ -640,7 +642,7 @@ public class BoardViewSurfaceThread implements Runnable {
         }
         //float part = ((float)width / ((4f * phi) + 18f));
         drawRegions[DRAW_REGION_CENTER_BOUNDS] =
-                new Rect(width / 16, height / 16, width * 15 / 16, height * 15 / 16);
+                new Rect(width / 16 + 6, height / 16 + 6, width * 15 / 16 - 6, height * 15 / 16 - 6);
                 //new Rect((int)(2f * phi * part), (int)(2f * phi * part), (int)(width - 2f * phi * part), (int)(height - 2f * phi * part));
     }
 
@@ -846,7 +848,7 @@ public class BoardViewSurfaceThread implements Runnable {
         }
     }
 
-    public void updateConfigurableRegions(SparseArray<Configurable> configurables) {
+    /*public void updateConfigurableRegions(SparseArray<Configurable> configurables) {
         for (int i = 0; i < configurables.size(); i++) {
             final int configId = configurables.keyAt(i);
             Configurable config = configurables.valueAt(i);
@@ -866,7 +868,7 @@ public class BoardViewSurfaceThread implements Runnable {
             //}
         }
         hasChanges = true;
-    }
+    }*/
 
     public void addStartButtonRegions(boolean isMaster) {
         if (drawState == DrawState.NOTREADY) {
@@ -890,7 +892,7 @@ public class BoardViewSurfaceThread implements Runnable {
             });
     }
 
-    public void updateStartButtonRegions(boolean isMaster) {
+    /*public void updateStartButtonRegions(boolean isMaster) {
         GestureRegion region = (GestureRegion) layers.get(LAYER_BACKGROUND).getGestureRegion(TAG_GAME_START_BUTTON);
         if (isMaster) {
             region.enable();
@@ -898,7 +900,7 @@ public class BoardViewSurfaceThread implements Runnable {
             region.disable();
         }
         hasChanges = true;
-    }
+    }&/
     
     /**
      * Specifies the side or corner of the board of this estate.

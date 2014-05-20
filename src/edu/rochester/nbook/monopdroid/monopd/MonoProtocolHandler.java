@@ -495,7 +495,8 @@ public class MonoProtocolHandler {
     private void handleNodeDeletePlayer(XmlNodeType nodeType, HashMap<String, String> data,
             MonoProtocolGameListener glistener) {
         //<deleteplayer playerid="481"/>
-        int playerId = getAttributeAsInt(data, "playerid");
+        HashMap<String, String> dataCopy = new HashMap<String, String>(data);
+        int playerId = getAttributeAsInt(dataCopy, "playerid");
         glistener.onPlayerDelete(playerId);
         data.clear();
     }
@@ -578,7 +579,8 @@ public class MonoProtocolHandler {
     private void handleNodeMetaServer(XmlNodeType nodeType, HashMap<String, String> data,
             MonoProtocolMetaListener mlistener) {
         // <metaserver version="#.#.#"></metaserver>
-        mlistener.onMetaServer(this.getAttributeAsString(data, "version"));
+        HashMap<String, String> dataCopy = new HashMap<String, String>(data);
+        mlistener.onMetaServer(this.getAttributeAsString(dataCopy, "version"));
         data.clear();
     }
 
@@ -586,8 +588,10 @@ public class MonoProtocolHandler {
             MonoProtocolMetaListener mlistener, SharedList list) {
         // <servergamelist host="monopd.gradator.net" port="#"
         // version="#.#.#"><game>[...]</servergamelist>
-        mlistener.onServerGameList(this.getAttributeAsString(data, "host"), this.getAttributeAsInt(data, "port"),
-                this.getAttributeAsString(data, "version"), list.<GameItem>getAs());
+        String host = this.getAttributeAsString(data, "host");
+        int port = this.getAttributeAsInt(data, "port");
+        String version = this.getAttributeAsString(data, "version");
+        mlistener.onServerGameList(host, port, version, list.<GameItem>getAs());
         list.clear();
         data.clear();
     }
@@ -649,7 +653,8 @@ public class MonoProtocolHandler {
 
     private void handleNodeServer(XmlNodeType nodeType, HashMap<String, String> data, MonoProtocolGameListener glistener) {
         // <server version="0.8.3" />
-        String version = this.getAttributeAsString(data, "version");
+        HashMap<String, String> dataCopy = new HashMap<String, String>(data);
+        String version = this.getAttributeAsString(dataCopy, "version");
         glistener.onServer(version);
         data.clear();
     }
@@ -666,7 +671,8 @@ public class MonoProtocolHandler {
             MonoProtocolGameListener glistener) {
         int playerId = this.getAttributeAsInt(data, "playerid");
         data.remove("playerid");
-        glistener.onPlayerUpdate(playerId, data);
+        HashMap<String, String> dataCopy = new HashMap<String, String>(data);
+        glistener.onPlayerUpdate(playerId, dataCopy);
         data.clear();
     }
 
@@ -708,7 +714,8 @@ public class MonoProtocolHandler {
             int configId = this.getAttributeAsInt(data, "configid");
             data.remove("configid");
             data.remove("gameid");
-            glistener.onConfigUpdate(configId, data);
+            HashMap<String, String> dataCopy = new HashMap<String, String>(data);
+            glistener.onConfigUpdate(configId, dataCopy);
             data.clear();
         } else {
             // handle older style options <configupdate gameid="#"><option>...</configupdate>
@@ -793,7 +800,8 @@ public class MonoProtocolHandler {
             MonoProtocolGameListener glistener) {
         int estateId = this.getAttributeAsInt(data, "estateid");
         data.remove("estateid");
-        glistener.onEstateUpdate(estateId, data);
+        HashMap<String, String> dataCopy = new HashMap<String, String>(data);
+        glistener.onEstateUpdate(estateId, dataCopy);
         data.clear();
     }
 
@@ -801,7 +809,8 @@ public class MonoProtocolHandler {
             MonoProtocolGameListener glistener) {
         int estateGroupId = this.getAttributeAsInt(data, "groupid");
         data.remove("groupid");
-        glistener.onEstateGroupUpdate(estateGroupId, data);
+        HashMap<String, String> dataCopy = new HashMap<String, String>(data);
+        glistener.onEstateGroupUpdate(estateGroupId, dataCopy);
         data.clear();
     }
 
@@ -809,7 +818,8 @@ public class MonoProtocolHandler {
             MonoProtocolGameListener glistener) {
         int auctionId = this.getAttributeAsInt(data, "auctionid");
         data.remove("auctionid");
-        glistener.onAuctionUpdate(auctionId, data);
+        HashMap<String, String> dataCopy = new HashMap<String, String>(data);
+        glistener.onAuctionUpdate(auctionId, dataCopy);
         data.clear();
     }
 
@@ -818,7 +828,8 @@ public class MonoProtocolHandler {
             SharedList list) {
         int tradeId = this.getAttributeAsInt(data, "tradeid");
         data.remove("tradeid");
-        glistener.onTradeUpdate(tradeId, data);
+        HashMap<String, String> dataCopy = new HashMap<String, String>(data);
+        glistener.onTradeUpdate(tradeId, dataCopy);
         if (list.size() > 0) {
             for (Object item : list.<TradeUpdateSubject>getAs()) {
                 if (item instanceof TradePlayer) {

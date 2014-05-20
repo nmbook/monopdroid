@@ -134,6 +134,6 @@ public class Configurable {
     
     @Override
     public String toString() {
-        return description + " (" + command + ")";
+        return description + " (" + getCommand() + ", id: " + configId + ")";
     }
 }

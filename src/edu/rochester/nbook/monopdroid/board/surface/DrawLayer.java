@@ -3,8 +3,6 @@ package edu.rochester.nbook.monopdroid.board.surface;
 import java.util.ArrayList;
 
 import android.graphics.Canvas;
-import android.graphics.Color;
-import android.graphics.Paint;
 import android.graphics.drawable.Drawable;
 import android.util.SparseArray;
 
@@ -65,17 +63,17 @@ public class DrawLayer {
     
     public void drawRegions(Canvas canvas) {
         if (visible) {
-            Paint p = new Paint();
-            p.setColor(Color.YELLOW);
-            p.setStyle(Paint.Style.STROKE);
-            p.setStrokeWidth(2);
+            //Paint p = new Paint();
+            //p.setColor(Color.YELLOW);
+            //p.setStyle(Paint.Style.STROKE);
+            //p.setStrokeWidth(2);
             synchronized (regions) {
                 for (Drawable d : regions) {
                     d.draw(canvas);
-                }   
-                /*for (Drawable d : regions) {
-                    canvas.drawRect(d.getBounds(), p);
-                }*/
+                }
+                //for (Drawable d : regions) {
+                //    canvas.drawRect(d.getBounds(), p);
+                //}
             }
         }
     }

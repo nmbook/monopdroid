@@ -3,6 +3,7 @@ package edu.rochester.nbook.monopdroid.board;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Hashtable;
 import java.text.DateFormat;
 
 import edu.rochester.nbook.monopdroid.R;
@@ -758,9 +759,8 @@ public class BoardActivity extends FragmentActivity {
             }
 
             @Override
-            public void onPlayerUpdate(final int updatePlayerId, HashMap<String, String> data) {
+            public void onPlayerUpdate(final int updatePlayerId, final HashMap<String, String> data) {
                 Log.v("monopd", "net: Received onPlayerUpdate() from MonoProtocolHandler");
-                final HashMap<String, String> map = new HashMap<String, String>(data);
                 runOnUiThread(new Runnable() {
 
                     @Override
@@ -777,9 +777,10 @@ public class BoardActivity extends FragmentActivity {
                         if (player == null) {
                             player = new Player(updatePlayerId);
                         }
+                        player.setGrayed(false);
                         // update internal player data
-                        for (String key : map.keySet()) {
-                            String value = map.get(key);
+                        for (String key : data.keySet()) {
+                            String value = data.get(key);
                             XmlAttribute attr = Player.playerAttributes.get(key);
                             if (attr == null) {
                                 Log.w("monopd", "player." + key + " was unknown. Value = " + value);
@@ -823,8 +824,6 @@ public class BoardActivity extends FragmentActivity {
                                 case RECONNECT:
                                 case CREATE:
                                 case JOIN:
-                                    // ignore playerupdates before game state change!
-                                    return;
                                 case CONFIG:
                                 case INIT:
                                     // add to player list
@@ -837,6 +836,7 @@ public class BoardActivity extends FragmentActivity {
                                     }
                                     break;
                                 case RUN:
+                                case END:
                                     // do not update player list
                                     return;
                                 }
@@ -900,29 +900,31 @@ public class BoardActivity extends FragmentActivity {
 
                     @Override
                     public void run() {
-                        boolean deleted = false;
-                        for (int i = 0; i < BoardViewPiece.MAX_PLAYERS; i++) {
-                            if (playerIds[i] == playerId) {
-                                deleted = true;
-                            }
-                            if (deleted) {
-                                if (i < 3) {
-                                    playerIds[i] = playerIds[i + 1];
-                                } else {
-                                    playerIds[i] = 0;
-                                    /*for (int j = 0; j < players.size(); j++) {
-                                        int playerIdJ = players.keyAt(j);
-                                        boolean foundPlayerJ = false;
-                                        for (int k = 0; k < BoardViewPiece.MAX_PLAYERS; k++) {
-                                            if (playerIdJ == playerIds[k] || players.get(playerIdJ).getNick().equals("_metaserver_")) {
-                                                foundPlayerJ = true;
+                        if (status != GameStatus.RUN && status != GameStatus.END) {
+                            boolean deleted = false;
+                            for (int i = 0; i < BoardViewPiece.MAX_PLAYERS; i++) {
+                                if (playerIds[i] == playerId) {
+                                    deleted = true;
+                                }
+                                if (deleted) {
+                                    if (i < 3) {
+                                        playerIds[i] = playerIds[i + 1];
+                                    } else {
+                                        playerIds[i] = 0;
+                                        /*for (int j = 0; j < players.size(); j++) {
+                                            int playerIdJ = players.keyAt(j);
+                                            boolean foundPlayerJ = false;
+                                            for (int k = 0; k < BoardViewPiece.MAX_PLAYERS; k++) {
+                                                if (playerIdJ == playerIds[k] || players.get(playerIdJ).getNick().equals("_metaserver_")) {
+                                                    foundPlayerJ = true;
+                                                }
                                             }
-                                        }
-                                        if (!foundPlayerJ) {
-                                            playerIds[i] = playerIdJ;
-                                            break;
-                                        }
-                                    }*/
+                                            if (!foundPlayerJ) {
+                                                playerIds[i] = playerIdJ;
+                                                break;
+                                            }
+                                        }*/
+                                    }
                                 }
                             }
                         }
@@ -939,6 +941,10 @@ public class BoardActivity extends FragmentActivity {
                                         writeMessage(players.get(playerId).getName() + " left the game.", Color.GRAY, playerId, -1);
                                     }
                                 }
+                            } else if (status == GameStatus.RUN || status == GameStatus.END) {
+                                players.get(playerId).setGrayed(true);
+                                updatePlayerView();
+                                return;
                             }
                             players.delete(playerId);
                             updatePlayerView();
@@ -950,7 +956,6 @@ public class BoardActivity extends FragmentActivity {
             @Override
             public void onEstateUpdate(final int estateId, final HashMap<String, String> data) {
                 Log.v("monopd", "net: Received onEstateUpdate() from MonoProtocolHandler");
-                final HashMap<String, String> map = new HashMap<String, String>(data);
                 runOnUiThread(new Runnable() {
 
                     @Override
@@ -963,8 +968,8 @@ public class BoardActivity extends FragmentActivity {
                             isNew = true;
                             estate = new Estate(estateId);
                         }
-                        for (String key : map.keySet()) {
-                            String value = map.get(key);
+                        for (String key : data.keySet()) {
+                            String value = data.get(key);
                             XmlAttribute attr = Estate.estateAttributes.get(key);
                             if (attr == null) {
                                 Log.w("monopd", "estate." + key + " was unknown. Value = " + value);
@@ -998,6 +1003,17 @@ public class BoardActivity extends FragmentActivity {
                     public void run() {
                         if (gameId > 0) {
                             gameItem.setGameId(gameId);
+                            
+                            // check for players already in game
+                            for (int i = 0; i < players.size(); i++) {
+                                int playerId = players.keyAt(i);
+                                Player player = players.get(playerId);
+                                if (player.getGameId() == gameId) {
+                                    HashMap<String, String> data = new HashMap<String, String>();
+                                    data.put("game", Integer.toString(gameId));
+                                    onPlayerUpdate(playerId, data);
+                                }
+                            }
                         }
                         
                         BoardActivity.this.status = GameStatus.fromString(status);
@@ -1025,19 +1041,17 @@ public class BoardActivity extends FragmentActivity {
             }
 
             @Override
-            public void onConfigUpdate(final int configId, HashMap<String, String> data) {
+            public void onConfigUpdate(final int configId, final HashMap<String, String> data) {
                 Log.v("monopd", "net: Received onConfigUpdate() from MonoProtocolHandler");
-                final HashMap<String, String> map = new HashMap<String, String>(data);
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        Configurable config;
-                        config = configurables.get(configId);
+                        Configurable config = configurables.get(configId);
                         if (config == null) {
                             config = new Configurable(configId);
                         }
-                        for (String key : map.keySet()) {
-                            String value = map.get(key);
+                        for (String key : data.keySet()) {
+                            String value = data.get(key);
                             XmlAttribute attr = Configurable.configurableAttributes.get(key);
                             if (attr == null) {
                                 Log.w("monopd", "configurable." + key + " was unknown. Value = " + value);
@@ -1045,51 +1059,53 @@ public class BoardActivity extends FragmentActivity {
                                 attr.set(config, value);
                             }
                         }
+                        // XXX this is a hack to override editable field
+                        // XXX because they say all "new style" configurables are editable by you
+                        config.setEditable(isMaster);
                         configurables.put(configId, config);
-                        boardView.redrawConfigRegions(BoardActivity.this.configurables, isMaster);
+                        if (boardView.isRunning()) {
+                            boardView.drawConfigRegions(BoardActivity.this.configurables, isMaster);
+                        }
                     }
                 });                
             }
 
             @Override
-            public void onConfigUpdate(ArrayList<Configurable> configList) {
+            public void onConfigUpdate(final ArrayList<Configurable> configList) {
                 Log.v("monopd", "net: Received onConfigUpdate() from MonoProtocolHandler");
-                final ArrayList<Configurable> configurables = new ArrayList<Configurable>(configList);
                 BoardActivity.this.runOnUiThread(new Runnable() {
 
                     @Override
                     public void run() {
-                        boolean fullList = false;
-                        for (Configurable toAdd : configurables) {
+                        //boolean fullList = false;
+                        for (Configurable toAdd : configList) {
                             BoardActivity.this.configurables.put(toAdd.getConfigId(), toAdd);
-                            fullList = true;
+                            //fullList = true;
                         }
                         if (boardView.isRunning()) {
-                            if (fullList) {
-                                boardView.drawConfigRegions(BoardActivity.this.configurables, isMaster);
-                            } else {
-                                boardView.redrawConfigRegions(BoardActivity.this.configurables, isMaster);
-                            }
+                            //if (fullList) {
+                            boardView.drawConfigRegions(BoardActivity.this.configurables, isMaster);
+                            //} else {
+                            //    boardView.redrawConfigRegions(BoardActivity.this.configurables, isMaster);
+                            //}
                         }
                     }
                 });
             }
 
             @Override
-            public void onEstateGroupUpdate(final int estateGroupId, HashMap<String, String> data) {
+            public void onEstateGroupUpdate(final int estateGroupId, final HashMap<String, String> data) {
                 Log.v("monopd", "net: Received onEstateGroupUpdate() from MonoProtocolHandler");
-                final HashMap<String, String> map = new HashMap<String, String>(data);
                 runOnUiThread(new Runnable() {
 
                     @Override
                     public void run() {
-                        EstateGroup estateGroup;
-                        estateGroup = estateGroups.get(estateGroupId);
+                        EstateGroup estateGroup = estateGroups.get(estateGroupId);
                         if (estateGroup == null) {
                             estateGroup = new EstateGroup(estateGroupId);
                         }
-                        for (String key : map.keySet()) {
-                            String value = map.get(key);
+                        for (String key : data.keySet()) {
+                            String value = data.get(key);
                             XmlAttribute attr = EstateGroup.estateGroupAttributes.get(key);
                             if (attr == null) {
                                 Log.w("monopd", "estategroup." + key + " was unknown. Value = " + value);
@@ -1104,9 +1120,8 @@ public class BoardActivity extends FragmentActivity {
             }
 
             @Override
-            public void onAuctionUpdate(final int auctionId, HashMap<String, String> data) {
+            public void onAuctionUpdate(final int auctionId, final HashMap<String, String> data) {
                 Log.v("monopd", "net: Received onEstateGroupUpdate() from MonoProtocolHandler");
-                final HashMap<String, String> map = new HashMap<String, String>(data);
                 runOnUiThread(new Runnable() {
 
                     @Override
@@ -1117,8 +1132,8 @@ public class BoardActivity extends FragmentActivity {
                         }
                         boolean isNew = false;
                         int orange = Color.rgb(255, 128, 0);
-                        for (String key : map.keySet()) {
-                            String value = map.get(key);
+                        for (String key : data.keySet()) {
+                            String value = data.get(key);
                             XmlAttribute attr = Auction.auctionAttributes.get(key);
                             if (attr == null) {
                                 Log.w("monopd", "auction." + key + " was unknown. Value = " + value);
@@ -1217,27 +1232,27 @@ public class BoardActivity extends FragmentActivity {
 
             @Override
             public void onDisplayMessage(final int estateId, final String text, boolean clearText,
-                    final boolean clearButtons, ArrayList<Button> newButtons) {
+                    final boolean clearButtons, final ArrayList<Button> newButtons) {
                 Log.v("monopd", "net: Received onDisplayMessage() from MonoProtocolHandler");
-                boolean redrawButtons = false;
-                if (clearButtons) {
-                    buttons.clear();
-                    redrawButtons = true;
-                }
-                if (newButtons.size() > 0) {
-                    buttons.addAll(newButtons);
-                    redrawButtons = true;
-                }
-                if (redrawButtons) {
-                    boardView.drawActionRegions(estates, playerIds, players, buttons, playerId);
-                }
-                if (text == null || text.length() == 0) {
-                    return;
-                }
                 BoardActivity.this.runOnUiThread(new Runnable() {
 
                     @Override
                     public void run() {
+                        boolean redrawButtons = false;
+                        if (clearButtons) {
+                            buttons.clear();
+                            redrawButtons = true;
+                        }
+                        if (newButtons.size() > 0) {
+                            buttons.addAll(newButtons);
+                            redrawButtons = true;
+                        }
+                        if (redrawButtons) {
+                            boardView.drawActionRegions(estates, playerIds, players, buttons, playerId);
+                        }
+                        if (text == null || text.length() == 0) {
+                            return;
+                        }
                         writeMessage("GAME: " + text, Color.CYAN, -1, ((estateId == -1) ? 0 : estateId));
                     }
                 });
@@ -1350,44 +1365,43 @@ public class BoardActivity extends FragmentActivity {
                     }
                     if (item.getDescription() != null) {
                         gameItem.setDescription(item.getDescription());
-                        final String descr = item.getDescription();
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                setTitle(descr);                                
-                            }
-                        });
                     }
                     gameItem.setCanJoin(item.canJoin());
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            setTitle(gameItem.getDescription() + "  #" + gameItem.getGameId() + ": " + gameItem.getTypeName() + " (" + gameItem.getType() + ")");
+                        }
+                    });
                 }
             }
 
             @Override
-            public void onTradeUpdate(int tradeId, HashMap<String, String> data) {
+            public void onTradeUpdate(final int tradeId, final HashMap<String, String> data) {
                 // TODO Auto-generated method stub
                 
             }
 
             @Override
-            public void onTradePlayer(int tradeId, TradePlayer player) {
+            public void onTradePlayer(final int tradeId, final TradePlayer player) {
                 // TODO Auto-generated method stub
                 
             }
 
             @Override
-            public void onTradeMoney(int tradeId, MoneyTradeOffer offer) {
+            public void onTradeMoney(final int tradeId, final MoneyTradeOffer offer) {
                 // TODO Auto-generated method stub
                 
             }
 
             @Override
-            public void onTradeEstate(int tradeId, EstateTradeOffer offer) {
+            public void onTradeEstate(final int tradeId, final EstateTradeOffer offer) {
                 // TODO Auto-generated method stub
                 
             }
 
             @Override
-            public void onTradeCard(int tradeId, CardTradeOffer offer) {
+            public void onTradeCard(final int tradeId, final CardTradeOffer offer) {
                 // TODO Auto-generated method stub
                 
             }
@@ -1514,6 +1528,12 @@ public class BoardActivity extends FragmentActivity {
             boardView.drawConfigRegions(configurables, isMaster);
             break;
         case RUN:
+            boardView.calculateBoardRegions();
+            boardView.drawBoardRegions(estates, players);
+            boardView.drawActionRegions(estates, playerIds, players, buttons, playerId);
+            boardView.drawPieces(estates, playerIds, players);
+            break;
+        case END:
             boardView.calculateBoardRegions();
             boardView.drawBoardRegions(estates, players);
             boardView.drawActionRegions(estates, playerIds, players, buttons, playerId);
@@ -1682,7 +1702,9 @@ public class BoardActivity extends FragmentActivity {
                         text2.setText(player.getHost());
                         break;
                     case RUN:
-                        if (player.isTurn()) {
+                        if (player.isGrayed()) {
+                            text1.setTextColor(Color.GRAY);
+                        } else if (player.isTurn()) {
                             text1.setTextColor(Color.YELLOW);
                         } else {
                             text1.setTextColor(Color.WHITE);
@@ -1847,6 +1869,7 @@ public class BoardActivity extends FragmentActivity {
      * @return An HTML formatted string.
      */
     public static String makeEstateName(Estate estate) {
+        if (estate == null) return "";
         return "<b><font color=\"" + estate.getHtmlColor() + "\">" +
         estate.getName() + "</font></b>";
     }
@@ -1857,6 +1880,7 @@ public class BoardActivity extends FragmentActivity {
      * @return An HTML formatted string.
      */
     public static String makePlayerName(Player player) {
+        if (player == null) return "";
         BoardViewPiece piece = BoardViewPiece.getPiece(player.getPlayerId());
         int color = Color.WHITE;
         if (piece != null) {

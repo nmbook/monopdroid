@@ -252,12 +252,12 @@ public class BoardView extends SurfaceView {
         }
     }
 
-    public void redrawConfigRegions(SparseArray<Configurable> configurables, boolean isMaster) {
+    /*public void redrawConfigRegions(SparseArray<Configurable> configurables, boolean isMaster) {
         if (surfaceRunner.getStatus() == GameStatus.CONFIG) {
             surfaceRunner.updateConfigurableRegions(configurables);
             surfaceRunner.updateStartButtonRegions(isMaster);
         }
-    }
+    }*/
 
     public void overlayPlayerInfo(int playerId) {
         surfaceRunner.beginRegions(BoardViewSurfaceThread.LAYER_OVERLAY);

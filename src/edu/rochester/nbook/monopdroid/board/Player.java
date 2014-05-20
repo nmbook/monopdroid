@@ -55,6 +55,8 @@ public class Player {
     private boolean canUseCard;
     private boolean directMove;
     
+    private boolean grayed;
+    
     public Player(int playerId) {
         this.playerId = playerId;
     }
@@ -231,5 +233,13 @@ public class Player {
 
     public int getLastLocation() {
         return lastLocation;
+    }
+
+    public boolean isGrayed() {
+        return grayed;
+    }
+    
+    public void setGrayed(boolean grayed) {
+        this.grayed = grayed;
     }
 }
