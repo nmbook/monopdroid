@@ -261,30 +261,38 @@ public class BoardView extends SurfaceView {
 
     public void overlayPlayerInfo(int playerId) {
         surfaceRunner.beginRegions(BoardViewSurfaceThread.LAYER_OVERLAY);
-        //surfaceRunner.setEstateButtonsEnabled(false);
-        surfaceRunner.addOverlayRegion();
-        surfaceRunner.addPlayerOverlayRegions(playerId);
+        surfaceRunner.openOverlay(BoardViewOverlay.PLAYER, playerId);
         surfaceRunner.commitRegions(BoardViewSurfaceThread.LAYER_OVERLAY);
     }
 
-    public void overlayEstateInfo(ArrayList<Estate> estates, int estateId, int selfPlayerId) {
+    public void overlayEstateInfo(int estateId) {
         surfaceRunner.beginRegions(BoardViewSurfaceThread.LAYER_OVERLAY);
-        //surfaceRunner.setEstateButtonsEnabled(false);
-        surfaceRunner.addOverlayRegion();
-        surfaceRunner.addEstateOverlayRegions(estates, estateId, selfPlayerId);
+        surfaceRunner.openOverlay(BoardViewOverlay.ESTATE, estateId);
         surfaceRunner.commitRegions(BoardViewSurfaceThread.LAYER_OVERLAY);
     }
 
     public void overlayAuctionInfo(int auctionId) {
         surfaceRunner.beginRegions(BoardViewSurfaceThread.LAYER_OVERLAY);
-        //surfaceRunner.setEstateButtonsEnabled(false);
-        surfaceRunner.addOverlayRegion();
-        surfaceRunner.addAuctionOverlayRegions(auctionId);
+        surfaceRunner.openOverlay(BoardViewOverlay.AUCTION, auctionId);
+        surfaceRunner.commitRegions(BoardViewSurfaceThread.LAYER_OVERLAY);
+    }
+
+    public void overlayTradeInfo(int tradeId) {
+        surfaceRunner.beginRegions(BoardViewSurfaceThread.LAYER_OVERLAY);
+        surfaceRunner.openOverlay(BoardViewOverlay.TRADE, tradeId);
         surfaceRunner.commitRegions(BoardViewSurfaceThread.LAYER_OVERLAY);
     }
 
     public void redrawOverlay() {
-        surfaceRunner.updateOverlay();
+        BoardViewOverlay overlay = surfaceRunner.getOverlay();
+        int overlayObjectId = surfaceRunner.getOverlayObjectId();
+        if (overlay == BoardViewOverlay.NONE) {
+            surfaceRunner.closeOverlay();
+        } else {
+            surfaceRunner.beginRegions(BoardViewSurfaceThread.LAYER_OVERLAY);
+            surfaceRunner.openOverlay(overlay, overlayObjectId);
+            surfaceRunner.commitRegions(BoardViewSurfaceThread.LAYER_OVERLAY);
+        }
     }
 
     public void closeOverlay() {

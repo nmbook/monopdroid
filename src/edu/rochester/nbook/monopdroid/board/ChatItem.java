@@ -1,34 +1,46 @@
 package edu.rochester.nbook.monopdroid.board;
 
-public class ChatItem {
-    private String text;
-    private int color;
-    private int playerId;
-    private int estateId;
-    private boolean clickable;
+import android.text.Html;
+import android.text.SpannableStringBuilder;
+import android.text.Spanned;
+import android.text.style.LeadingMarginSpan;
+import edu.rochester.nbook.monopdroid.board.surface.BoardViewOverlay;
 
-    public ChatItem(String text, int color, int playerId, int estateId) {
-        this.text = text;
-        this.color = color;
-        this.playerId = playerId;
-        this.estateId = estateId;
-        this.clickable = (playerId > 0) || (estateId > 0);
+public class ChatItem {
+    private CharSequence text;
+    private int color;
+    private BoardViewOverlay overlayType;
+    private int objectId;
+    private boolean clickable;
+    
+    public ChatItem(String text, int color) {
+        this(text, color, BoardViewOverlay.NONE, -1);
     }
 
-    public String getText() {
+    public ChatItem(String text, int color, BoardViewOverlay overlayType, int objectId) {
+        SpannableStringBuilder formattedText = (SpannableStringBuilder) Html.fromHtml(text, null, BoardActivity.tagHandler);
+        formattedText.setSpan(new LeadingMarginSpan.Standard(0, 30), 0, formattedText.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        this.text = formattedText;
+        this.color = color;
+        this.overlayType = overlayType;
+        this.objectId = objectId;
+        this.clickable = overlayType != BoardViewOverlay.NONE;
+    }
+
+    public CharSequence getText() {
         return this.text;
     }
 
     public int getColor() {
         return this.color;
     }
-
-    public int getPlayerId() {
-        return this.playerId;
+    
+    public BoardViewOverlay getOverlayType() {
+        return this.overlayType;
     }
 
-    public int getEstateId() {
-        return this.estateId;
+    public int getObjectId() {
+        return this.objectId;
     }
 
     public boolean isClickable() {

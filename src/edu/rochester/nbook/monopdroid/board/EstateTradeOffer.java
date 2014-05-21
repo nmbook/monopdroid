@@ -3,8 +3,8 @@ package edu.rochester.nbook.monopdroid.board;
 import java.util.HashMap;
 
 public final class EstateTradeOffer extends TradeOffer {
-    public EstateTradeOffer(int playerIdFrom, int playerIdTo, int estateId) {
-        super(TradeOfferType.ESTATE, playerIdFrom, playerIdTo, estateId);
+    public EstateTradeOffer(int tradeId, int playerIdFrom, int playerIdTo, int estateId) {
+        super(tradeId, TradeOfferType.ESTATE, playerIdFrom, playerIdTo, estateId);
     }
     
     @Override
@@ -25,14 +25,6 @@ public final class EstateTradeOffer extends TradeOffer {
     @Override
     public TradeOfferKey generateKey() {
         return new TradeOfferKey(type, -1, playerIdTo, offerValue);
-    }
-    
-    public int getPlayerIdFrom() {
-        return playerIdFrom;
-    }
-    
-    public int getPlayerIdTo() {
-        return playerIdTo;
     }
     
     public int getEstateId() {

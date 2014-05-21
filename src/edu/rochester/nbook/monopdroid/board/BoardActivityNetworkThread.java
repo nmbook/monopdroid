@@ -127,7 +127,7 @@ public class BoardActivityNetworkThread implements Runnable {
                     case END:
                         monopd.sendClientHello();
                         monopd.sendChangeNick(nick, false);
-                        monopd.sendJoinGame(gameId);
+                        monopd.sendGameJoin(gameId);
                         break;
                     case INIT:
                     case RUN:
@@ -166,11 +166,17 @@ public class BoardActivityNetworkThread implements Runnable {
                 case MSG_DECLARE_BANKRUPCY:
                     monopd.sendDeclareBankrupcy();
                     break;
+                case MSG_SERVER_FORCE_REFRESH:
+                    monopd.sendForceRefresh();
+                    break;
                 case MSG_GAME_START:
-                    monopd.sendStartGame();
+                    monopd.sendGameStart();
                     break;
                 case MSG_GAME_QUIT:
-                    monopd.sendQuitGame();
+                    monopd.sendGameQuit();
+                    break;
+                case MSG_KICK:
+                    monopd.sendGameKick(rState.getInt("playerId"));
                     break;
                 case MSG_BUTTON_COMMAND:
                     monopd.sendButtonCommand(
@@ -229,8 +235,6 @@ public class BoardActivityNetworkThread implements Runnable {
                             rState.getInt("playerIdTo"),
                             rState.getInt("cardId"));
                     break;
-                default:
-                    break;
                 }
                 msg.recycle();
             }
@@ -255,12 +259,12 @@ public class BoardActivityNetworkThread implements Runnable {
         case JOIN:
             monopd.sendClientHello();
             monopd.sendChangeNick(nick, false);
-            monopd.sendJoinGame(gameId);
+            monopd.sendGameJoin(gameId);
             break;
         case CREATE:
             monopd.sendClientHello();
             monopd.sendChangeNick(nick, false);
-            monopd.sendCreateGame(type);
+            monopd.sendGameCreate(type);
             break;
         case RECONNECT:
             monopd.sendReconnect(cookie);

@@ -28,5 +28,5 @@ public enum XmlAttributeType {
      * the rent index (0-5), the number of houses, for which this rent value
      * is being stored for.
      */
-    RENT
+    RENT,
 }

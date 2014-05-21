@@ -1,12 +1,12 @@
 package edu.rochester.nbook.monopdroid.board.surface;
 
+import edu.rochester.nbook.monopdroid.board.BoardActivity;
 import android.graphics.Canvas;
 import android.graphics.ColorFilter;
 import android.graphics.Paint;
 import android.graphics.PixelFormat;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
-import android.text.Html.TagHandler;
 import android.text.Layout.Alignment;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
@@ -25,10 +25,10 @@ public class TextDrawable extends Drawable implements OnButtonStateChangedHandle
     private Alignment alignment;
     private VerticalAlignment valignment;
     
-    public TextDrawable(String text, float pxTextSize, int enabledColor, int disabledColor, Alignment align, VerticalAlignment valign, TagHandler tagHandler) {
+    public TextDrawable(String text, float pxTextSize, int enabledColor, int disabledColor, Alignment align, VerticalAlignment valign) {
         this.enabled = enabledColor;
         this.disabled = disabledColor;
-        SpannableStringBuilder formattedText = (SpannableStringBuilder) Html.fromHtml(text, null, tagHandler);
+        SpannableStringBuilder formattedText = (SpannableStringBuilder) Html.fromHtml(text, null, BoardActivity.tagHandler);
         formattedText.setSpan(new LeadingMarginSpan.Standard(0, 30), 0, formattedText.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         this.text = formattedText;
         this.paint = new TextPaint(Paint.ANTI_ALIAS_FLAG | Paint.SUBPIXEL_TEXT_FLAG);

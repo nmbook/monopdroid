@@ -57,6 +57,11 @@ public class MonoProtocolHandler {
             this.put("deleteplayer", XmlNodeType.DELETEPLAYER);
             this.put("button", XmlNodeType.BUTTON);
             this.put("auctionupdate", XmlNodeType.AUCTIONUPDATE);
+            this.put("tradeupdate", XmlNodeType.TRADEUPDATE);
+            this.put("tradeplayer", XmlNodeType.TRADEPLAYER);
+            this.put("trademoney", XmlNodeType.TRADEMONEY);
+            this.put("tradeestate", XmlNodeType.TRADEESTATE);
+            this.put("tradecard", XmlNodeType.TRADECARD);
         }
     };
 
@@ -826,24 +831,26 @@ public class MonoProtocolHandler {
     private void handleNodeTradeUpdate(XmlNodeType nodeType,
             HashMap<String, String> data, MonoProtocolGameListener glistener,
             SharedList list) {
-        int tradeId = this.getAttributeAsInt(data, "tradeid");
-        data.remove("tradeid");
-        HashMap<String, String> dataCopy = new HashMap<String, String>(data);
-        glistener.onTradeUpdate(tradeId, dataCopy);
+        if (data.containsKey("tradeid")) {
+            int tradeId = this.getAttributeAsInt(data, "tradeid");
+            data.remove("tradeid");
+            HashMap<String, String> dataCopy = new HashMap<String, String>(data);
+            glistener.onTradeUpdate(tradeId, dataCopy);
+        }
         if (list.size() > 0) {
-            for (Object item : list.<TradeUpdateSubject>getAs()) {
+            for (TradeUpdateSubject item : list.<TradeUpdateSubject>getAs()) {
                 if (item instanceof TradePlayer) {
                     TradePlayer player = (TradePlayer) item;
-                    glistener.onTradePlayer(tradeId, player);
+                    glistener.onTradePlayer(item.getTradeId(), player);
                 } else if (item instanceof MoneyTradeOffer) {
                     MoneyTradeOffer offer = (MoneyTradeOffer) item;
-                    glistener.onTradeMoney(tradeId, offer);
+                    glistener.onTradeMoney(item.getTradeId(), offer);
                 } else if (item instanceof EstateTradeOffer) {
                     EstateTradeOffer offer = (EstateTradeOffer) item;
-                    glistener.onTradeEstate(tradeId, offer);
+                    glistener.onTradeEstate(item.getTradeId(), offer);
                 } else if (item instanceof CardTradeOffer) {
                     CardTradeOffer offer = (CardTradeOffer) item;
-                    glistener.onTradeCard(tradeId, offer);
+                    glistener.onTradeCard(item.getTradeId(), offer);
                 }
             }
         }
@@ -854,54 +861,55 @@ public class MonoProtocolHandler {
     private void handleNodeTradePlayer(XmlNodeType nodeType,
             HashMap<String, String> data, MonoProtocolGameListener glistener,
             SharedList list) {
-        // <player playerid="680" name="Ribose"
-        // host="dynamic-addr-90-116.resnet.rochester.edu" master="1" />
+        int tradeId = this.getAttributeAsInt(data, "tradeid");
         int playerId = this.getAttributeAsInt(data, "playerid");
-        boolean accepted = this.getAttributeAsBoolean(data, "accepted");
+        boolean accepted = this.getAttributeAsBoolean(data, "accept");
 
-        TradePlayer player = new TradePlayer(playerId, accepted);
+        TradePlayer player = new TradePlayer(tradeId, playerId, accepted);
         list.add(player);
-        data.clear();
+        data.remove("playerid");
+        data.remove("accept");
     }
 
     private void handleNodeTradeMoney(XmlNodeType nodeType,
             HashMap<String, String> data, MonoProtocolGameListener glistener,
             SharedList list) {
-        // <player playerid="680" name="Ribose"
-        // host="dynamic-addr-90-116.resnet.rochester.edu" master="1" />
-        int playerIdFrom = this.getAttributeAsInt(data, "playeridfrom");
-        int playerIdTo = this.getAttributeAsInt(data, "playeridto");
-        int amount = this.getAttributeAsInt(data, "amount");
+        int tradeId = this.getAttributeAsInt(data, "tradeid");
+        int playerIdFrom = this.getAttributeAsInt(data, "playerfrom");
+        int playerIdTo = this.getAttributeAsInt(data, "playerto");
+        int amount = this.getAttributeAsInt(data, "money");
 
-        MoneyTradeOffer offer = new MoneyTradeOffer(playerIdFrom, playerIdTo, amount);
+        MoneyTradeOffer offer = new MoneyTradeOffer(tradeId, playerIdFrom, playerIdTo, amount);
         list.add(offer);
-        data.clear();
+        data.remove("playerfrom");
+        data.remove("playerto");
+        data.remove("money");
     }
 
     private void handleNodeTradeEstate(XmlNodeType nodeType,
             HashMap<String, String> data, MonoProtocolGameListener glistener,
             SharedList list) {
-        // <player playerid="680" name="Ribose"
-        // host="dynamic-addr-90-116.resnet.rochester.edu" master="1" />
-        int playerIdTo = this.getAttributeAsInt(data, "playeridto");
+        int tradeId = this.getAttributeAsInt(data, "tradeid");
+        int playerIdTo = this.getAttributeAsInt(data, "playerto");
         int estateId = this.getAttributeAsInt(data, "estateid");
 
-        EstateTradeOffer offer = new EstateTradeOffer(glistener.getEstateOwner(estateId), playerIdTo, estateId);
+        EstateTradeOffer offer = new EstateTradeOffer(tradeId, glistener.getEstateOwner(estateId), playerIdTo, estateId);
         list.add(offer);
-        data.clear();
+        data.remove("playerto");
+        data.remove("estateid");
     }
 
     private void handleNodeTradeCard(XmlNodeType nodeType,
             HashMap<String, String> data, MonoProtocolGameListener glistener,
             SharedList list) {
-        // <player playerid="680" name="Ribose"
-        // host="dynamic-addr-90-116.resnet.rochester.edu" master="1" />
-        int playerIdTo = this.getAttributeAsInt(data, "playeridto");
+        int tradeId = this.getAttributeAsInt(data, "tradeid");
+        int playerIdTo = this.getAttributeAsInt(data, "playerto");
         int cardId = this.getAttributeAsInt(data, "cardid");
 
-        EstateTradeOffer offer = new EstateTradeOffer(glistener.getCardOwner(cardId), playerIdTo, cardId);
+        EstateTradeOffer offer = new EstateTradeOffer(tradeId, glistener.getCardOwner(cardId), playerIdTo, cardId);
         list.add(offer);
-        data.clear();
+        data.remove("playerto");
+        data.remove("cardid");
     }
     
     private void handleNodeButton(XmlNodeType nodeType, HashMap<String, String> data,
@@ -909,7 +917,7 @@ public class MonoProtocolHandler {
         String caption = this.getAttributeAsString(data, "caption");
         String command = this.getAttributeAsString(data, "command");
         boolean enabled = this.getAttributeAsBoolean(data, "enabled");
-        list.add(new Button(caption, command, enabled));
+        list.add(new Button(caption, enabled, command));
     }
 
     public void disconnect() {
@@ -986,20 +994,28 @@ public class MonoProtocolHandler {
         this.sendCommand(".r");
     }
     
-    public void sendStartGame() {
+    public void sendGameStart() {
         this.sendCommand(".gs");
     }
     
-    public void sendQuitGame() {
+    public void sendGameQuit() {
         this.sendCommand(".gx");
     }
     
-    public void sendCreateGame(String type) {
+    public void sendGameCreate(String type) {
         this.sendCommand(".gn" + type);
     }
     
-    public void sendJoinGame(int gameId) {
+    public void sendGameJoin(int gameId) {
         this.sendCommand(".gj" + gameId);
+    }
+    
+    public void sendGameSetDescription(String description) {
+        this.sendCommand(".gd" + description);
+    }
+    
+    public void sendGameKick(int playerId) {
+        this.sendCommand(".gk" + playerId);
     }
 
     public void sendToggleMortgage(int estateId) {
@@ -1043,10 +1059,14 @@ public class MonoProtocolHandler {
     }
 
     public void sendTradeEstate(int tradeId, int playerIdTo, int estateId) {
-        this.sendCommand(".Te" + tradeId + ":" + playerIdTo + ":" + estateId);        
+        this.sendCommand(".Te" + tradeId + ":" + playerIdTo + ":" + estateId);
     }
 
     public void sendTradeCard(int tradeId, int playerIdTo, int cardId) {
-        this.sendCommand(".Tc" + tradeId + ":" + playerIdTo + ":" + cardId);        
+        this.sendCommand(".Tc" + tradeId + ":" + playerIdTo + ":" + cardId);
+    }
+
+    public void sendForceRefresh() {
+        this.sendCommand(".f");
     }
 }

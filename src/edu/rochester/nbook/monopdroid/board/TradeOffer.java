@@ -1,14 +1,17 @@
 package edu.rochester.nbook.monopdroid.board;
 
 import java.util.HashMap;
+import java.util.Set;
 
 public abstract class TradeOffer implements TradeUpdateSubject {
+    protected int tradeId;
     protected TradeOfferType type;
     protected int playerIdFrom;
     protected int playerIdTo;
     protected int offerValue;
     
-    protected TradeOffer(TradeOfferType type, int playerIdFrom, int playerIdTo, int offerValue) {
+    protected TradeOffer(int tradeId, TradeOfferType type, int playerIdFrom, int playerIdTo, int offerValue) {
+        this.tradeId = tradeId;
         this.type = type;
         this.playerIdFrom = playerIdFrom;
         this.playerIdTo = playerIdTo;
@@ -21,9 +24,10 @@ public abstract class TradeOffer implements TradeUpdateSubject {
      * @return A trade offer to add to the final list. If this returns {@code null}, no new offer should be added (this trade offer was a removal).
      */
     public TradeOffer merge(HashMap<TradeOfferKey, TradeOffer> currentOffers) {
-        TradeOfferKey[] keys = (TradeOfferKey[]) currentOffers.keySet().toArray();
+        Set<TradeOfferKey> set = currentOffers.keySet();
+        TradeOfferKey[] keys = set.toArray(new TradeOfferKey[set.size()]);
         for (int i = 0; i < keys.length; i++) {
-            if (currentOffers.equals(keys[i])) {
+            if (currentOffers.containsKey(keys[i])) {
                 currentOffers.remove(keys[i]);
             }
         }
@@ -40,5 +44,22 @@ public abstract class TradeOffer implements TradeUpdateSubject {
     
     public final TradeOfferType getType() {
         return this.type;
+    }
+    
+    public final int getPlayerIdFrom() {
+        return playerIdFrom;
+    }
+    
+    public final int getPlayerIdTo() {
+        return playerIdTo;
+    }
+    
+    public final int getOfferValue() {
+        return offerValue;
+    }
+    
+    @Override
+    public final int getTradeId() {
+        return tradeId;
     }
 }

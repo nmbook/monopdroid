@@ -3,34 +3,16 @@ package edu.rochester.nbook.monopdroid.board;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.Locale;
 
 import android.util.SparseArray;
 
 public final class Trade {
-    private enum TradeUpdateType {
-        UPDATED, NEW, REJECTED, ACCEPTED, COMPLETED;
-        
-        public static TradeUpdateType fromString(String updateType) {
-            for (TradeUpdateType type : values()) {
-                if (type.toString().equals(updateType)) {
-                    return type;
-                }
-            }
-            return UPDATED;
-        }
-        
-        @Override
-        public String toString() {
-            return name().toLowerCase(Locale.US);
-        }
-    }
     
-    public static final HashMap<String, XmlAttribute> auctionAttributes = new HashMap<String, XmlAttribute>() {
-        private static final long serialVersionUID = 2978911583408943533L;
+    public static final HashMap<String, XmlAttribute> tradeAttributes = new HashMap<String, XmlAttribute>() {
+        private static final long serialVersionUID = 7243437286161425757L;
 
         {
-            this.put("type", new XmlAttribute(Trade.class, "setUpdateType", XmlAttributeType.STRING));
+            this.put("type", new XmlAttribute(Trade.class, "setType", XmlAttributeType.STRING));
             this.put("actor", new XmlAttribute(Trade.class, "setActorId", XmlAttributeType.INT));
             this.put("revision", new XmlAttribute(Trade.class, "setRevision", XmlAttributeType.INT));
         }
@@ -41,6 +23,8 @@ public final class Trade {
     private int actorId;
     private int revision;
     private TradeUpdateType lastUpdateType;
+    
+    private int creatorId;
     
     private HashMap<TradeOfferKey, TradeOffer> offers = new HashMap<TradeOfferKey, TradeOffer>();
     private SparseArray<TradePlayer> players = new SparseArray<TradePlayer>();
@@ -69,10 +53,18 @@ public final class Trade {
         this.revision = revision;
     }
     
+    public int getCreatorId() {
+        return creatorId;
+    }
+    
+    public void setCreatorId(int creatorId) {
+        this.creatorId = creatorId;
+    }
+    
     public TradeUpdateType getLastUpdateType() {
         return this.lastUpdateType;
     }
-    
+
     public void setType(String type) {
         this.lastUpdateType = TradeUpdateType.fromString(type);
     }
@@ -89,8 +81,8 @@ public final class Trade {
         return players;
     }
     
-    public void setPlayer(int playerId, boolean accepted) {
-        players.put(playerId, new TradePlayer(playerId, accepted));
+    public void setPlayer(TradePlayer player) {
+        players.put(player.getPlayerId(), player);
     }
     
     public void mergeMoneyOffer(MoneyTradeOffer offer) {
@@ -115,5 +107,9 @@ public final class Trade {
     @Override
     public String toString() {
         return "Trade by playerId " + this.actorId + " with " + this.offers.size() + " offers (id: " + this.tradeId + ").";
+    }
+
+    public int getOfferCount() {
+        return offers.size();
     }
 }

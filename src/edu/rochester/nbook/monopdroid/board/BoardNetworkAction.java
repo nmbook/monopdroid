@@ -63,6 +63,10 @@ public enum BoardNetworkAction {
      */
     MSG_DECLARE_BANKRUPCY(16),
     /**
+     * Send to ask the server to send the full game state to us.
+     */
+    MSG_SERVER_FORCE_REFRESH(17),
+    /**
      * Send to start the game.
      */
     MSG_GAME_START(20),
@@ -70,6 +74,11 @@ public enum BoardNetworkAction {
      * Send to quit the game.
      */
     MSG_GAME_QUIT(21),
+    /**
+     * Send to kick a player from the game.
+     * Argument int "playerId": The player to kick. 
+     */
+    MSG_KICK(22),
     /**
      * Send when the user presses a server-sent button.
      * Argument String "command": The command to send.

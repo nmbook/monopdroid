@@ -52,4 +52,9 @@ public class TradeOfferKey {
         result = 31 * result + type.hashCode();
         return result;
     }
+    
+    @Override
+    public String toString() {
+        return "offer " + type.toString() + " from " + playerIdFrom + " to " + playerIdTo + " of " + offerKey;
+    }
 }

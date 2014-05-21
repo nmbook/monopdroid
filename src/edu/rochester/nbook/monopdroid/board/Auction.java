@@ -22,8 +22,11 @@ public class Auction {
     private int highBid;
     private int highBidder;
     private int status;
+    
+    private int numberBids;
 
     public Auction(int auctionId) {
+        this.status = -1;
         this.auctionId = auctionId;
     }
 
@@ -69,6 +72,14 @@ public class Auction {
 
     public void setStatus(int status) {
         this.status = status;
+    }
+    
+    public int getNumberOfBids() {
+        return numberBids;
+    }
+    
+    public void setNumberOfBids(int numberBids) {
+        this.numberBids = numberBids;
     }
 
     @Override
