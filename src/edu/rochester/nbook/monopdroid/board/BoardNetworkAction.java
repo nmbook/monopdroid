@@ -1,5 +1,14 @@
 package edu.rochester.nbook.monopdroid.board;
 
+/**
+ * Represents types of messages that can be sent to the network thread from the activity.
+ * Many of these are client commands for the MONOPD server.
+ * 
+ * To properly send a command, you must give the Handler the result of {@link #getWhat()} and 
+ * a {@link android.os.Bundle} containing the arguments required by the type of message.
+ * @author Nate
+ *
+ */
 public enum BoardNetworkAction {
     /**
      * Internal use only.
@@ -155,6 +164,10 @@ public enum BoardNetworkAction {
         this.msgWhat = msgWhat;
     }
     
+    /**
+     * The value to provide to the {@link BoardActivityNetworkThread} 
+     * @return The "what" value.
+     */
     public int getWhat() {
         return this.msgWhat;
     }

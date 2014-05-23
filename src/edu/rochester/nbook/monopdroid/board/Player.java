@@ -2,6 +2,11 @@ package edu.rochester.nbook.monopdroid.board;
 
 import java.util.HashMap;
 
+/**
+ * Represents a MONOPD Player object.
+ * @author Nate
+ *
+ */
 public class Player {
     public static final HashMap<String, XmlAttribute> playerAttributes = new HashMap<String, XmlAttribute>() {
         private static final long serialVersionUID = 1431923100451372984L;

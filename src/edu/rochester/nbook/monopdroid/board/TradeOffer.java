@@ -3,15 +3,18 @@ package edu.rochester.nbook.monopdroid.board;
 import java.util.HashMap;
 import java.util.Set;
 
+/**
+ * Represents a trade proposal (money, estate, or card).
+ * @author Nate
+ *
+ */
 public abstract class TradeOffer implements TradeUpdateSubject {
-    protected int tradeId;
     protected TradeOfferType type;
     protected int playerIdFrom;
     protected int playerIdTo;
     protected int offerValue;
     
-    protected TradeOffer(int tradeId, TradeOfferType type, int playerIdFrom, int playerIdTo, int offerValue) {
-        this.tradeId = tradeId;
+    protected TradeOffer(TradeOfferType type, int playerIdFrom, int playerIdTo, int offerValue) {
         this.type = type;
         this.playerIdFrom = playerIdFrom;
         this.playerIdTo = playerIdTo;
@@ -56,10 +59,5 @@ public abstract class TradeOffer implements TradeUpdateSubject {
     
     public final int getOfferValue() {
         return offerValue;
-    }
-    
-    @Override
-    public final int getTradeId() {
-        return tradeId;
     }
 }

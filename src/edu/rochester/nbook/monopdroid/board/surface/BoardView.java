@@ -27,11 +27,11 @@ public class BoardView extends SurfaceView {
     private BoardViewSurfaceThread surfaceRunner = null;
     private BoardViewListener listener = null;
 
-    public BoardViewSurfaceThread getSurfaceRunner() {
+    public BoardViewSurfaceThread saveState() {
         return surfaceRunner;
     }
     
-    public void setSurfaceRunner(BoardViewSurfaceThread surfaceRunner) {
+    public void restoreState(BoardViewSurfaceThread surfaceRunner) {
         this.surfaceRunner = surfaceRunner;
     }
     

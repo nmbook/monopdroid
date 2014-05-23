@@ -3,8 +3,8 @@ package edu.rochester.nbook.monopdroid.board;
 import java.util.HashMap;
 
 public final class MoneyTradeOffer extends TradeOffer {
-    public MoneyTradeOffer(int tradeId, int playerIdFrom, int playerIdTo, int amount) {
-        super(tradeId, TradeOfferType.MONEY, playerIdFrom, playerIdTo, amount);
+    public MoneyTradeOffer(int playerIdFrom, int playerIdTo, int amount) {
+        super(TradeOfferType.MONEY, playerIdFrom, playerIdTo, amount);
     }
     
     @Override

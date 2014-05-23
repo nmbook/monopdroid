@@ -6,6 +6,11 @@ import android.text.Spanned;
 import android.text.style.LeadingMarginSpan;
 import edu.rochester.nbook.monopdroid.board.surface.BoardViewOverlay;
 
+/**
+ * A line of chat.
+ * @author Nate
+ *
+ */
 public class ChatItem {
     private CharSequence text;
     private int color;

@@ -4,6 +4,11 @@ import java.util.HashMap;
 
 import android.graphics.Color;
 
+/**
+ * Represents a MONOPD Estate object.
+ * @author Nate
+ *
+ */
 public class Estate {
     public static final HashMap<String, XmlAttribute> estateAttributes = new HashMap<String, XmlAttribute>() {
         private static final long serialVersionUID = -1649097477143814788L;

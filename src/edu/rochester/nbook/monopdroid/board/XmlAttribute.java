@@ -6,7 +6,11 @@ import java.lang.reflect.Method;
 import android.graphics.Color;
 
 /**
- * Allows me to read off and store XML data. Each of these objects represents an attribute encountered in the XML, and associates it with a setter in the specified class. Given the attribute string, the correct setter on the object can be called with the correct argument type.
+ * Allows me to read off and store XML data.
+ * Each of these objects represents an attribute encountered in the XML,
+ * and associates it with a setter in the specified class. Given the
+ * attribute string, the correct setter on the object can be called
+ * with the correct argument type.
  * @author Nate
  */
 public class XmlAttribute {

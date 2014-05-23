@@ -9,6 +9,12 @@ import android.os.Looper;
 import android.os.Message;
 import android.util.Log;
 
+/**
+ * A thread for handling the network.
+ * It should stay running while the Activity may restart.
+ * @author Nate
+ *
+ */
 public class BoardActivityNetworkThread implements Runnable {
     /**
      * An object to call to cause a monopd.doReceive() after 250ms.
@@ -41,7 +47,9 @@ public class BoardActivityNetworkThread implements Runnable {
      * The monopd protocol handler.
      */
     private MonoProtocolHandler monopd = null;
-    
+    /**
+     * The event listener that the protocol handler will use to talk to the activity. 
+     */
     private MonoProtocolGameListener listener;
     
     public BoardActivity getActivity() {
@@ -124,13 +132,13 @@ public class BoardActivityNetworkThread implements Runnable {
                     case JOIN:
                     case RECONNECT:
                     case CONFIG:
-                    case END:
                         monopd.sendClientHello();
                         monopd.sendChangeNick(nick, false);
                         monopd.sendGameJoin(gameId);
                         break;
                     case INIT:
                     case RUN:
+                    case END:
                         monopd.sendReconnect(cookie);
                         break;
                     default:

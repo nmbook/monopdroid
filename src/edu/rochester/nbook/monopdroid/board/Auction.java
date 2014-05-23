@@ -2,7 +2,15 @@ package edu.rochester.nbook.monopdroid.board;
 
 import java.util.HashMap;
 
+/**
+ * Represents the MONOPD Auction object.
+ * @author Nate
+ *
+ */
 public class Auction {
+    /**
+     * Automatically settable attributes.
+     */
     public static final HashMap<String, XmlAttribute> auctionAttributes = new HashMap<String, XmlAttribute>() {
         private static final long serialVersionUID = 2978911583408943533L;
 

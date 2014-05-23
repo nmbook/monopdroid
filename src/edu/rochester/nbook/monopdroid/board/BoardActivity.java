@@ -61,6 +61,11 @@ import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 
+/**
+ * The primary game Activity, for a game lobby and game.
+ * @author Nate
+ *
+ */
 public class BoardActivity extends FragmentActivity {
     /**
      * The Board UI. Do not access from networking thread.
@@ -82,81 +87,85 @@ public class BoardActivity extends FragmentActivity {
      * The player views. Do not access from networking thread.
      */
     private LinearLayout[] playerView = new LinearLayout[BoardViewPiece.MAX_PLAYERS];
+    
     /**
      * The networking handler. Used to send messages to the networking thread.
      */
     private Handler netHandler = null;
     /**
      * The networking thread runner (created in UI thread). Do not access from
-     * networking thread.
+     * networking thread. Save on restart.
      */
     private BoardActivityNetworkThread netRunnable = null;
-
+    
     /**
-     * This game item.
+     * This game item. Save on restart.
      */
     private GameItem gameItem = null;
     /**
-     * Array of players to show up to MAX_PLAYERS
+     * Array of player's IDs to show up to MAX_PLAYERS. Save on restart.
      */
     private int[] playerIds = new int[BoardViewPiece.MAX_PLAYERS];
     /**
-     * List of players.
+     * List of players. Save on restart.
      */
     private SparseArray<Player> players = new SparseArray<Player>();
     /**
-     * List of estates.
+     * List of estates. Save on restart.
      */
     private ArrayList<Estate> estates = new ArrayList<Estate>(40);
     /**
-     * List of estate groups.
+     * List of estate groups. Save on restart.
      */
     private SparseArray<EstateGroup> estateGroups = new SparseArray<EstateGroup>();
     /**
-     * Auction. Even though they have an auctionId, it is always 0.
+     * Auction. Save on restart.
+     * Even though they have an auctionId, it is always 0. 
      */
     private Auction auction = new Auction(0);
     /**
-     * List of trades.
+     * List of trades. Save on restart.
      */
     private SparseArray<Trade> trades = new SparseArray<Trade>();
     /**
-     * List of options.
+     * List of options. Save on restart.
      */
     private SparseArray<Configurable> configurables = new SparseArray<Configurable>();
     /**
-     * List of buttons.
+     * List of buttons. Save on restart.
      */
     private ArrayList<Button> buttons = new ArrayList<Button>();
     /**
-     * Current player ID.
+     * Current player ID. Save on restart.
      */
     private int playerId = 0;
     /**
-     * Current player cookie.
+     * Current player cookie. Save on restart.
      */
     private String cookie = null;
     /**
-     * Game status.
+     * Game status. Save on restart.
      */
     private GameStatus status = GameStatus.ERROR;
     /**
-     * Client name.
+     * Client name. Save on restart.
      */
     private String clientName;
     /**
-     * Client version.
+     * Client version. Save on restart.
      */
     private String clientVersion;
     /**
-     * Current nick name.
+     * Current nick name. Save on restart.
      */
     private String nickname;
     /**
-     * Whether we are the master of this game lobby.
+     * Whether we are the master of this game lobby. Save on restart.
      */
     private boolean isMaster = false;
-    
+    /**
+     * The current master of this game lobby.
+     */
     private int master = 0;
     /**
      * Whether this onDestroy() occured after saving state.
@@ -167,10 +176,19 @@ public class BoardActivity extends FragmentActivity {
      */
     private boolean firstInit = false;
     
+    /**
+     * Used to make sure a dialog may open at this time.
+     */
     private boolean running = false;
     
+    /**
+     * Stores the most recent leaving player's nickname, so the leave message is accurate.
+     */
     private String playerLeavingNick = null;
     
+    /**
+     * Static handler for HTML tag parsing. TODO: use BoardTextFormatter
+     */
     public static TagHandler tagHandler = null;
 
     @Override
@@ -248,21 +266,7 @@ public class BoardActivity extends FragmentActivity {
             
             this.netRunnable = new BoardActivityNetworkThread();
         } else {
-            boardView.setSurfaceRunner(state.surfaceRunner);
-            chatListAdapter.restoreState(state);
-            playerIds = state.playerIds;
-            netRunnable = state.netRunnable;
-            gameItem = state.gameItem;
-            estates = state.estates;
-            players = state.players;
-            configurables = state.configurables;
-            playerId = state.playerId;
-            cookie = state.cookie;
-            status = state.status;
-            clientName = state.clientName;
-            clientVersion = state.clientVersion;
-            nickname = state.nickname;
-            isMaster = state.isMaster;
+            state.restoreState(this);
         }
         
         attachListeners();
@@ -273,48 +277,84 @@ public class BoardActivity extends FragmentActivity {
     @Override
     public Object onRetainCustomNonConfigurationInstance() {
         BoardActivityState state = new BoardActivityState();
-        state.surfaceRunner = boardView.getSurfaceRunner();
-        state.chat = chatListAdapter.saveState();
-        state.playerIds = playerIds;
-        state.netRunnable = netRunnable;
-        state.gameItem = gameItem;
-        state.players = players;
-        state.estates = estates;
-        state.configurables = configurables;
-        state.playerId = playerId;
-        state.cookie = cookie;
-        state.status = status;
-        state.clientName = clientName;
-        state.clientVersion = clientVersion;
-        state.nickname = nickname;
-        state.isMaster = isMaster;
+        state.saveState(this);
         savingState = true;
         return state;
     }
     
-    public class BoardActivityState {
-        public BoardViewSurfaceThread surfaceRunner;
+    /**
+     * Stores the Activity state so it can be re-instated after a restart,
+     * such as from a device rotation.
+     * @author Nate
+     */
+    private final class BoardActivityState {
+        private BoardViewSurfaceThread surfaceRunner;
         
-        public ArrayList<ChatItem> chat;
-        public int[] playerIds = new int[4];
-        public BoardActivityNetworkThread netRunnable;
-        public GameItem gameItem;
-        public SparseArray<Player> players;
-        public ArrayList<Estate> estates;
-        public SparseArray<Configurable> configurables;
-        public int playerId;
-        public String cookie;
-        public GameStatus status;
-        public String clientName;
-        public String clientVersion;
-        public String nickname;
-        public boolean isMaster;
+        private ArrayList<ChatItem> chats;
+        private int[] playerIds = new int[4];
+        private BoardActivityNetworkThread netRunnable;
+        private GameItem gameItem;
+        private SparseArray<Player> players;
+        private ArrayList<Estate> estates;
+        private Auction auction;
+        private SparseArray<Trade> trades;
+        private SparseArray<Configurable> configurables;
+        private int playerId;
+        private String cookie;
+        private GameStatus status;
+        private String clientName;
+        private String clientVersion;
+        private String nickname;
+        private boolean isMaster;
+        private int master;
+        
+        public void saveState(BoardActivity activity) {
+            this.surfaceRunner = activity.boardView.saveState();
+            this.chats = activity.chatListAdapter.saveState();
+            this.playerIds = activity.playerIds;
+            this.netRunnable = activity.netRunnable;
+            this.gameItem = activity.gameItem;
+            this.players = activity.players;
+            this.estates = activity.estates;
+            this.auction = activity.auction;
+            this.trades = activity.trades;
+            this.configurables = activity.configurables;
+            this.playerId = activity.playerId;
+            this.cookie = activity.cookie;
+            this.status = activity.status;
+            this.clientName = activity.clientName;
+            this.clientVersion = activity.clientVersion;
+            this.nickname = activity.nickname;
+            this.isMaster = activity.isMaster;
+            this.master = activity.master;
+        }
+        
+        public void restoreState(BoardActivity activity) {
+            activity.boardView.restoreState(this.surfaceRunner);
+            activity.chatListAdapter.restoreState(this.chats);
+            activity.playerIds = this.playerIds;
+            activity.netRunnable = this.netRunnable;
+            activity.gameItem = this.gameItem;
+            activity.players = this.players;
+            activity.estates = this.estates;
+            activity.auction = this.auction;
+            activity.trades = this.trades;
+            activity.configurables = this.configurables;
+            activity.playerId = this.playerId;
+            activity.cookie = this.cookie;
+            activity.status = this.status;
+            activity.clientName = this.clientName;
+            activity.clientVersion = this.clientVersion;
+            activity.nickname = this.nickname;
+            activity.isMaster = this.isMaster;
+            activity.master = this.master;
+        }
     }
 
     private void showConnectionError(String error) {
-        Bundle state = new Bundle();
-        state.putString("error", error);
         if (running) {
+            Bundle state = new Bundle();
+            state.putString("error", error);
             DialogFragment connErrorDialog = new DialogFragment() {
                 @Override
                 public Dialog onCreateDialog(Bundle savedInstanceState) {
@@ -405,7 +445,7 @@ public class BoardActivity extends FragmentActivity {
 
             @Override
             public void onEstateClick(int estateId) {
-                BoardActivity.this.boardView.overlayEstateInfo(estateId);
+                boardView.overlayEstateInfo(estateId);
             }
 
             @Override
@@ -424,7 +464,7 @@ public class BoardActivity extends FragmentActivity {
             public String getPlayerOverlayText(int playerId) {
                 Player player = players.get(playerId);
                 if (player == null) {
-                    return "<i>This player has left and is no longer available.</i>";
+                    return "<i>This player has left and this information is no longer available.</i>";
                 }
                 StringBuilder sb = new StringBuilder();
                 sb.append(makePlayerName(player));
@@ -561,7 +601,7 @@ public class BoardActivity extends FragmentActivity {
                                         "<i>mortgaged</i>"));
                             } else {
                                 sb.append(makeFieldLine("Current rent",
-                                        "$" + utilCost + " × DICE ROLL TOTAL"));
+                                        "$" + utilCost + " ï¿½ DICE ROLL TOTAL"));
                             }
                             sb.append(makeFieldLine("Utilities owned by " +
                                     BoardActivity.makePlayerName(player),
@@ -767,13 +807,13 @@ public class BoardActivity extends FragmentActivity {
             }
 
             @Override
-            public ArrayList<Button> getPlayerOverlayButtons(final int playerId) {
-                ArrayList<Button> buttons = new ArrayList<Button>(4);
+            public ArrayList<OverlayButton> getPlayerOverlayButtons(final int playerId) {
+                ArrayList<OverlayButton> buttons = new ArrayList<OverlayButton>(4);
                 if (status == GameStatus.CONFIG) {
                     boolean kickable = isMaster &&
                             playerId != BoardActivity.this.playerId &&
                             players.get(playerId) != null;
-                    buttons.add(new Button(
+                    buttons.add(new OverlayButton(
                             "Kick", kickable, 3,
                             new GestureRegionListener() {
                                 @Override
@@ -787,7 +827,7 @@ public class BoardActivity extends FragmentActivity {
                     boolean tradable = status == GameStatus.RUN &&
                             playerId != BoardActivity.this.playerId &&
                             players.get(playerId) != null;
-                    buttons.add(new Button(
+                    buttons.add(new OverlayButton(
                             "Trade", tradable, 3,
                             new GestureRegionListener() {
                                 @Override
@@ -798,7 +838,7 @@ public class BoardActivity extends FragmentActivity {
                                 }
                             }));
                 }
-                buttons.add(new Button(
+                buttons.add(new OverlayButton(
                         "!ping", players.get(playerId) != null, 1,
                         new GestureRegionListener() {
                             @Override
@@ -809,7 +849,7 @@ public class BoardActivity extends FragmentActivity {
                                 }
                             }
                         }));
-                buttons.add(new Button(
+                buttons.add(new OverlayButton(
                         "!date", players.get(playerId) != null, 1,
                         new GestureRegionListener() {
                             @Override
@@ -820,7 +860,7 @@ public class BoardActivity extends FragmentActivity {
                                 }
                             }
                         }));
-                buttons.add(new Button(
+                buttons.add(new OverlayButton(
                         "!ver", players.get(playerId) != null, 1,
                         new GestureRegionListener() {
                             @Override
@@ -835,8 +875,8 @@ public class BoardActivity extends FragmentActivity {
             }
 
             @Override
-            public ArrayList<Button> getEstateOverlayButtons(final int estateId) {
-                ArrayList<Button> buttons = new ArrayList<Button>(4);
+            public ArrayList<OverlayButton> getEstateOverlayButtons(final int estateId) {
+                ArrayList<OverlayButton> buttons = new ArrayList<OverlayButton>(4);
                 Estate estate = estates.get(estateId);
                 if (estate != null && estate.canBeOwned()) {
                     boolean isOwner = estate.getOwner() == playerId;
@@ -845,7 +885,7 @@ public class BoardActivity extends FragmentActivity {
                     boolean canSellEstate = isOwner;
                     boolean canBuyHouse = isOwner && estate.canBuyHouses();
                     boolean canSellHouse = isOwner && estate.canSellHouses();
-                    buttons.add(new Button(
+                    buttons.add(new OverlayButton(
                             mortgageText, canMortgage, 2,
                             new GestureRegionListener() {
                                 @Override
@@ -855,7 +895,7 @@ public class BoardActivity extends FragmentActivity {
                                     sendToNetThread(BoardNetworkAction.MSG_ESTATE_MORTGAGE, args);
                                 }
                             }));
-                    buttons.add(new Button(
+                    buttons.add(new OverlayButton(
                             "+ House", canBuyHouse, 1,
                             new GestureRegionListener() {
                                 @Override
@@ -865,7 +905,7 @@ public class BoardActivity extends FragmentActivity {
                                     sendToNetThread(BoardNetworkAction.MSG_ESTATE_BUYHOUSE, args);
                                 }
                             }));
-                    buttons.add(new Button(
+                    buttons.add(new OverlayButton(
                             "- House", canSellHouse, 1,
                             new GestureRegionListener() {
                                 @Override
@@ -875,7 +915,7 @@ public class BoardActivity extends FragmentActivity {
                                     sendToNetThread(BoardNetworkAction.MSG_ESTATE_SELLHOUSE, args);
                                 }
                             }));
-                    buttons.add(new Button(
+                    buttons.add(new OverlayButton(
                             "Sell to bank", canSellEstate, 2,
                             new GestureRegionListener() {
                                 @Override
@@ -890,8 +930,8 @@ public class BoardActivity extends FragmentActivity {
             }
 
             @Override
-            public ArrayList<Button> getAuctionOverlayButtons(final int auctionId) {
-                ArrayList<Button> buttons = new ArrayList<Button>(5);
+            public ArrayList<OverlayButton> getAuctionOverlayButtons(final int auctionId) {
+                ArrayList<OverlayButton> buttons = new ArrayList<OverlayButton>(5);
                 final int[] bids = { 1, 10, 50, 100, -1 };
                 for (int i = 0; i < bids.length; i++) {
                     // A final copy of "i" to be used in the following code block.
@@ -902,7 +942,7 @@ public class BoardActivity extends FragmentActivity {
                         text = "Custom";
                         length = 2;
                     }
-                    buttons.add(new Button(
+                    buttons.add(new OverlayButton(
                             text, true, length,
                             new GestureRegionListener() {
                                 @Override
@@ -924,19 +964,19 @@ public class BoardActivity extends FragmentActivity {
             }
 
             @Override
-            public ArrayList<Button> getTradeOverlayButtons(final int tradeId) {
+            public ArrayList<OverlayButton> getTradeOverlayButtons(final int tradeId) {
                 Trade trade = trades.get(tradeId);
                 if (trade == null) {
-                    return new ArrayList<Button>(0);
+                    return new ArrayList<OverlayButton>(0);
                 }
                 // Note: store this now, so that if the trade overlay hasn't updated,
                 // then the revision will be out of date on purpose so that the user can
                 // always sees the trade revision they are accepting (in theory).
                 final int tradeRevision = trade.getRevision();
-                ArrayList<Button> buttons = new ArrayList<Button>(4);
+                ArrayList<OverlayButton> buttons = new ArrayList<OverlayButton>(4);
                 boolean isActive = trade.getLastUpdateType() != TradeUpdateType.COMPLETED &&
                         trade.getLastUpdateType() != TradeUpdateType.REJECTED;
-                buttons.add(new Button(
+                buttons.add(new OverlayButton(
                         "Accept", isActive, 2,
                         new GestureRegionListener() {
                             @Override
@@ -947,7 +987,7 @@ public class BoardActivity extends FragmentActivity {
                                 sendToNetThread(BoardNetworkAction.MSG_TRADE_ACCEPT, args);
                             }
                         }));
-                buttons.add(new Button(
+                buttons.add(new OverlayButton(
                         "Reject", isActive, 2,
                         new GestureRegionListener() {
                             @Override
@@ -957,7 +997,7 @@ public class BoardActivity extends FragmentActivity {
                                 sendToNetThread(BoardNetworkAction.MSG_TRADE_REJECT, args);
                             }
                         }));
-                buttons.add(new Button(
+                buttons.add(new OverlayButton(
                         "Modify", isActive, 1,
                         new GestureRegionListener() {
                             @Override
@@ -972,7 +1012,7 @@ public class BoardActivity extends FragmentActivity {
                                 // return to sendToNetThread(MSG_TRADE_*)
                             }
                         }));
-                buttons.add(new Button(
+                buttons.add(new OverlayButton(
                         "Remove", isActive, 1,
                         new GestureRegionListener() {
                             @Override

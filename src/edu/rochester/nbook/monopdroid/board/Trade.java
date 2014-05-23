@@ -6,6 +6,11 @@ import java.util.HashMap;
 
 import android.util.SparseArray;
 
+/**
+ * Represents a MONOPD Trade object.
+ * @author Nate
+ *
+ */
 public final class Trade {
     
     public static final HashMap<String, XmlAttribute> tradeAttributes = new HashMap<String, XmlAttribute>() {

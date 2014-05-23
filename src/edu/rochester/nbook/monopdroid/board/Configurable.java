@@ -5,7 +5,7 @@ import java.util.HashMap;
 import android.util.Log;
 
 /**
- * Represents a configurable in the lobby. The only tpye ever encountered was of type "bool",
+ * Represents a configurable in the lobby. The only type ever encountered has been of type "bool",
  * so for now that's all that is supported.
  * @author Nate
  *

@@ -1,5 +1,21 @@
 package edu.rochester.nbook.monopdroid.board;
 
+/**
+ * Allows merging a {@link TradeOffer} with other {@link TradeOffer}s by
+ * storing the parts of a trade proposal which uniquely identify a type of trade.
+ *<p>
+ * For example: A money trade offer's key contains the tuple (type, playerIdFrom, playerIdTo)
+ * but doesn't stor the amount so that two trade offers with different amounts but the same other
+ * three values cannot exist.
+ * <p>
+ * Tuples that define uniqueness by offer type:<br>
+ * Money: (type, playerIdFrom, playerIdTo)<br>
+ * Estate (type, offerKey/estateId)<br>
+ * Card (type, offerKey/cardId)<br>
+ * These tuples are defined by the trade proposal sub-classes when they make a key.
+ * @author Nate
+ *
+ */
 public class TradeOfferKey {
     private TradeOfferType type;
     private int playerIdFrom;

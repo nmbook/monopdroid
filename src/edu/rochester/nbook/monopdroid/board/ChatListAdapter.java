@@ -3,7 +3,6 @@ package edu.rochester.nbook.monopdroid.board;
 import java.util.ArrayList;
 
 import edu.rochester.nbook.monopdroid.R;
-import edu.rochester.nbook.monopdroid.board.BoardActivity.BoardActivityState;
 
 import android.content.Context;
 import android.view.LayoutInflater;
@@ -12,6 +11,11 @@ import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.TextView;
 
+/**
+ * The adapter to view the list of {@link ChatItem}s.
+ * @author Nate
+ *
+ */
 public class ChatListAdapter extends ArrayAdapter<ChatItem> {
     private Context context = null;
     private int layout = 0;
@@ -49,9 +53,8 @@ public class ChatListAdapter extends ArrayAdapter<ChatItem> {
         return items;
     }
 
-    public void restoreState(BoardActivityState state) {
-        ArrayList<ChatItem> items = state.chat;
-        for (ChatItem item : items) {
+    public void restoreState(ArrayList<ChatItem> chatItems) {
+        for (ChatItem item : chatItems) {
             add(item);
         }
     }

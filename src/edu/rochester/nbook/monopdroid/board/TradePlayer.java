@@ -1,20 +1,18 @@
 package edu.rochester.nbook.monopdroid.board;
 
+/**
+ * Represents a player involved in a trade.
+ * @author Nate
+ *
+ */
 public final class TradePlayer implements TradeUpdateSubject {
     // trade player object data
-    private int tradeId;
     private int playerId;
     private boolean accepted;
     
-    public TradePlayer(int tradeId, int playerId, boolean accepted) {
-        this.tradeId = tradeId;
+    public TradePlayer(int playerId, boolean accepted) {
         this.playerId = playerId;
         this.accepted = accepted;
-    }
-    
-    @Override
-    public int getTradeId() {
-        return tradeId;
     }
     
     public int getPlayerId() {

@@ -22,6 +22,10 @@ public enum XmlAttributeType {
      */
     COLOR,
     /**
+     * This converts the XML string value to an {@link AuctionState} value.
+     */
+    AUCTION_STATE,
+    /**
      * This does the integer conversion, but has special properties.
      * This is specific to the Estate.rent[] values.
      * The methodName specified with this type MUST end with a digit, specifying 

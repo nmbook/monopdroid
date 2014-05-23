@@ -7,6 +7,7 @@ import edu.rochester.nbook.monopdroid.board.Button;
 import edu.rochester.nbook.monopdroid.board.Configurable;
 import edu.rochester.nbook.monopdroid.board.Estate;
 import edu.rochester.nbook.monopdroid.board.GameStatus;
+import edu.rochester.nbook.monopdroid.board.OverlayButton;
 import edu.rochester.nbook.monopdroid.board.Player;
 import edu.rochester.nbook.monopdroid.board.surface.BoardViewPiece.For;
 import android.content.Context;
@@ -1255,7 +1256,7 @@ public class BoardViewSurfaceThread implements Runnable {
         layers.get(LAYER_OVERLAY).addDrawable(overlayBody);
         bounds.top = bounds.bottom - (int) getPixelSize(DPI_BUTTON_HEIGHT);
         
-        ArrayList<Button> buttons = new ArrayList<Button>();
+        ArrayList<OverlayButton> buttons = new ArrayList<OverlayButton>();
         switch (overlay) {
         default:
             break;
@@ -1276,7 +1277,7 @@ public class BoardViewSurfaceThread implements Runnable {
         }
         int index = 0;
         int w = bounds.right - bounds.left;
-        for (Button button : buttons) {
+        for (OverlayButton button : buttons) {
             int width = button.getWidth() * w / 6;
             Rect btnBounds = new Rect(bounds.left + index, bounds.top, bounds.left + index + width, bounds.bottom);
             addButton(LAYER_OVERLAY, btnBounds, button.getCaption(), button.isEnabled(), TAG_OVERLAY_BUTTON + index, button.getListener());

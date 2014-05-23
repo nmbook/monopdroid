@@ -2,8 +2,8 @@ package edu.rochester.nbook.monopdroid.board.surface;
 
 import java.util.ArrayList;
 
-import edu.rochester.nbook.monopdroid.board.Button;
 import edu.rochester.nbook.monopdroid.board.Estate;
+import edu.rochester.nbook.monopdroid.board.OverlayButton;
 
 public interface BoardViewListener {
     /**
@@ -80,28 +80,28 @@ public interface BoardViewListener {
      * @param playerId The Player ID
      * @return A list of buttons
      */
-    public ArrayList<Button> getPlayerOverlayButtons(int playerId);
+    public ArrayList<OverlayButton> getPlayerOverlayButtons(int playerId);
 
     /**
      * Generate the buttons for the Estate overlay.
      * @param estateId The Estate ID
      * @return A list of buttons
      */
-    public ArrayList<Button> getEstateOverlayButtons(int estateId);
+    public ArrayList<OverlayButton> getEstateOverlayButtons(int estateId);
 
     /**
      * Generate the buttons for the Auction overlay.
      * @param auctionId The Auction ID
      * @return A list of buttons
      */
-    public ArrayList<Button> getAuctionOverlayButtons(int auctionId);
+    public ArrayList<OverlayButton> getAuctionOverlayButtons(int auctionId);
 
     /**
      * Generate the buttons for the Trade overlay.
      * @param tradeId The Trade ID
      * @return A list of buttons
      */
-    public ArrayList<Button> getTradeOverlayButtons(int tradeId);
+    public ArrayList<OverlayButton> getTradeOverlayButtons(int tradeId);
 
     /**
      * Get the list of Estate objects.
