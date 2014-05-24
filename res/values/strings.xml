@@ -13,7 +13,7 @@
     <string name="game_list_create">Tap to create new game</string>
     <string name="game_list_loading">Fetching list&#8230;</string>
     <string name="game_list_empty">Nothing listed (tap to retry)</string>
-    <string name="game_list_error">Error occured (tap to retry)</string>
+    <string name="game_list_error">Error occurred (tap to retry)</string>
     <string name="dialog_server_info">Information for %s</string>
     <string name="dialog_list_error">Error fetching list</string>
     <string name="dialog_conn_error">Connection error</string>
@@ -21,6 +21,7 @@
     <string name="pref_player_nick_summary">Change the nick name that other users will see you as.</string>
     <string name="pref_player_nick_dialog_title">Change nickname</string>
     <string name="empty"></string>
+    <string name="empty_chat_hint">Chat with other players</string>
     <string name="reconnect">Reconnect</string>
     <string name="quit">Quit</string>
     <string name="pref_gamelist_server_title">List server</string>

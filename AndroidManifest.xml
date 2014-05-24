@@ -14,16 +14,21 @@
         android:theme="@style/AppTheme"
         android:allowBackup="false" >
         <activity
-            android:name="com.natembook.monopdroid.gamelist.GameListActivity"
+            android:name=".gamelist.GameListActivity"
             android:label="@string/title_activity_server_list">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name="com.natembook.monopdroid.SettingsActivity" android:label="@string/title_activity_settings"></activity>
-        <activity android:label="@string/title_activity_board" android:name="edu.rocom.natembook.monopdroid.board.BoardActivity         android:theme="@style/BoardTheme"
-            android:windowSoftInputMode="stateHidden|adjustPan"></activity>
+        <activity
+            android:name=".SettingsActivity"
+            android:label="@string/title_activity_settings" />
+        <activity
+            android:name=".board.BoardActivity"
+            android:label="@string/title_activity_board"
+            android:theme="@style/BoardTheme"
+            android:windowSoftInputMode="stateHidden|adjustPan" />
     </application>
 
 </manifest>

@@ -7,23 +7,41 @@
     <com.natembook.monopdroid.board.surface.BoardView
         android:id="@id/board_ui"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content" >
-    </edu.rochester.nbook.monopdroid.board.surface.BoardView>
+        android:layout_height="wrap_content"
+        
+        android:nextFocusUp="@id/board_player_item_1"
+        android:nextFocusDown="@id/board_chat_list"
+        android:nextFocusLeft="@null"
+        android:nextFocusRight="@id/board_chat_box"
+        android:nextFocusForward="@id/board_chat_list" />
     <ListView
         android:id="@id/board_chat_list"
         android:layout_width="fill_parent"
         android:layout_height="0dip"
         android:layout_weight="1"
         android:stackFromBottom="true"
-        android:transcriptMode="alwaysScroll"
- 		android:divider="@null" >
+        android:transcriptMode="normal"
+ 		android:divider="@null"
+        
+        android:nextFocusUp="@id/board_player_item_1"
+        android:nextFocusDown="@id/board_chat_box"
+        android:nextFocusLeft="@id/board_ui"
+        android:nextFocusRight="@null"
+        android:nextFocusForward="@id/board_chat_box" >
     </ListView>
     <EditText
         android:id="@id/board_chat_box"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:ems="10"
-        android:inputType="textLongMessage"
-        android:text="@string/empty" >
+        android:inputType="textLongMessage|textAutoCorrect"
+        android:imeOptions="actionSend|flagNoFullscreen"
+        android:hint="@string/empty_chat_hint"
+        android:text="@string/empty"
+        
+        android:nextFocusUp="@id/board_chat_list"
+        android:nextFocusDown="@null"
+        android:nextFocusLeft="@id/board_ui"
+        android:nextFocusRight="@null"
+        android:nextFocusForward="@null" >
     </EditText>
 </LinearLayout>
