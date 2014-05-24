@@ -1,5 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="edu.rochester.nbook.monopdroid"
+    package="com.natembook.monopdroid"
     android:versionCode="1"
     android:versionName="0.5.0" android:installLocation="auto">
 
@@ -14,16 +14,15 @@
         android:theme="@style/AppTheme"
         android:allowBackup="false" >
         <activity
-            android:name=".gamelist.GameListActivity"
+            android:name="com.natembook.monopdroid.gamelist.GameListActivity"
             android:label="@string/title_activity_server_list">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name="SettingsActivity" android:label="@string/title_activity_settings"></activity>
-        <activity android:label="@string/title_activity_board" android:name=".board.BoardActivity"
-            android:theme="@style/BoardTheme"
+        <activity android:name="com.natembook.monopdroid.SettingsActivity" android:label="@string/title_activity_settings"></activity>
+        <activity android:label="@string/title_activity_board" android:name="edu.rocom.natembook.monopdroid.board.BoardActivity         android:theme="@style/BoardTheme"
             android:windowSoftInputMode="stateHidden|adjustPan"></activity>
     </application>
 

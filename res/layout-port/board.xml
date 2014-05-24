@@ -4,7 +4,7 @@
     android:layout_height="match_parent"
     android:orientation="vertical" >
     <include layout="@layout/players" />
-    <edu.rochester.nbook.monopdroid.board.surface.BoardView
+    <com.natembook.monopdroid.board.surface.BoardView
         android:id="@id/board_ui"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content" >
