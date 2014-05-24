@@ -2139,14 +2139,14 @@ public class BoardActivity extends FragmentActivity {
         writeMessage(msgText, color, BoardViewOverlay.NONE, -1);
     }
 
-    /**
+    /*
      * Set the player list to show the specified 4 players. Player ID 0 means
      * that slot is empty.
      * 
      * @param playerIds
      *            Player IDs of the players to show.
-     */
-    /*private void setPlayerView(int[] playerIds) {
+     *
+    private void setPlayerView(int[] playerIds) {
         this.playerIds = playerIds;
         this.updatePlayerView();
     }*/
@@ -2173,6 +2173,9 @@ public class BoardActivity extends FragmentActivity {
                     }
                     text1.setText(nameText);
                     switch (status) {
+                    case ERROR:
+                    case JOIN:
+                    case CREATE:
                     case CONFIG:
                         if (player.isMaster()) {
                             text1.setTextColor(Color.YELLOW);
@@ -2182,7 +2185,10 @@ public class BoardActivity extends FragmentActivity {
                         
                         text2.setText(player.getHost());
                         break;
+                    case RECONNECT:
+                    case INIT:
                     case RUN:
+                    case END:
                         if (player.isGrayed()) {
                             text1.setTextColor(Color.GRAY);
                         } else if (player.isTurn()) {
@@ -2196,10 +2202,6 @@ public class BoardActivity extends FragmentActivity {
                         text2.setText("$" + Integer.toString(player.getMoney()));
                         text2.setCompoundDrawablePadding(5);
                         text2.setCompoundDrawablesWithIntrinsicBounds(draw, null, null, null);
-                        break;
-                    default:
-                        text1.setTextColor(Color.WHITE);
-                        text2.setText("");
                         break;
                     }
                 }
