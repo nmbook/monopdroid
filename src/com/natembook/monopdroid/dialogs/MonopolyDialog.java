@@ -73,15 +73,21 @@ public class MonopolyDialog extends DialogFragment {
             String defaultName = arguments.getString("default");
             if (defaultName != null) {
                 editText.setText(defaultName);
+                editText.selectAll();
             }
-            editText.selectAll();
             b.setMessage(message);
-            b.setNegativeButton(android.R.string.cancel, null);
             b.setPositiveButton(android.R.string.ok, new OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialog, int which) {
                     listener.onDialogEnterName(editText.getText().toString(), arguments);
                     hideKeyboard(editText);
+                    dismiss();
+                }
+            });
+            b.setNegativeButton(android.R.string.cancel, new OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    dismiss();
                 }
             });
             b.setIcon(android.R.drawable.ic_dialog_info);
@@ -93,22 +99,27 @@ public class MonopolyDialog extends DialogFragment {
             int defaultMoney = arguments.getInt("default");
             String defaultMoneyS = Integer.toString(defaultMoney);
             editText.setText(defaultMoneyS);
-            editText.setSelection(defaultMoneyS.length());
+            editText.selectAll();
             b.setMessage(message);
-            b.setNegativeButton(android.R.string.cancel, null);
             b.setPositiveButton(android.R.string.ok, new OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialog, int which) {
                     try {
                         int intValue = Integer.parseInt(editText.getText().toString());
                         listener.onDialogEnterMoney(intValue, arguments);
-                        hideKeyboard(editText);
                     } catch (NumberFormatException nfex) {
                         
                     }
+                    hideKeyboard(editText);
+                    dismiss();
                 }
             });
-            b.setNegativeButton(android.R.string.cancel, null);
+            b.setNegativeButton(android.R.string.cancel, new OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    dismiss();
+                }
+            });
             b.setIcon(android.R.drawable.ic_dialog_info);
             break;
         case R.id.dialog_type_prompt_tradetype:
@@ -121,6 +132,13 @@ public class MonopolyDialog extends DialogFragment {
                 @Override
                 public void onClick(DialogInterface dialog, int which) {
                     listener.onDialogChooseTradeType(types[which], arguments);
+                    dismiss();
+                }
+            });
+            b.setNegativeButton(android.R.string.cancel, new OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    dismiss();
                 }
             });
             b.setIcon(android.R.drawable.ic_dialog_info);
@@ -130,34 +148,48 @@ public class MonopolyDialog extends DialogFragment {
             if (itemCount == 0) {
                 b.setMessage(message);
             } else {
-                final int[] objectIds = new int[itemCount];
-                final String[] objects = new String[itemCount];
+                final MonopolyDialogObjectItem[] objects = new MonopolyDialogObjectItem[itemCount];
                 for (int i = 0; i < itemCount; i++) {
-                    objectIds[i] = arguments.getInt("itemId_" + i);
-                    objects[i] = arguments.getString("itemName_" + i);
+                    objects[i] = new MonopolyDialogObjectItem(arguments.getInt("itemId_" + i),
+                            arguments.getString("itemName_" + i),
+                            arguments.getString("itemSubtext_" + i));
                 }
-                ArrayAdapter<String> objectAdapter = new ArrayAdapter<>(
-                        context,
-                        android.R.layout.select_dialog_item,
-                        objects);
+                MonopolyDialogObjectAdapter objectAdapter =
+                        new MonopolyDialogObjectAdapter(context, R.layout.game_item, objects);
                 b.setAdapter(objectAdapter, new OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
-                        listener.onDialogChooseItem(objectIds[which], arguments);
+                        listener.onDialogChooseItem(objects[which].getObjectId(), arguments);
+                        dismiss();
                     }
                 });
             }
-            b.setNegativeButton(android.R.string.cancel, null);
+            b.setNegativeButton(android.R.string.cancel, new OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    dismiss();
+                }
+            });
             b.setIcon(android.R.drawable.ic_dialog_info);
             break;
         case R.id.dialog_type_info:
             b.setMessage(message);
-            b.setNeutralButton(android.R.string.ok, null);
+            b.setNeutralButton(android.R.string.ok, new OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    dismiss();
+                }
+            });
             b.setIcon(android.R.drawable.ic_dialog_info);
             break;
         case R.id.dialog_type_error:
             b.setMessage(message);
-            b.setNeutralButton(android.R.string.ok, null);
+            b.setNeutralButton(android.R.string.ok, new OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    dismiss();
+                }
+            });
             b.setIcon(android.R.drawable.ic_dialog_alert);
             break;
         case R.id.dialog_type_reconnect:
@@ -166,12 +198,32 @@ public class MonopolyDialog extends DialogFragment {
                 @Override
                 public void onClick(DialogInterface dialog, int which) {
                     listener.onDialogReconnect(arguments);
+                    dismiss();
                 }
             });
             b.setNegativeButton(R.string.quit, new OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialog, int which) {
                     listener.onDialogQuit(arguments);
+                    dismiss();
+                }
+            });
+            b.setCancelable(false);
+            b.setIcon(android.R.drawable.ic_dialog_alert);
+            break;
+        case R.id.dialog_type_confirmquit:
+            b.setMessage(message);
+            b.setPositiveButton(android.R.string.yes, new OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    listener.onDialogConfirmQuit(arguments);
+                    dismiss();
+                }
+            });
+            b.setNegativeButton(android.R.string.no, new OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    dismiss();
                 }
             });
             b.setIcon(android.R.drawable.ic_dialog_alert);

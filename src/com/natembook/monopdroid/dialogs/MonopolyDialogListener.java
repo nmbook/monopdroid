@@ -21,5 +21,7 @@ public interface MonopolyDialogListener {
 
     public void onDialogReconnect(Bundle dialogArgs);
 
+    public void onDialogConfirmQuit(Bundle dialogArgs);
+
     public void onDialogDismiss();
 }

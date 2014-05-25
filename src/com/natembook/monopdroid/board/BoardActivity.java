@@ -138,7 +138,7 @@ public class BoardActivity extends FragmentActivity implements
     /**
      * Current player ID. Save on restart.
      */
-    private int playerId = 0;
+    private int selfPlayerId = -1;
     /**
      * Current player cookie. Save on restart.
      */
@@ -166,7 +166,7 @@ public class BoardActivity extends FragmentActivity implements
     /**
      * The current master of this game lobby.
      */
-    private int master = 0;
+    private int master = -1;
     /**
      * Whether this onDestroy() occured after saving state.
      */
@@ -187,14 +187,16 @@ public class BoardActivity extends FragmentActivity implements
     private MonopolyDialog dialog = null;
     
     /**
-     * Stores the most recent leaving player's nickname, so the leave message is accurate.
-     */
-    private String playerLeavingNick = null;
-    
-    /**
      * Static handler for HTML tag parsing. TODO: use BoardTextFormatter
      */
     public static TagHandler tagHandler = null;
+    
+    public BoardActivity() {
+        super();
+        for (int i = 0; i < BoardViewPiece.MAX_PLAYERS; i++) {
+            playerIds[i] = -1;
+        }
+    }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -308,7 +310,7 @@ public class BoardActivity extends FragmentActivity implements
         private SparseArray<Auction> auctions;
         private SparseArray<Trade> trades;
         private SparseArray<Configurable> configurables;
-        private int playerId;
+        private int selfPlayerId;
         private String cookie;
         private GameStatus status;
         private String clientName;
@@ -330,7 +332,7 @@ public class BoardActivity extends FragmentActivity implements
             this.auctions = activity.auctions;
             this.trades = activity.trades;
             this.configurables = activity.configurables;
-            this.playerId = activity.playerId;
+            this.selfPlayerId = activity.selfPlayerId;
             this.cookie = activity.cookie;
             this.status = activity.status;
             this.clientName = activity.clientName;
@@ -353,7 +355,7 @@ public class BoardActivity extends FragmentActivity implements
             activity.auctions = this.auctions;
             activity.trades = this.trades;
             activity.configurables = this.configurables;
-            activity.playerId = this.playerId;
+            activity.selfPlayerId = this.selfPlayerId;
             activity.cookie = this.cookie;
             activity.status = this.status;
             activity.clientName = this.clientName;
@@ -445,21 +447,25 @@ public class BoardActivity extends FragmentActivity implements
         if (boardView.isOverlayOpen()) {
             boardView.closeOverlay();
         } else if (status == GameStatus.RUN) {
-            // ask to finish
-            finish();
+            Bundle args = new Bundle();
+            args.putInt("dialogType", R.id.dialog_type_confirmquit);
+            args.putString("title", getString(R.string.dialog_confirm_quit));
+            args.putString("message", getString(R.string.confirm_quit));
+            MonopolyDialog.showNewDialog(this, args);
         } else {
             finish();
         }
     }
 
-    private void initPlayerColors() {
-        int index = 0;
+    private int initPlayerColors() {
+        int count = 0;
         for (int playerId : playerIds) {
-            if (playerId > 0) {
-                BoardViewPiece.pieces[index].setPlayerId(playerId);
+            if (playerId >= 0) {
+                BoardViewPiece.pieces[count].setPlayerId(playerId);
+                count++;
             }
-            index++;
         }
+        return count;
     }
     
     private void redrawRegions() {
@@ -491,13 +497,13 @@ public class BoardActivity extends FragmentActivity implements
         case RUN:
             boardView.calculateBoardRegions();
             boardView.drawBoardRegions(estates, players);
-            boardView.drawActionRegions(estates, playerIds, players, buttons, playerId);
+            boardView.drawActionRegions(estates, playerIds, players, buttons, selfPlayerId);
             boardView.drawPieces(estates, playerIds, players);
             break;
         case END:
             boardView.calculateBoardRegions();
             boardView.drawBoardRegions(estates, players);
-            boardView.drawActionRegions(estates, playerIds, players, buttons, playerId);
+            boardView.drawActionRegions(estates, playerIds, players, buttons, selfPlayerId);
             boardView.drawPieces(estates, playerIds, players);
             break;
         }
@@ -538,13 +544,10 @@ public class BoardActivity extends FragmentActivity implements
                 BoardViewPiece.pieces[playerIndex].setProgressEstate((i - 1) % 40);
                 BoardViewPiece.pieces[playerIndex].setCurrentEstate(i % 40);
                 for (int j = 0; j <= BoardViewSurfaceThread.animationSteps; j++) {
-                    if (j == BoardViewSurfaceThread.animationSteps) {
-                        BoardViewPiece.pieces[playerIndex].setProgressEstateDelta(0);
-                    } else {
-                        BoardViewPiece.pieces[playerIndex].setProgressEstateDelta(j);
-                    }
+                    BoardViewPiece.pieces[playerIndex].setProgressEstateDelta(j);
                     boardView.drawPieces(estates, playerIds, players);
                     boardView.waitDraw();
+                    boardView.redrawOverlay();
                 }
             }
         }
@@ -623,8 +626,8 @@ public class BoardActivity extends FragmentActivity implements
      *            Whether the buttons should be cleared, if any.
      */
     private void writeMessage(String msgText, int color, BoardViewOverlay overlayType, int objectId) {
-        BoardActivity.this.chatListAdapter.add(new ChatItem(msgText, color, overlayType, objectId));
-        BoardActivity.this.chatListAdapter.notifyDataSetChanged();
+        chatListAdapter.add(new ChatItem(msgText, color, overlayType, objectId));
+        chatListAdapter.notifyDataSetChanged();
     }
     
     private void writeMessage(String msgText, int color) {
@@ -648,7 +651,7 @@ public class BoardActivity extends FragmentActivity implements
      */
     private void updatePlayerView() {
         for (int i = 0; i < BoardViewPiece.MAX_PLAYERS; i++) {
-            if (this.playerIds[i] == 0) {
+            if (this.playerIds[i] < 0) {
                 this.playerView[i].setVisibility(View.GONE);
             } else {
                 Player player = this.players.get(this.playerIds[i]);
@@ -660,7 +663,7 @@ public class BoardActivity extends FragmentActivity implements
                     TextView text1 = (TextView) this.playerView[i].findViewById(R.id.player_text_1);
                     TextView text2 = (TextView) this.playerView[i].findViewById(R.id.player_text_2);
                     SpannableString nameText = new SpannableString(player.getName());
-                    if (player.getPlayerId() == playerId) {
+                    if (player.getPlayerId() == selfPlayerId) {
                         nameText.setSpan(new StyleSpan(Typeface.BOLD), 0, player.getName().length(), SpannedString.SPAN_EXCLUSIVE_EXCLUSIVE);
                     }
                     text1.setText(nameText);
@@ -783,7 +786,7 @@ public class BoardActivity extends FragmentActivity implements
         MenuItem declareBankrupt = (MenuItem) menu.findItem(R.id.menu_bankrupt);
         if (status == GameStatus.RUN) {
             declareBankrupt.setVisible(true);
-            declareBankrupt.setEnabled(players.get(playerId).isInDebt());
+            declareBankrupt.setEnabled(players.get(selfPlayerId).isInDebt());
         } else {
             declareBankrupt.setVisible(false);
         }
@@ -801,10 +804,10 @@ public class BoardActivity extends FragmentActivity implements
 
     @Override
     public boolean onMenuItemSelected(int featureId, MenuItem item) {
+        Bundle args = new Bundle();
         switch (item.getItemId()) {
         case R.id.menu_descr:
             if (status == GameStatus.CONFIG) {
-                Bundle args = new Bundle();
                 args.putInt("dialogType", R.id.dialog_type_prompt_name);
                 args.putString("title", getString(R.string.pref_game_descr_dialog_title));
                 args.putString("message", getString(R.string.pref_game_descr_summary));
@@ -815,12 +818,11 @@ public class BoardActivity extends FragmentActivity implements
             }
             break;
         case R.id.menu_bankrupt:
-            if (status == GameStatus.RUN && players.get(playerId).isInDebt()) {
+            if (status == GameStatus.RUN && players.get(selfPlayerId).isInDebt()) {
                 sendToNetThread(BoardNetworkAction.MSG_DECLARE_BANKRUPCY, null);
             }
             break;
         case R.id.menu_name:
-            Bundle args = new Bundle();
             args.putInt("dialogType", R.id.dialog_type_prompt_name);
             args.putString("title", getString(R.string.pref_player_nick_dialog_title));
             args.putString("message", getString(R.string.pref_player_nick_summary));
@@ -833,12 +835,26 @@ public class BoardActivity extends FragmentActivity implements
             Intent settings = new Intent(this, SettingsActivity.class);
             this.startActivity(settings);
             break;
+        case R.id.menu_quit:
+            if (status == GameStatus.RUN) {
+                args.putInt("dialogType", R.id.dialog_type_confirmquit);
+                args.putString("title", getString(R.string.dialog_confirm_quit));
+                args.putString("message", getString(R.string.confirm_quit));
+                MonopolyDialog.showNewDialog(this, args);
+            } else {
+                finish();
+            }
+            break;
         }
         return true;
     }
 
     private String getFullTitle() {
-        return gameItem.getDescription() + "  #" + gameItem.getGameId() + ": " + gameItem.getTypeName() + " (" + gameItem.getType() + ")";
+        String gameNumber = "";
+        if (gameItem.getGameId() >= 0) {
+            gameNumber = "#" + gameItem.getGameId() + ": ";
+        }
+        return gameItem.getDescription() + " / " + gameNumber + gameItem.getTypeName() + " (" + gameItem.getType() + ")";
     }
 
     /**
@@ -858,8 +874,12 @@ public class BoardActivity extends FragmentActivity implements
      */
     public static String makeEstateName(Estate estate) {
         if (estate == null) return "";
+        String estateName = estate.getName();
+        if (estateName == null) {
+            estateName = "#" + estate.getEstateId();
+        }
         return "<b><font color=\"" + estate.getHtmlColor() + "\">" +
-        estate.getName() + "</font></b>";
+        escapeHtml(estateName) + "</font></b>";
     }
 
     /**
@@ -869,14 +889,19 @@ public class BoardActivity extends FragmentActivity implements
      */
     public static String makePlayerName(Player player) {
         if (player == null) return "";
+        String playerName = player.getName();
         BoardViewPiece piece = BoardViewPiece.getPiece(player.getPlayerId());
         int color = Color.WHITE;
         if (piece != null) {
             color = piece.getColor();
         }
         
+        if (playerName == null) {
+            playerName = "#" + player.getPlayerId();
+        }
+        
         return "<b><font color=\"" + Estate.getHtmlColor(color) + "\">" +
-        player.getName() + "</font></b>";
+        escapeHtml(playerName) + "</font></b>";
     }
 
     /**
@@ -888,11 +913,25 @@ public class BoardActivity extends FragmentActivity implements
     public static String makeFieldLine(String key, String value) {
         return "<b>" + key + "</b>: " + value + "<br>";
     }
+
+    /**
+     * Escapes the given string for the places we use HTML formatting here (very few).
+     * @param value
+     * @return
+     */
+    public static String escapeHtml(String value) {
+        return value.replace("&", "&amp;").replace("<", "&lt;");
+    }
     
+    /**
+     * Given a String representing a player name, find the player's ID and thus object to send to {@link makePlayerName}.
+     * @param playerName
+     * @return
+     */
     private String highlightPlayer(String playerName) {
-        for (int i = 0; i < BoardViewPiece.MAX_PLAYERS; i++) {
-            if (playerIds[i] != 0) {
-                Player player = players.get(playerIds[i]);
+        for (int playerId : playerIds) {
+            if (playerId >= 0) {
+                Player player = players.get(playerId);
                 if (player.getName().equals(playerName)) {
                     return makePlayerName(player);
                 }
@@ -908,13 +947,13 @@ public class BoardActivity extends FragmentActivity implements
         Bundle state = new Bundle();
         state.putString("command", command);
         state.putString("value", value);
-        BoardActivity.this.sendToNetThread(BoardNetworkAction.MSG_CONFIG, state);
+        sendToNetThread(BoardNetworkAction.MSG_CONFIG, state);
     }
 
     @Override
     public void onStartGame() {
         Log.d("monopd", "BoardView tapped start game");
-        BoardActivity.this.sendToNetThread(BoardNetworkAction.MSG_GAME_START, null);
+        sendToNetThread(BoardNetworkAction.MSG_GAME_START, null);
     }
 
     @Override
@@ -931,17 +970,17 @@ public class BoardActivity extends FragmentActivity implements
             case JOIN:
                 status = GameStatus.JOIN;
                 boardView.setStatus(GameStatus.JOIN);
-                writeMessage("Joining game: " + getFullTitle(), Color.YELLOW);
+                writeMessage("Joining game: " + escapeHtml(getFullTitle()), Color.YELLOW);
                 break;
             case CREATE:
                 status = GameStatus.CREATE;
                 boardView.setStatus(GameStatus.CREATE);
-                writeMessage("Creating game: " + getFullTitle(), Color.YELLOW);
+                writeMessage("Creating game: " + escapeHtml(getFullTitle()), Color.YELLOW);
                 break;
             case RECONNECT:
                 status = GameStatus.RECONNECT;
                 boardView.setStatus(GameStatus.RECONNECT);
-                writeMessage("Reconnecting to game: " + getFullTitle(), Color.YELLOW);
+                writeMessage("Reconnecting to game: " + escapeHtml(getFullTitle()), Color.YELLOW);
                 break;
             default:
                 break;
@@ -979,14 +1018,23 @@ public class BoardActivity extends FragmentActivity implements
     public String getPlayerOverlayText(int playerId) {
         Player player = players.get(playerId);
         if (player == null) {
-            return "<i>This player has left and this information is no longer available.</i>";
+            return "<i>This player's information is no longer available.</i>";
         }
         StringBuilder sb = new StringBuilder();
         sb.append(makePlayerName(player));
         sb.append("<br>");
+        boolean inGame = false; 
+        for (int aPlayerId : playerIds) {
+            if (aPlayerId == playerId) {
+                inGame = true;
+            }
+        }
         //sb.append("Player ID: " + player.getPlayerId() + "\n");
+        if (!inGame) {
+            sb.append("<i><font color=\"gray\">This player is not in the game.</font></i><br>");
+        }
         if (player.isMaster() && status == GameStatus.CONFIG) {
-            sb.append("<i>This player created this game.</i><br>");
+            sb.append("<i><font color=\"yellow\">This player created this game.</font></i><br>");
         }
         if (player.isTurn()) {
             sb.append("<i><font color=\"yellow\">It is this player's turn.</font></i><br>");
@@ -996,9 +1044,15 @@ public class BoardActivity extends FragmentActivity implements
                     player.getHost()));
         }
         if (status == GameStatus.RUN) {
-            Estate estate = estates.get(player.getLocation());
-            sb.append(makeFieldLine("On estate", 
-                    makeEstateName(estate)));
+            BoardViewPiece piece = BoardViewPiece.getPiece(playerId);
+            if (piece != null) {
+                sb.append(makeFieldLine("Color",  piece.getColorName()));
+                Estate estate = estates.get(piece.getCurrentEstate());
+                if (estate != null) {
+                    sb.append(makeFieldLine("On estate", 
+                        makeEstateName(estate)));
+                }
+            }
             sb.append(makeFieldLine("Money", 
                     "$" + player.getMoney()));
             
@@ -1046,7 +1100,7 @@ public class BoardActivity extends FragmentActivity implements
                     Integer.toString(houses)));
             sb.append(makeFieldLine("Owned hotels", 
                     Integer.toString(hotels)));
-            sb.append(makeFieldLine("Owned complete estate sets", 
+            sb.append(makeFieldLine("Owned monopolies", 
                     Integer.toString(completeGroups)));
         }
         return sb.toString();
@@ -1066,7 +1120,7 @@ public class BoardActivity extends FragmentActivity implements
         if (estate.canBeOwned()) {
             EstateGroup group = estateGroups.get(estate.getEstateGroup());
             if (group != null) {
-                sb.append(makeFieldLine("Group", group.getName()));
+                sb.append(makeFieldLine("Group", escapeHtml(group.getName())));
             }
             if (estate.getOwner() <= 0) {
                 sb.append(makeFieldLine("Current owner", "<i>none</i>"));
@@ -1116,7 +1170,7 @@ public class BoardActivity extends FragmentActivity implements
                                 "<i>mortgaged</i>"));
                     } else {
                         sb.append(makeFieldLine("Current rent",
-                                "$" + utilCost + " � DICE ROLL TOTAL"));
+                                "$" + utilCost + " &times; DICE ROLL TOTAL"));
                     }
                     sb.append(makeFieldLine("Utilities owned by " +
                             BoardActivity.makePlayerName(player),
@@ -1178,9 +1232,9 @@ public class BoardActivity extends FragmentActivity implements
         }
         
         String onThis = "";
-        for (int i = 0; i < BoardViewPiece.MAX_PLAYERS; i++) {
-            if (BoardActivity.this.playerIds[i] != 0) {
-                Player player = BoardActivity.this.players.get(BoardActivity.this.playerIds[i]);
+        for (int playerId : playerIds) {
+            if (playerId >= 0) {
+                Player player = players.get(playerId);
                 if (player.getLocation() == estateId) {
                     if (onThis != "") {
                         onThis += ", ";
@@ -1205,20 +1259,6 @@ public class BoardActivity extends FragmentActivity implements
         StringBuilder sb = new StringBuilder();
         Player auPlayer = players.get(auction.getActorId());
         Estate estate = estates.get(auction.getEstateId());
-        sb.append(makePlayerName(auPlayer))
-        .append(" is auctioning off ")
-        .append(makeEstateName(estate))
-        .append("<br>");
-        if (auction.getHighBidder() == 0) {
-            sb.append(makeFieldLine("Current highest bid",
-                    "<i>none yet</i>"));
-        } else {
-            Player bidPlayer = players.get(auction.getHighBidder());
-            sb.append(makeFieldLine("Current highest bid",
-                    "$" + auction.getHighBid() + " by " + makePlayerName(bidPlayer)));
-        }
-        sb.append(makeFieldLine("Number of bids",
-                Integer.toString(auction.getNumberOfBids())));
         switch (auction.getStatus()) {
         case 0: // ACTIVE
             sb.append("<font color=\"green\"><b>ACTIVE</b></font><br>");
@@ -1234,8 +1274,23 @@ public class BoardActivity extends FragmentActivity implements
             break;
         }
         sb.append("<br>");
+        sb.append(makePlayerName(auPlayer))
+        .append(" is auctioning off ")
+        .append(makeEstateName(estate))
+        .append("<br>");
+        if (auction.getHighBidder() == 0) {
+            sb.append(makeFieldLine("Current highest bid",
+                    "<i>no bids yet</i>"));
+        } else {
+            Player bidPlayer = players.get(auction.getHighBidder());
+            sb.append(makeFieldLine("Current highest bid",
+                    "$" + auction.getHighBid() + " by " + makePlayerName(bidPlayer)));
+        }
+        sb.append(makeFieldLine("Number of bids",
+                Integer.toString(auction.getNumberOfBids())));
         String estateOverlay = getEstateOverlayText(auction.getEstateId());
         if (estateOverlay != null) {
+            sb.append("<br><b>Estate being auctioned off</b>:<br>");
             sb.append(estateOverlay);
         }
         return sb.toString();
@@ -1254,60 +1309,72 @@ public class BoardActivity extends FragmentActivity implements
         case NEW:
         case UPDATED:
         case ACCEPTED:
-            sb.append("<b><font color=\"green\">Active</font></b> trade with ");
+            sb.append("<font color=\"green\"><b>ACTIVE</b></font> trade with ");
             break;
         case REJECTED:
-            sb.append("<b><font color=\"red\">Cancelled</font></b> trade with ");
+            sb.append("<font color=\"red\"><b>CANCELLED</b></font> trade with ");
             break;
         case COMPLETED:
-            sb.append("<b><font color=\"gray\">Completed</font></b> trade with ");
+            sb.append("<font color=\"gray\"><b>COMPLETED</b></font> trade with ");
             break;
         }
         sb.append(tradePlayers.size())
-        .append(" participants and ")
+        .append(" participant");
+        if (tradePlayers.size() != 1) { sb.append('s'); }
+        sb.append(" and ")
         .append(offers.size())
-        .append(" proposed trades<br>");
+        .append(" proposed trade");
+        if (offers.size() != 1) { sb.append('s'); }
+        sb.append("<br>");
         sb.append("<br>");
         sb.append(makeFieldLine("Trade revision",
                 Integer.toString(trade.getRevision())));
         sb.append("<br>");
         sb.append("<b>Current participants</b>:<br>");
-        for (TradePlayer player : tradePlayers) {
-            sb.append(makePlayerName(players.get(player.getPlayerId())))
-            .append(" has ");
-            if (player.hasAccepted()) {
-                sb.append("<font color=\"green\">accepted</font>");
-            } else {
-                sb.append("<font color=\"#ff8800\">not yet accepted</font>");
+        if (tradePlayers.size() == 0) {
+            sb.append("<i>no participants</i>");
+        } else {
+            for (TradePlayer player : tradePlayers) {
+                sb.append(makePlayerName(players.get(player.getPlayerId())))
+                .append(" has <b>");
+                if (player.hasAccepted()) {
+                    sb.append("<font color=\"green\">accepted</font>");
+                } else {
+                    sb.append("<font color=\"#ff8800\">not yet accepted</font>");
+                }
+                sb.append("</b> this trade.<br>");
             }
-            sb.append(" this trade.<br>");
         }
         sb.append("<br>");
         sb.append("<b>Current trade proposals</b>:<br>");
-        for (TradeOffer offer : offers) {
-            sb.append(makePlayerName(players.get(offer.getPlayerIdFrom())))
-            .append(" gives ");
-            switch (offer.getType()) {
-            case CARD:
-                sb.append(" card #")
-                .append(offer.getOfferValue());
-                break;
-            case ESTATE:
-                sb.append(" ")
-                .append(makeEstateName(estates.get(offer.getOfferValue())));
-                break;
-            case MONEY:
-                sb.append(" $")
-                .append(Integer.toString(offer.getOfferValue()));
-                break;
-            default:
-                sb.append(" something of value with id: ")
-                .append(Integer.toString(offer.getOfferValue()));
-                break;
+        if (offers.size() == 0) {
+            sb.append("<i>no proposals yet</i>");
+        } else {
+            for (TradeOffer offer : offers) {
+                sb.append(makePlayerName(players.get(offer.getPlayerIdFrom())))
+                .append(" gives ");
+                switch (offer.getType()) {
+                case CARD:
+                    sb.append(" card #")
+                    .append(offer.getOfferValue());
+                    break;
+                case ESTATE:
+                    sb.append(" ")
+                    .append(makeEstateName(estates.get(offer.getOfferValue())));
+                    break;
+                case MONEY:
+                    sb.append(" $")
+                    .append(Integer.toString(offer.getOfferValue()));
+                    break;
+                default:
+                    sb.append(" something of value with id: ")
+                    .append(Integer.toString(offer.getOfferValue()));
+                    break;
+                }
+                sb.append(" to ")
+                .append(makePlayerName(players.get(offer.getPlayerIdTo())))
+                .append("<br>");
             }
-            sb.append(" to ")
-            .append(makePlayerName(players.get(offer.getPlayerIdTo())))
-            .append("<br>");
         }
         return sb.toString();
     }
@@ -1319,69 +1386,78 @@ public class BoardActivity extends FragmentActivity implements
 
     @Override
     public int getSelfPlayerId() {
-        return playerId;
+        return selfPlayerId;
     }
 
     @Override
-    public ArrayList<OverlayButton> getPlayerOverlayButtons(final int playerId) {
+    public ArrayList<OverlayButton> getPlayerOverlayButtons(final int overlayPlayerId) {
         ArrayList<OverlayButton> buttons = new ArrayList<OverlayButton>(4);
+        boolean inGame = false;
+        if (overlayPlayerId < 0) {
+            return buttons;
+        } else {
+            for (int playerId : playerIds) {
+                if (playerId == overlayPlayerId) {
+                    inGame = true;
+                }
+            }
+        }
+        boolean pingable = inGame && players.get(overlayPlayerId) != null;
         if (status == GameStatus.CONFIG) {
-            boolean kickable = isMaster &&
-                    playerId != BoardActivity.this.playerId &&
-                    players.get(playerId) != null;
+            boolean kickable = pingable && isMaster &&
+                    overlayPlayerId != selfPlayerId;
             buttons.add(new OverlayButton(
                     "Kick", kickable, 3,
                     new GestureRegionListener() {
                         @Override
                         public void onGestureRegionClick(GestureRegion gestureRegion) {
                             Bundle args = new Bundle();
-                            args.putInt("playerId", playerId);
+                            args.putInt("playerId", overlayPlayerId);
                             sendToNetThread(BoardNetworkAction.MSG_GAME_KICK, args);
                         }
                     }));
         } else {
-            boolean tradable = status == GameStatus.RUN &&
-                    playerId != BoardActivity.this.playerId &&
-                    players.get(playerId) != null;
+            boolean tradable = pingable && status == GameStatus.RUN &&
+                    overlayPlayerId != selfPlayerId;
             buttons.add(new OverlayButton(
                     "Trade", tradable, 3,
                     new GestureRegionListener() {
                         @Override
                         public void onGestureRegionClick(GestureRegion gestureRegion) {
                             Bundle args = new Bundle();
-                            args.putInt("playerId", playerId);
+                            args.putInt("playerId", overlayPlayerId);
                             sendToNetThread(BoardNetworkAction.MSG_TRADE_NEW, args);
                         }
                     }));
         }
         buttons.add(new OverlayButton(
-                "!ping", players.get(playerId) != null, 1,
+                "!ping", pingable, 1,
                 new GestureRegionListener() {
                     @Override
                     public void onGestureRegionClick(GestureRegion gestureRegion) {
-                        Player player = players.get(playerId);
+                        Player player = players.get(overlayPlayerId);
                         if (player != null) {
                             sendCommand("!ping " + player.getName());
                         }
                     }
                 }));
         buttons.add(new OverlayButton(
-                "!date", players.get(playerId) != null, 1,
+                "!date", pingable, 1,
                 new GestureRegionListener() {
                     @Override
                     public void onGestureRegionClick(GestureRegion gestureRegion) {
-                        Player player = players.get(playerId);
+                        Player player = players.get(overlayPlayerId);
                         if (player != null) {
                             sendCommand("!date " + player.getName());
                         }
                     }
                 }));
         buttons.add(new OverlayButton(
-                "!ver", players.get(playerId) != null, 1,
+                "!ver", pingable, 1,
                 new GestureRegionListener() {
                     @Override
                     public void onGestureRegionClick(GestureRegion gestureRegion) {
-                        Player player = players.get(playerId);
+                        Player player = players.get(overlayPlayerId);
                         if (player != null) {
                             sendCommand("!version " + player.getName());
                         }
@@ -1395,7 +1471,7 @@ public class BoardActivity extends FragmentActivity implements
         ArrayList<OverlayButton> buttons = new ArrayList<OverlayButton>(4);
         Estate estate = estates.get(estateId);
         if (estate != null && estate.canBeOwned()) {
-            boolean isOwner = estate.getOwner() == playerId;
+            boolean isOwner = estate.getOwner() == selfPlayerId;
             boolean canMortgage = isOwner && estate.canToggleMortgage();
             String mortgageText = estate.isMortgaged() ? "Unmortgage" : "Mortgage";
             boolean canSellEstate = isOwner;
@@ -1556,7 +1632,7 @@ public class BoardActivity extends FragmentActivity implements
                 args.putInt("offerType", type.getIndex());
                 args.putInt("offerStep", step.getIndex());
                 args.putInt("tradeId", finalTrade.getInt("tradeId"));
-                serializePlayers(args, -1);
+                serializePlayers(args, -1, type);
                 dialog = MonopolyDialog.showNewDialog(this, args);
             } else {
                 tradeAddOfferPrompt(TradeOfferStep.VALUE, finalTrade);
@@ -1569,6 +1645,7 @@ public class BoardActivity extends FragmentActivity implements
                 args.putInt("dialogType", R.id.dialog_type_prompt_money);
                 args.putString("title", getString(R.string.dialog_choose_trademoney));
                 args.putString("message", getString(R.string.choose_trademoney));
+                args.putInt("default", 1);
                 args.putInt("min", 1);
                 args.putInt("max", players.get(finalTrade.getInt("playerIdFrom")).getMoney());
                 args.putBoolean("isTrade", true);
@@ -1630,7 +1707,7 @@ public class BoardActivity extends FragmentActivity implements
             args.putInt("dialogType", R.id.dialog_type_prompt_objectlist);
             args.putString("title", getString(R.string.dialog_choose_tradeplayerto));
             args.putString("message", getString(R.string.empty_dialog_prompt_objectlist_player));
-            serializePlayers(args, finalTrade.getInt("playerIdFrom", -1));
+            serializePlayers(args, finalTrade.getInt("playerIdFrom", -1), type);
             if (args.getInt("itemCount") == 1) {
                 // only one possible recipient, use it now and skip dialog!
                 int playerId = args.getInt("itemId_0");
@@ -1671,7 +1748,11 @@ public class BoardActivity extends FragmentActivity implements
             Estate estate = estates.get(i);
             if (estate.getOwner() >= 0) {
                 args.putInt("itemId_" + count, estate.getEstateId());
-                args.putString("itemName_" + count, estate.getName());
+                args.putString("itemName_" + count, makeEstateName(estate));
+                Player owner = players.get(estate.getOwner());
+                if (owner != null) {
+                    args.putString("itemSubtext_" + count, "Owned by " + makePlayerName(owner));
+                }
                 count++;
             }
         }
@@ -1679,14 +1760,32 @@ public class BoardActivity extends FragmentActivity implements
         args.putString("itemType", "ESTATE");
     }
 
-    private void serializePlayers(Bundle args, int playerIdExclude) {
+    private void serializePlayers(Bundle args, int playerIdExclude, TradeOfferType type) {
         int count = 0;
         for (int i = 0; i < players.size(); i++) {
             int playerId = players.keyAt(i);
             Player player = players.get(playerId);
             if (playerIdExclude != player.getPlayerId() && player.getGameId() == gameItem.getGameId()) {
                 args.putInt("itemId_" + count, playerId);
-                args.putString("itemName_" + count, player.getName());
+                args.putString("itemName_" + count, makePlayerName(player));
+                switch (type) {
+                default:
+                case MONEY:
+                    args.putString("itemSubtext_" + count, "$" + player.getMoney());
+                    break;
+                case ESTATE:
+                    int ownedE = 0;
+                    for (Estate est : estates) {
+                        if (est.getOwner() == playerId) {
+                            ownedE++;
+                        }
+                    }
+                    args.putString("itemSubtext_" + count, ownedE + " estates owned");
+                    break;
+                case CARD:
+                    args.putString("itemSubtext_" + count, "0 cards owned");
+                    break;
+                }
                 count++;
             }
         }
@@ -1714,10 +1813,10 @@ public class BoardActivity extends FragmentActivity implements
     }
 
     @Override
-    public void onClient(int playerId, String cookie) {
+    public void onClient(int selfPlayerId, String cookie) {
         Log.v("monopd", "net: Received onClient() from MonoProtocolHandler");
-        BoardActivity.this.playerId = playerId;
-        BoardActivity.this.cookie = cookie;
+        this.selfPlayerId = selfPlayerId;
+        this.cookie = cookie;
     }
 
     @Override
@@ -1732,7 +1831,6 @@ public class BoardActivity extends FragmentActivity implements
                 String oldNick = null;
                 boolean changingLocation = false;
                 boolean changingMaster = false;
-                boolean wasMaster = false;
                 // get player from internal data
                 Player player = players.get(updatePlayerId);
                 // if not found, add internally
@@ -1754,13 +1852,12 @@ public class BoardActivity extends FragmentActivity implements
                             if (!value.equals(player.getName())) {
                                 oldNick = makePlayerName(player);
                             }
-                            if (player.getPlayerId() == BoardActivity.this.playerId) {
+                            if (player.getPlayerId() == selfPlayerId) {
                                 nickname = value;
                             }
                         }
                         if (key.equals("master")) {
                             changingMaster = true;
-                            wasMaster = player.isMaster();
                         }
                         attr.set(player, value);
                     }
@@ -1772,13 +1869,9 @@ public class BoardActivity extends FragmentActivity implements
                     // this player is not in this game
                     return;
                 }
-                // first player in list is master on joining a game
-                if (players.size() == 0) {
-                    player.setMaster(true);
-                }
                 // find in player list
-                for (int i = 0; i < BoardViewPiece.MAX_PLAYERS; i++) {
-                    if (playerIds[i] == updatePlayerId) {
+                for (int playerId : playerIds) {
+                    if (playerId == updatePlayerId) {
                         found = true;
                     }
                 }
@@ -1794,7 +1887,7 @@ public class BoardActivity extends FragmentActivity implements
                         case INIT:
                             // add to player list
                             for (int i = 0; i < BoardViewPiece.MAX_PLAYERS; i++) {
-                                if (playerIds[i] == 0) {
+                                if (playerIds[i] < 0) {
                                     playerIds[i] = updatePlayerId;
                                     isJoin = true;
                                     break;
@@ -1811,23 +1904,16 @@ public class BoardActivity extends FragmentActivity implements
                 // update player view
                 updatePlayerView();
                 // redraw for possible new colors
-                boardView.drawActionRegions(estates, playerIds, players, buttons, playerId);
+                boardView.drawActionRegions(estates, playerIds, players, buttons, selfPlayerId);
                 // redraw overlay for possible new data
                 boardView.redrawOverlay();
                 // join message
                 if (isJoin) {
-                    // before estate data, is in-game list
-                    if (estates.size() == 0) {
-                        // indicate master
-                        if (player.isMaster()) {
-                            writeMessage(makePlayerName(player) + " is in the game as game master.", Color.GRAY, BoardViewOverlay.PLAYER, updatePlayerId);
-                            wasMaster = true;
-                        } else {
-                            writeMessage(makePlayerName(player) + " is in the game.", Color.GRAY, BoardViewOverlay.PLAYER, updatePlayerId);
-                        }
-                    } else {
-                        // normal join
+                    // is in-game list?
+                    if (status == GameStatus.CONFIG) {
                         writeMessage(makePlayerName(player) + " joined the game.", Color.GRAY, BoardViewOverlay.PLAYER, updatePlayerId);
+                    } else {
+                        writeMessage(makePlayerName(player) + " is in the game.", Color.GRAY, BoardViewOverlay.PLAYER, updatePlayerId);
                     }
                 } else if (oldNick != null) {
                     // nick changed!
@@ -1837,22 +1923,10 @@ public class BoardActivity extends FragmentActivity implements
                     animateMove(player);
                 }
                 if (changingMaster) {
-                    if (player.getPlayerId() == BoardActivity.this.playerId && player.isMaster() != isMaster) {
+                    if (player.getPlayerId() == selfPlayerId && player.isMaster() != isMaster) {
                         isMaster = player.isMaster();
                         if (player.isMaster()) {
                             master = player.getPlayerId();
-                        }
-                    }
-                    if (player.isMaster() && !wasMaster) {
-                        if (playerLeavingNick != null) {
-                            writeMessage(playerLeavingNick + " left the game giving game master to " + player.getName() + ".", Color.GRAY, BoardViewOverlay.PLAYER, updatePlayerId);
-                            playerLeavingNick = null;
-                        } else {
-                            if (master > 0) {
-                                playerLeavingNick = makePlayerName(player);
-                            } else {
-                                writeMessage(makePlayerName(player) + " is now game master.", Color.GRAY, BoardViewOverlay.PLAYER, updatePlayerId);
-                            }
                         }
                     }
                 }
@@ -1866,7 +1940,12 @@ public class BoardActivity extends FragmentActivity implements
 
             @Override
             public void run() {
-                if (status != GameStatus.RUN && status != GameStatus.END) {
+                Player player = players.get(playerId);
+                if (status == GameStatus.RUN || status == GameStatus.END) {
+                    if (player != null) {
+                        player.setGrayed(true);
+                    }
+                } else {
                     boolean deleted = false;
                     for (int i = 0; i < BoardViewPiece.MAX_PLAYERS; i++) {
                         if (playerIds[i] == playerId) {
@@ -1876,7 +1955,7 @@ public class BoardActivity extends FragmentActivity implements
                             if (i < 3) {
                                 playerIds[i] = playerIds[i + 1];
                             } else {
-                                playerIds[i] = 0;
+                                playerIds[i] = -1;
                                 /*for (int j = 0; j < players.size(); j++) {
                                     int playerIdJ = players.keyAt(j);
                                     boolean foundPlayerJ = false;
@@ -1894,25 +1973,13 @@ public class BoardActivity extends FragmentActivity implements
                         }
                     }
                 }
-                if (players.get(playerId) != null) {
-                    if (status == GameStatus.CONFIG && players.get(playerId).getGameId() == gameItem.getGameId()) {
+                if (player != null) {
+                    if (status == GameStatus.CONFIG && player.getGameId() == gameItem.getGameId()) {
                         if (master == playerId) {
-                            playerLeavingNick = makePlayerName(players.get(playerId));
-                            master = 0;
-                        } else {
-                            if (playerLeavingNick != null) {
-                                writeMessage(makePlayerName(players.get(playerId)) + " left the game giving game master to " + playerLeavingNick + ".", Color.GRAY, BoardViewOverlay.PLAYER, playerId);
-                                playerLeavingNick = null;
-                            } else {
-                                writeMessage(makePlayerName(players.get(playerId)) + " left the game.", Color.GRAY, BoardViewOverlay.PLAYER, playerId);
-                            }
+                            master = -1;
                         }
-                    } else if (status == GameStatus.RUN || status == GameStatus.END) {
-                        players.get(playerId).setGrayed(true);
-                        updatePlayerView();
-                        return;
+                        writeMessage(makePlayerName(player) + " left the game.", Color.GRAY, BoardViewOverlay.PLAYER, playerId);
                     }
-                    players.delete(playerId);
                     updatePlayerView();
                 }
             }
@@ -1953,7 +2020,7 @@ public class BoardActivity extends FragmentActivity implements
                     estates.set(estateId, estate);
                 }
                 boardView.drawBoardRegions(estates, players);
-                boardView.drawActionRegions(estates, playerIds, players, buttons, playerId);
+                boardView.drawActionRegions(estates, playerIds, players, buttons, selfPlayerId);
                 boardView.drawPieces(estates, playerIds, players);
                 boardView.redrawOverlay();
             }
@@ -1961,47 +2028,51 @@ public class BoardActivity extends FragmentActivity implements
     }
 
     @Override
-    public void onGameUpdate(final int gameId, final String status) {
+    public void onGameUpdate(final int gameId, final String newStatus) {
         Log.v("monopd", "net: Received onGameUpdate() from MonoProtocolHandler");
-        BoardActivity.this.runOnUiThread(new Runnable() {
+        runOnUiThread(new Runnable() {
 
             @Override
             public void run() {
                 if (gameId > 0) {
                     gameItem.setGameId(gameId);
-                    
-                    // check for players already in game
-                    //for (int i = 0; i < players.size(); i++) {
-                    //    int playerId = players.keyAt(i);
-                    //    Player player = players.get(playerId);
-                    //    if (player.getGameId() == gameId) {
-                    //        HashMap<String, String> data = new HashMap<String, String>();
-                    //        data.put("game", Integer.toString(gameId));
-                    //        onPlayerUpdate(playerId, data);
-                    //    }
-                    //}
                 }
                 
-                BoardActivity.this.status = GameStatus.fromString(status);
-                BoardActivity.this.boardView.setStatus(BoardActivity.this.status);
-                redrawRegions();
+                GameStatus oldStatus = status;
+                status = GameStatus.fromString(newStatus);
+                boolean statusChanged = (status != oldStatus);
+                boardView.setStatus(status);
                 
-                switch (BoardActivity.this.status) {
+                switch (status) {
                 case CONFIG:
-                    //writeMessage("Entering a game...", Color.YELLOW, -1, -1);
+                    if (statusChanged) {
+                        writeMessage("Entering the game lobby...", Color.YELLOW);
+                    }
                     clearCookie();
                     break;
                 case INIT:
-                    //writeMessage("Starting game...", Color.YELLOW, -1, -1);
+                    if (statusChanged) {
+                        writeMessage("The game is starting...", Color.YELLOW);
+                    }
                     saveCookie();
                     break;
                 case RUN:
-                    initPlayerColors();
-                    redrawRegions();
+                    int playerCount = initPlayerColors();
+                    if (statusChanged) {
+                        writeMessage("The game started with " + playerCount + " players.", Color.YELLOW);
+                    }
+                    break;
+                case END:
+                    if (statusChanged) {
+                        writeMessage("The game has ended.", Color.YELLOW);
+                    }
+                    clearCookie();
                     break;
                 default:
                     break;
                 }
+                
+                redrawRegions();
             }
         });
     }
@@ -2030,7 +2101,7 @@ public class BoardActivity extends FragmentActivity implements
                 config.setEditable(isMaster);
                 configurables.put(configId, config);
                 if (boardView.isRunning()) {
-                    boardView.drawConfigRegions(BoardActivity.this.configurables, isMaster);
+                    boardView.drawConfigRegions(configurables, isMaster);
                 }
             }
         });                
@@ -2039,20 +2110,20 @@ public class BoardActivity extends FragmentActivity implements
     @Override
     public void onConfigUpdate(final ArrayList<Configurable> configList) {
         Log.v("monopd", "net: Received onConfigUpdate() from MonoProtocolHandler");
-        BoardActivity.this.runOnUiThread(new Runnable() {
+        runOnUiThread(new Runnable() {
 
             @Override
             public void run() {
                 //boolean fullList = false;
                 for (Configurable toAdd : configList) {
-                    BoardActivity.this.configurables.put(toAdd.getConfigId(), toAdd);
+                    configurables.put(toAdd.getConfigId(), toAdd);
                     //fullList = true;
                 }
                 if (boardView.isRunning()) {
                     //if (fullList) {
-                    boardView.drawConfigRegions(BoardActivity.this.configurables, isMaster);
+                    boardView.drawConfigRegions(configurables, isMaster);
                     //} else {
-                    //    boardView.redrawConfigRegions(BoardActivity.this.configurables, isMaster);
+                    //    boardView.redrawConfigRegions(configurables, isMaster);
                     //}
                 }
             }
@@ -2143,13 +2214,13 @@ public class BoardActivity extends FragmentActivity implements
     @Override
     public void onChatMessage(final int playerId, final String author, final String text) {
         Log.v("monopd", "net: Received onChatMessage() from MonoProtocolHandler");
-        BoardActivity.this.runOnUiThread(new Runnable() {
+        runOnUiThread(new Runnable() {
 
             @Override
             public void run() {
                 if (author.length() > 0) {
                     
-                    writeMessage(highlightPlayer(author) + ": " + text, Color.WHITE, BoardViewOverlay.PLAYER, playerId);
+                    writeMessage(highlightPlayer(author) + ": " + escapeHtml(text), Color.WHITE, BoardViewOverlay.PLAYER, playerId);
                     // handle !ping, !date, !version
                     if (text.startsWith("!")) {
                         boolean doCommand = false;
@@ -2182,11 +2253,11 @@ public class BoardActivity extends FragmentActivity implements
     @Override
     public void onErrorMessage(final String text) {
         Log.v("monopd", "net: Received onErrorMessage() from MonoProtocolHandler");
-        BoardActivity.this.runOnUiThread(new Runnable() {
+        runOnUiThread(new Runnable() {
 
             @Override
             public void run() {
-                writeMessage("ERROR: " + text, Color.RED);
+                writeMessage("ERROR: " + escapeHtml(text), Color.RED);
             }
         });
     }
@@ -2194,11 +2265,11 @@ public class BoardActivity extends FragmentActivity implements
     @Override
     public void onInfoMessage(final String text) {
         Log.v("monopd", "net: Received onInfoMessage() from MonoProtocolHandler");
-        BoardActivity.this.runOnUiThread(new Runnable() {
+        runOnUiThread(new Runnable() {
 
             @Override
             public void run() {
-                writeMessage("INFO: " + text, Color.LTGRAY);
+                writeMessage("INFO: " + escapeHtml(text), Color.LTGRAY);
             }
         });
     }
@@ -2207,7 +2278,7 @@ public class BoardActivity extends FragmentActivity implements
     public void onDisplayMessage(final int estateId, final String text, boolean clearText,
             final boolean clearButtons, final ArrayList<Button> newButtons) {
         Log.v("monopd", "net: Received onDisplayMessage() from MonoProtocolHandler");
-        BoardActivity.this.runOnUiThread(new Runnable() {
+        runOnUiThread(new Runnable() {
 
             @Override
             public void run() {
@@ -2221,12 +2292,12 @@ public class BoardActivity extends FragmentActivity implements
                     redrawButtons = true;
                 }
                 if (redrawButtons) {
-                    boardView.drawActionRegions(estates, playerIds, players, buttons, playerId);
+                    boardView.drawActionRegions(estates, playerIds, players, buttons, selfPlayerId);
                 }
                 if (text == null || text.length() == 0) {
                     return;
                 }
-                writeMessage("GAME: " + text, Color.CYAN, BoardViewOverlay.ESTATE, ((estateId == -1) ? -1 : estateId));
+                writeMessage("GAME: " + escapeHtml(text), Color.CYAN, BoardViewOverlay.ESTATE, ((estateId == -1) ? -1 : estateId));
             }
         });
     }
@@ -2240,7 +2311,7 @@ public class BoardActivity extends FragmentActivity implements
             for (int i = 0; i < list.size() && i < BoardViewPiece.MAX_PLAYERS; i++) {
                 newPlayerIds[i] = list.get(i).getPlayerId();
             }
-            BoardActivity.this.runOnUiThread(new Runnable() {
+            runOnUiThread(new Runnable() {
 
                 @Override
                 public void run() {
@@ -2250,22 +2321,22 @@ public class BoardActivity extends FragmentActivity implements
         } else if (type.equals("edit")) {
             // Log.d("monopd", "players: Edit " +
             // list.get(0).getNick());
-            BoardActivity.this.runOnUiThread(new Runnable() {
+            runOnUiThread(new Runnable() {
 
                 @Override
                 public void run() {
-                    BoardActivity.this.updatePlayerView();
+                    updatePlayerView();
                 }
             });
         } else if (type.equals("add")) {
             // Log.d("monopd", "players: Add " +
             // list.get(0).getNick());
-            final int[] newPlayerIds = BoardActivity.this.playerIds;
+            final int[] newPlayerIds = playerIds;
             for (int i = 0; i < list.size(); i++) {
                 for (int j = 0; j < BoardViewPiece.MAX_PLAYERS; j++) {
                     final int playerId = list.get(i).getPlayerId();
                     if (newPlayerIds[j] == 0 || newPlayerIds[j] == playerId) {
-                        BoardActivity.this.runOnUiThread(new Runnable() {
+                        runOnUiThread(new Runnable() {
 
                             @Override
                             public void run() {
@@ -2277,23 +2348,23 @@ public class BoardActivity extends FragmentActivity implements
                     }
                 }
             }
-            BoardActivity.this.runOnUiThread(new Runnable() {
+            runOnUiThread(new Runnable() {
 
                 @Override
                 public void run() {
-                    BoardActivity.this.setPlayerView(newPlayerIds);
+                    setPlayerView(newPlayerIds);
                 }
             });
         } else if (type.equals("del")) {
             //Log.d("monopd", "players: Delete "
-            //        + BoardActivity.this.players.get(list.get(0).getPlayerId()).getNick());
-            final int[] newPlayerIds = BoardActivity.this.playerIds;
+            //        + players.get(list.get(0).getPlayerId()).getNick());
+            final int[] newPlayerIds = playerIds;
             for (int i = 0; i < list.size(); i++) {
                 boolean moveBack = false;
                 for (int j = 0; j < BoardViewPiece.MAX_PLAYERS; j++) {
                     if (!moveBack && newPlayerIds[j] == list.get(i).getPlayerId()) {
                         final int playerIdClosure = newPlayerIds[j];
-                        BoardActivity.this.runOnUiThread(new Runnable() {
+                        runOnUiThread(new Runnable() {
 
                             @Override
                             public void run() {
@@ -2307,11 +2378,11 @@ public class BoardActivity extends FragmentActivity implements
                     }
                 }
             }
-            BoardActivity.this.runOnUiThread(new Runnable() {
+            runOnUiThread(new Runnable() {
 
                 @Override
                 public void run() {
-                    BoardActivity.this.setPlayerView(newPlayerIds);
+                    setPlayerView(newPlayerIds);
                 }
             });
         } else {
@@ -2321,7 +2392,7 @@ public class BoardActivity extends FragmentActivity implements
 
     @Override
     public void setHandler(Handler netHandler) {
-        BoardActivity.this.netHandler = netHandler;
+        this.netHandler = netHandler;
     }
 
     @Override
@@ -2343,7 +2414,7 @@ public class BoardActivity extends FragmentActivity implements
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    BoardActivity.this.setTitle(getFullTitle());
+                    setTitle(getFullTitle());
                 }
             });
         }
@@ -2374,7 +2445,7 @@ public class BoardActivity extends FragmentActivity implements
                 }
                 switch (trade.getLastUpdateType()) {
                 case NEW:
-                    if (trade.getActorId() == playerId) {
+                    if (trade.getActorId() == selfPlayerId) {
                         writeMessage("TRADE: You initiate a trade.", Color.MAGENTA, BoardViewOverlay.TRADE, tradeId);
                     } else {
                         writeMessage("TRADE: " + makePlayerName(players.get(trade.getActorId())) +
@@ -2386,7 +2457,7 @@ public class BoardActivity extends FragmentActivity implements
                     // updated (changes made in other onTrade* calls)
                     break;
                 case ACCEPTED:
-                    if (trade.getActorId() == playerId) {
+                    if (trade.getActorId() == selfPlayerId) {
                         writeMessage("TRADE: You accept the trade.", Color.MAGENTA, BoardViewOverlay.TRADE, tradeId);
                     } else {
                         writeMessage("TRADE: " + makePlayerName(players.get(trade.getActorId())) + " accepts the trade.", Color.MAGENTA, BoardViewOverlay.TRADE, tradeId);
@@ -2396,7 +2467,7 @@ public class BoardActivity extends FragmentActivity implements
                     writeMessage("TRADE: The trade has completed successfully.", Color.MAGENTA, BoardViewOverlay.TRADE, tradeId);
                     break;
                 case REJECTED:
-                    if (trade.getActorId() == playerId) {
+                    if (trade.getActorId() == selfPlayerId) {
                         writeMessage("TRADE: You rejected the trade.", Color.MAGENTA, BoardViewOverlay.TRADE, tradeId);
                     } else {
                         writeMessage("TRADE: " + makePlayerName(players.get(trade.getActorId())) + " rejected the trade.", Color.MAGENTA, BoardViewOverlay.TRADE, tradeId);
@@ -2529,10 +2600,10 @@ public class BoardActivity extends FragmentActivity implements
     @Override
     public boolean onKey(View v, int keyCode, KeyEvent event) {
         if (event.getAction() == KeyEvent.ACTION_UP && keyCode == KeyEvent.KEYCODE_ENTER) {
-            String text = BoardActivity.this.chatSendBox.getText().toString();
+            String text = chatSendBox.getText().toString();
             if (text.length() > 0) {
-                BoardActivity.this.sendCommand(text);
-                BoardActivity.this.chatSendBox.setText("");
+                sendCommand(text);
+                chatSendBox.setText("");
             }
         }
         return false;
@@ -2541,7 +2612,7 @@ public class BoardActivity extends FragmentActivity implements
     @Override
     public void onItemClick(AdapterView<?> listView, View itemView, int position, long id) {
         // chat item click
-        ChatItem item = BoardActivity.this.chatListAdapter.getItem(position);
+        ChatItem item = chatListAdapter.getItem(position);
         BoardViewOverlay overlayType = item.getOverlayType();
         if (item.getObjectId() < 0) {
             overlayType = BoardViewOverlay.NONE;
@@ -2551,16 +2622,16 @@ public class BoardActivity extends FragmentActivity implements
         case NONE:
             break;
         case PLAYER:
-            BoardActivity.this.boardView.overlayPlayerInfo(item.getObjectId());
+            boardView.overlayPlayerInfo(item.getObjectId());
             break;
         case ESTATE:
-            BoardActivity.this.boardView.overlayEstateInfo(item.getObjectId());
+            boardView.overlayEstateInfo(item.getObjectId());
             break;
         case AUCTION:
-            BoardActivity.this.boardView.overlayAuctionInfo(item.getObjectId());
+            boardView.overlayAuctionInfo(item.getObjectId());
             break;
         case TRADE:
-            BoardActivity.this.boardView.overlayTradeInfo(item.getObjectId());
+            boardView.overlayTradeInfo(item.getObjectId());
             break;
         }
     }
@@ -2572,7 +2643,13 @@ public class BoardActivity extends FragmentActivity implements
     
     @Override
     public void onDialogQuit(Bundle dialogArgs) {
-        sendToNetThread(BoardNetworkAction.MSG_STOP, null);
+        finish();
+    }
+
+    @Override
+    public void onDialogConfirmQuit(Bundle dialogArgs) {
+        sendToNetThread(BoardNetworkAction.MSG_GAME_QUIT, null);
+        clearCookie();
         finish();
     }
     

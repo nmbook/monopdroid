@@ -61,19 +61,19 @@ public class BoardViewPiece {
     /**
      * The player ID using the piece.
      */
-    private int playerId;
+    private int playerId = -1;
      /**
      * The estate ID the piece is currently on.
      */
-    private int currentEstate;
+    private int currentEstate = 0;
     /**
      * The estate ID of the piece as it progresses in a non-directMove.
      */
-    private int progressEstate;
+    private int progressEstate = 0;
     /**
      * The amount of progress (between 0 and anim_ms setting).
      */
-    private int progressEstateDelta;
+    private int progressEstateDelta = 0;
     
     /**
      * Create a Piece with the given index.
@@ -132,7 +132,7 @@ public class BoardViewPiece {
         case 7:
             return Color.LTGRAY;
         case 8:
-            return Color.rgb(255, 127, 0); // orange, sucker
+            return Color.rgb(255, 127, 0); // orange
         }
     }
 
@@ -225,9 +225,9 @@ public class BoardViewPiece {
      * @return A piece object. If that player ID doesn't have a piece, return null
      */
     public static BoardViewPiece getPiece(int playerId) {
-        for (int j = 0; j < MAX_PLAYERS; j++) {
-            if (playerId == BoardViewPiece.pieces[j].getPlayerId()) {
-                return BoardViewPiece.pieces[j];
+        for (BoardViewPiece piece : pieces) {
+            if (playerId == piece.getPlayerId()) {
+                return piece;
             }
         }
         return null;

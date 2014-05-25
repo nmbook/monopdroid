@@ -284,10 +284,9 @@ public class BoardActivityNetworkThread implements Runnable {
         }
         // do not continuously receive so that we can get messages from
         // the ui thread to send
-        monopd.doReceive();
-        Log.d("monopd", "postDelay result = " + netHandler.postDelayed(doDelayedReceive, 250));
         Log.d("monopd", "net: Completed thread set-up");
         Log.v("monopd", "net: Current thread = " + Thread.currentThread().getName());
+        netHandler.postDelayed(doDelayedReceive, 250);
         // await messages on network thread
         Looper.loop();
     }

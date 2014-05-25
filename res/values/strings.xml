@@ -1,5 +1,4 @@
 <resources>
-
     <string name="app_name">MONOPDroid</string>
     <string name="title_activity_server_list">Monopoly</string>
     <string name="title_activity_settings">Settings</string>
@@ -25,9 +24,11 @@
     <string name="dialog_choose_tradecard">Choose a card to trade</string>
     <string name="dialog_choose_tradeplayerfrom">Choose a sending player</string>
     <string name="dialog_choose_tradeplayerto">Choose a receiving player</string>
+    <string name="dialog_confirm_quit">Leaving game</string>
     <string name="enter_custom_bid_amount">How much do you want to bid? It must be more than $%d.</string>
     <string name="choose_tradetype">What type of thing should be traded?</string>
     <string name="choose_trademoney">What amount of money should be traded?</string>
+    <string name="confirm_quit">Are you sure you want to leave this game?</string>
     <string name="pref_player_nick_title">Nickname</string>
     <string name="pref_player_nick_summary">Change the nickname that other users will see you as.</string>
     <string name="pref_player_nick_dialog_title">Change nickname</string>
@@ -51,5 +52,4 @@
     <string name="pref_gamelist_port_dialog_title">Set list server port</string>
     <string name="pref_gamelist_auto_title">Automatically fetch list</string>
     <string name="pref_gamelist_auto_summary">If this is set, when the game list is brought to the foreground, the list will automatically be fetched</string>
-
 </resources>

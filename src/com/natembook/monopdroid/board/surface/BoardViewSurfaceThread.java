@@ -15,17 +15,12 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
-import android.graphics.Path;
 import android.graphics.Point;
-import android.graphics.RadialGradient;
 import android.graphics.Rect;
 import android.graphics.Paint.Style;
-import android.graphics.Shader.TileMode;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.GradientDrawable.Orientation;
-import android.graphics.drawable.shapes.PathShape;
-import android.graphics.drawable.ShapeDrawable;
 import android.os.Handler;
 import android.text.Layout.Alignment;
 import android.util.Log;
@@ -99,7 +94,7 @@ public class BoardViewSurfaceThread implements Runnable {
     // draw thread cached images
     //private static SparseArray<GradientDrawable> estateGradientCache = new SparseArray<GradientDrawable>();
     
-    private static Path housePath = new Path();
+    /*private static Path housePath = new Path();
     {
         housePath.moveTo(0, 4);
         housePath.lineTo(2, 4);
@@ -107,7 +102,7 @@ public class BoardViewSurfaceThread implements Runnable {
         housePath.lineTo(1, 0);
         housePath.lineTo(0, 1);
         housePath.close();
-    }
+    }*/
     
     private BoardViewOverlay overlay = BoardViewOverlay.NONE;
     private int overlayObjectId = -1;
@@ -348,6 +343,11 @@ public class BoardViewSurfaceThread implements Runnable {
     private int pzAnimIndex = 0;
     private Runnable pzAnimRunnable = null;
     
+    private static final float pzMaxScale = 2f;
+    private static final float pzMinScale = 1f;
+    private static final int pzAnimSteps = 5;
+    private static final int pzAnimMS = 5;
+    
     private void animateToPZState(PZState state, final int stepsToTake, final int msToStep) {
         final PZState[] steps = state.makeAnimationSteps(pzState, stepsToTake);
         pzAnimIndex = 0;
@@ -397,10 +397,10 @@ public class BoardViewSurfaceThread implements Runnable {
         offsetX -= centerX / scale;
         offsetY -= centerY / scale;
         scale *= scaleFactor;
-        if (scale < 1f) {
-            scale = 1f;
-        } else if (scale > 4f) {
-            scale = 4f;
+        if (scale < pzMinScale) {
+            scale = pzMinScale;
+        } else if (scale > pzMaxScale) {
+            scale = pzMaxScale;
         }
         offsetX -= -centerX / scale;
         offsetY -= -centerY / scale;
@@ -411,7 +411,7 @@ public class BoardViewSurfaceThread implements Runnable {
     
     private void zoomOut() {
         PZState state = new PZState();
-        animateToPZState(state, 15, 30);
+        animateToPZState(state, pzAnimSteps, pzAnimMS);
     }
     
     private void zoomIn(float centerX, float centerY) {
@@ -420,19 +420,19 @@ public class BoardViewSurfaceThread implements Runnable {
         float scale = pzState.getScale();
         offsetX -= centerX / scale;
         offsetY -= centerY / scale;
-        scale = 4f;
+        scale = pzMaxScale;
         offsetX -= -centerX / scale;
         offsetY -= -centerY / scale;
         PZState state = new PZState(offsetX, offsetY, scale);
         state.snapBounds();
-        animateToPZState(state, 15, 30);
+        animateToPZState(state, pzAnimSteps, pzAnimMS);
     }
 
     public void onDoubleTap(float x, float y) {
         if (overlay != BoardViewOverlay.NONE) {
             return;
         }
-        if (pzState.scale == 1f) {
+        if (pzState.scale == pzMinScale) {
             zoomIn(x, y);
         } else {
             zoomOut();
@@ -651,7 +651,7 @@ public class BoardViewSurfaceThread implements Runnable {
                 gradX = estateX = ((4f * phi) + 18f) - 2f * phi - (float)index * 2f;
                 gradY = estateY = ((4f * phi) + 18f) - (2f * phi);
                 gradH = 1;
-                pieceX = iconX = estateX - 1f;
+                pieceX = iconX = estateX + 1f;
                 pieceY = estateY + 2f;
                 iconY = ((4f * phi) + 18f) - 1.4f;
                 pieceDeltaX = 0.5f;
@@ -667,7 +667,7 @@ public class BoardViewSurfaceThread implements Runnable {
                 gradX = 2f * phi - 1f;
                 gradW = 1;
                 pieceX = estateX + 1f;
-                pieceY = iconY = estateY - 1f;
+                pieceY = iconY = estateY + 1f;
                 iconX = 1.4f;
                 pieceDeltaX = 0f;
                 pieceDeltaY = 0.5f;
@@ -681,7 +681,7 @@ public class BoardViewSurfaceThread implements Runnable {
                 gradY = estateY = 0;
                 gradY = 2f * phi - 1f;
                 gradH = 1;
-                pieceX = iconX = estateX + 3f;
+                pieceX = iconX = estateX + 1f;
                 pieceY = estateY + 1f;
                 iconY = 1.4f;
                 pieceDeltaX = -0.5f;
@@ -697,7 +697,7 @@ public class BoardViewSurfaceThread implements Runnable {
                 gradW = 1;
                 if (index != 0) {
                     pieceX = estateX + 2f;
-                    pieceY = iconY = estateY + 3f;
+                    pieceY = iconY = estateY + 1f;
                     iconX = ((4f * phi) + 18f) - 1.4f;
                     pieceDeltaX = 0f;
                     pieceDeltaY = -0.5f;
@@ -958,13 +958,32 @@ public class BoardViewSurfaceThread implements Runnable {
             layers.get(LAYER_BACKGROUND).addGestureRegion(region);
             layers.get(LAYER_BACKGROUND).addDrawable(estateDraw);
             
+            if (estate.getOwner() > 0) {
+                int ownerColor = 0;
+                int borderWidth = 8;
+                int insetWidth = 5;
+                BoardViewPiece piece = BoardViewPiece.getPiece(estate.getOwner());
+                if (piece != null) {
+                    ownerColor = piece.getColor();
+                    if (estate.isMortgaged()) {
+                        ownerColor = fade(ownerColor);
+                        borderWidth = 4;
+                        insetWidth = 3;
+                    }
+                }
+                RectDrawable estateOwnerBorder = new RectDrawable(0, ownerColor, borderWidth);
+                bounds.inset(insetWidth, insetWidth);
+                estateOwnerBorder.setBounds(bounds);
+                layers.get(LAYER_BACKGROUND).addDrawable(estateOwnerBorder);
+            }
+            
             if (estate.getColor() != 0) {
                 Orientation gradOrient = direction.getGradientOrientation();
                 GradientDrawable grad = createEstateGradient(estate.getColor(), gradOrient);
                 RectDrawable estateGradientDraw = new RectDrawable(grad, Color.BLACK, 2);
                 estateGradientDraw.setBounds(drawRegions[DRAW_REGION_BOARD_ESTATE_GRAD_BOUNDS + index]);
                 layers.get(LAYER_BACKGROUND).addDrawable(estateGradientDraw);
-                int color = Color.GREEN;
+                /*int color = Color.GREEN;
                 int houseCount = estate.getHouses();
                 if (houseCount == 5) {
                     houseCount = 1;
@@ -981,7 +1000,7 @@ public class BoardViewSurfaceThread implements Runnable {
                     house.getPaint().setShader(new RadialGradient(location.x, location.y, radius, color, darken(color), TileMode.CLAMP));
                     house.setBounds(houseBounds);
                     layers.get(LAYER_BACKGROUND).addDrawable(house);
-                }
+                }*/
             }
             
             if (estate.getIcon() == null) {
@@ -1049,29 +1068,6 @@ public class BoardViewSurfaceThread implements Runnable {
                 iconBitmapRotator.setBounds(iconBounds);
                 layers.get(LAYER_BACKGROUND).addDrawable(iconBitmapRotator);
             }
-            
-            if (estate.getOwner() > 0) {
-                int ownerColor = 0;
-                int borderWidth = 4;
-                int insetWidth = 3;
-                BoardViewPiece piece = BoardViewPiece.getPiece(estate.getOwner());
-                if (piece != null) {
-                    ownerColor = piece.getColor();
-                    if (estate.isMortgaged()) {
-                        ownerColor = Color.argb(
-                                128,
-                                Color.red(ownerColor),
-                                Color.green(ownerColor),
-                                Color.blue(ownerColor));
-                        borderWidth = 4;
-                        insetWidth = 3;
-                    }
-                }
-                RectDrawable estateOwnerBorder = new RectDrawable(0, ownerColor, borderWidth);
-                bounds.inset(insetWidth, insetWidth);
-                estateOwnerBorder.setBounds(bounds);
-                layers.get(LAYER_BACKGROUND).addDrawable(estateOwnerBorder);
-            }
         }
     }
 
@@ -1115,8 +1111,12 @@ public class BoardViewSurfaceThread implements Runnable {
             int currentEstate = BoardViewPiece.pieces[i].getCurrentEstate();
             int progressEstate = BoardViewPiece.pieces[i].getProgressEstate();
             int progressEstateDelta = BoardViewPiece.pieces[i].getProgressEstateDelta();
+            //Log.v("monopd", "draw: piece for player " + playerId +
+            //        ", current estate " + currentEstate +
+            //        ", progress estate " + progressEstate +
+            //        ", progress delta estate " + progressEstateDelta);
             // location of piece = PROGRESSDELTA steps / animation steps, between PROGRESS and CURRENT
-            if (playerId > 0) {
+            if (playerId >= 0) {
                 int sameEstateIndex = 0;
                 int sameEstate = 0;
                 for (int j = 0; j < BoardViewPiece.MAX_PLAYERS; j++) {
@@ -1130,21 +1130,27 @@ public class BoardViewSurfaceThread implements Runnable {
                         }
                     }
                 }
-                Point offsetP = drawPoints[DRAW_POINT_BOARD_ESTATE_DIRECTION_OFFSET + progressEstate];
+                // store values: amount and direction to move when overlapping other pieces
+                Point offsetMultiplier = drawPoints[DRAW_POINT_BOARD_ESTATE_DIRECTION_OFFSET + progressEstate];
+                // store values: piece radius
                 float radius = drawPoints[DRAW_POINT_BOARD_ESTATE_PIECE_RADIUS].x;
+                // store values: scale of overlapping-piece offset (based on how many pieces are overlapping us)
                 float offsetScale = sameEstateIndex - (sameEstate) / 2f;
-                Point locationP = new Point(drawPoints[DRAW_POINT_BOARD_ESTATE_PIECE_POSITION + progressEstate]);
-                Point locationC = new Point(drawPoints[DRAW_POINT_BOARD_ESTATE_PIECE_POSITION + currentEstate]);
-                if (locationP.equals(locationC)) {
-                    locationP.offset((int)(offsetP.x * offsetScale), (int)(offsetP.y * offsetScale));
+                // store values: point of Estate we are coming from (this is the last place we were)
+                Point estatePointProgress = new Point(drawPoints[DRAW_POINT_BOARD_ESTATE_PIECE_POSITION + progressEstate]);
+                // store values: point of Estate we are going to (we are currently here)
+                Point estatePointCurrent = new Point(drawPoints[DRAW_POINT_BOARD_ESTATE_PIECE_POSITION + currentEstate]);
+                /*if (estatePointProgress.equals(estatePointCurrent)) {
+                    // if current == progress, then we are stationary on this estate
+                    estatePointProgress.offset((int)(offsetMultiplier.x * offsetScale), (int)(offsetMultiplier.y * offsetScale));
                 } else {
                     float progress = (float)progressEstateDelta / (float)animationSteps; 
-                    locationC.offset(-locationP.x, -locationP.y);
-                    locationC = new Point((int)(locationC.x * progress), (int)(locationC.y * progress));
-                    locationC.offset(locationP.x, locationP.y);
-                    locationP = new Point(locationC.x, locationC.y);
-                }
-                Rect rect = new Rect((int)locationP.x - (int)radius, (int)locationP.y - (int)radius, (int)locationP.x + (int)radius, (int)locationP.y + (int)radius);
+                    estatePointCurrent.offset(-estatePointProgress.x, -estatePointProgress.y);
+                    estatePointCurrent = new Point((int)(estatePointCurrent.x * progress), (int)(estatePointCurrent.y * progress));
+                    estatePointCurrent.offset(estatePointProgress.x, estatePointProgress.y);
+                    estatePointProgress = new Point(estatePointCurrent.x, estatePointCurrent.y);
+                }*/
+                Rect rect = new Rect((int)estatePointCurrent.x - (int)radius, (int)estatePointCurrent.y - (int)radius, (int)estatePointCurrent.x + (int)radius, (int)estatePointCurrent.y + (int)radius);
                 Drawable draw = BoardViewPiece.pieces[i].getDrawable(For.BOARD);
                 draw.setBounds(rect);
                 layers.get(LAYER_PIECES).addDrawable(draw);
@@ -1493,15 +1499,24 @@ public class BoardViewSurfaceThread implements Runnable {
     }
 
     /**
-     * Make a color darker by lowering its HSV value by 40% of full value.
+     * Make a color darker by lowering its HSV value by 50% of full value.
      * @param color The input color.
      * @return The output color.
      */
     public static int darken(int color) {
         float[] hsv = new float[3];
         Color.colorToHSV(color, hsv);
-        hsv[2] -= 0.4;
+        hsv[2] -= 0.5f;
         return Color.HSVToColor(hsv);
+    }
+
+    /**
+     * Make a color more transparent by lowering its alpha to 75%.
+     * @param color The solid color.
+     * @return The output color.
+     */
+    public static int fade(int color) {
+        return Color.argb(192, Color.red(color), Color.green(color), Color.blue(color));
     }
 
     public void waitDraw() {

@@ -13,6 +13,7 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.v4.app.FragmentActivity;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -70,24 +71,28 @@ public class GameListActivity extends FragmentActivity implements
             fetcher.cancel(true);
             this.gettingGameList = false;
         }
-        outState.putInt("count", adapter.getCount());
+        int count = 0;
         for (int i = 0; i < adapter.getCount(); i++) {
             GameItem o = adapter.getItem(i);
-            outState.putInt("item_" + i + "_id", o.getGameId());
-            outState.putInt("item_" + i + "_s_count", o.getServers().size());
-            for (int j = 0; j < o.getServers().size(); j++) {
-                outState.putString("item_" + i + "_s_" + j + "_host", o.getServers().get(j).getHost());
-                outState.putInt("item_" + i + "_s_" + j + "_port", o.getServers().get(j).getPort());
-                outState.putString("item_" + i + "_s_" + j + "_version", o.getServers().get(j).getVersion());
-                outState.putInt("item_" + i + "_s_" + j + "_players", o.getServers().get(j).getUsers());
+            if (o.getItemType() != GameItemType.RECONNECT) {
+                outState.putInt("item_" + count + "_id", o.getGameId());
+                outState.putInt("item_" + count + "_s_count", o.getServers().size());
+                for (int j = 0; j < o.getServers().size(); j++) {
+                    outState.putString("item_" + count + "_s_" + j + "_host", o.getServers().get(j).getHost());
+                    outState.putInt("item_" + count + "_s_" + j + "_port", o.getServers().get(j).getPort());
+                    outState.putString("item_" + count + "_s_" + j + "_version", o.getServers().get(j).getVersion());
+                    outState.putInt("item_" + count + "_s_" + j + "_players", o.getServers().get(j).getUsers());
+                }
+                outState.putString("item_" + count + "_type", o.getType());
+                outState.putString("item_" + count + "_type_name", o.getTypeName());
+                outState.putString("item_" + count + "_descr", o.getDescription());
+                outState.putInt("item_" + count + "_players", o.getPlayers());
+                outState.putBoolean("item_" + count + "_can_join", o.canJoin());
+                outState.putInt("item_" + count + "_item_type", o.getItemType().getIndex());
+                count++;
             }
-            outState.putString("item_" + i + "_type", o.getType());
-            outState.putString("item_" + i + "_type_name", o.getTypeName());
-            outState.putString("item_" + i + "_descr", o.getDescription());
-            outState.putInt("item_" + i + "_players", o.getPlayers());
-            outState.putBoolean("item_" + i + "_can_join", o.canJoin());
-            outState.putInt("item_" + i + "_item_type", o.getItemType().getIndex());
         }
+        outState.putInt("count", count);
     }
 
     @Override
@@ -111,6 +116,7 @@ public class GameListActivity extends FragmentActivity implements
     @Override
     protected void onRestoreInstanceState(Bundle state) {
         super.onRestoreInstanceState(state);
+        Log.v("monopd", "list: getting saved list, s="+this.adapter.getCount());
         adapter.clear();
         addSavedGame();
         int count = state.getInt("count");
@@ -134,6 +140,7 @@ public class GameListActivity extends FragmentActivity implements
             adapter.add(new GameItem(item_type, id, servers, type, type_name, descr, players, can_join));
         }
         adapter.notifyDataSetChanged();
+        Log.v("monopd", "list: got saved list, s="+this.adapter.getCount());
     }
 
     @Override
@@ -246,14 +253,17 @@ public class GameListActivity extends FragmentActivity implements
 
     @Override
     public void onGameListFetching() {
+        Log.v("monopd", "list: getting fetching, s="+this.adapter.getCount());
         adapter.clear();
         addSavedGame();
         adapter.add(new GameItem(GameItemType.LOADING));
         adapter.notifyDataSetChanged();
+        Log.v("monopd", "list: got fetching, s="+this.adapter.getCount());
     }
 
     @Override
     public void onGameListFetched(ArrayList<GameItem> result) {
+        Log.v("monopd", "list: getting fetched, s="+this.adapter.getCount());
         adapter.clear();
         addSavedGame();
         for (GameItem item : result) {
@@ -264,6 +274,7 @@ public class GameListActivity extends FragmentActivity implements
         }
         adapter.notifyDataSetChanged();
         gettingGameList = false;
+        Log.v("monopd", "list: got fetched, s="+this.adapter.getCount());
     }
 
     @Override
@@ -272,6 +283,7 @@ public class GameListActivity extends FragmentActivity implements
             @Override
             public void run() {
                 gettingGameList = false;
+                Log.v("monopd", "list: getting error in fetched, s="+adapter.getCount());
                 adapter.clear();
                 addSavedGame();
                 adapter.add(new GameItem(GameItemType.ERROR));
@@ -282,6 +294,7 @@ public class GameListActivity extends FragmentActivity implements
                 args.putString("title", getString(R.string.dialog_list_error));
                 args.putString("message", description + ": " + ex.getMessage());
                 dialog = MonopolyDialog.showNewDialog(GameListActivity.this, args);
+                Log.v("monopd", "list: got error in fetched, s="+adapter.getCount());
             }
         });
     }

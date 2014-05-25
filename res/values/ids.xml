@@ -17,9 +17,9 @@
     <item name="dialog_type_info" type="id" />
     <item name="dialog_type_error" type="id" />
     <item name="dialog_type_reconnect" type="id" />
+    <item name="dialog_type_confirmquit" type="id" />
     <item name="dialog_type_prompt_name" type="id" />
     <item name="dialog_type_prompt_money" type="id" />
     <item name="dialog_type_prompt_objectlist" type="id" />
     <item name="dialog_type_prompt_tradetype" type="id" />
-    
 </resources>
