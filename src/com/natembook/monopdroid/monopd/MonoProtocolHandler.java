@@ -104,7 +104,7 @@ public class MonoProtocolHandler {
         try {
             this.rd = new BufferedReader(new InputStreamReader(this.socket.getInputStream()));
         } catch (IOException e) {
-            this.listener.onException("Socket cannot be written to", e);
+            this.listener.onException("Socket cannot be read from", e);
         }
     }
 
@@ -159,7 +159,7 @@ public class MonoProtocolHandler {
      */
     public boolean isClosed() {
         try {
-            return (this.socketClosed && this.socket.getInputStream().available() == 0);
+            return this.socketClosed && (this.socket == null || this.socket.getInputStream().available() == 0);
         } catch (IOException e) {
             return this.socketClosed;
         }
@@ -200,10 +200,11 @@ public class MonoProtocolHandler {
      * Receives a line of XML from the server and parses it. Calls the
      * listener's methods when handled. Will block until a whole line is
      * received, so use a background thread!
+     * @return Returns whether or not the receive was successful
      */
-    public void doReceive() {
+    public boolean doReceive() {
         if (this.wr == null) { // connection failed
-            return;
+            return false;
         }
         try {
             //Log.v("monopd", "monopd: Do receive");
@@ -211,8 +212,7 @@ public class MonoProtocolHandler {
                 String line = this.rd.readLine();
                 if (line == null) {
                     this.socketClosed = true;
-                    this.listener.onClose(true);
-                    return;
+                    return false;
                 } else {
                     this.pullParse(line);
                 }
@@ -220,8 +220,9 @@ public class MonoProtocolHandler {
         } catch (IOException e) {
             this.listener.onException("Socket read error", e);
             this.socketClosed = true;
-            this.listener.onClose(true);
+            return false;
         }
+        return true;
     }
     
     /**
@@ -576,9 +577,11 @@ public class MonoProtocolHandler {
 
     public void close() {
         this.listener.onClose(false);
-        try {
-            this.socket.close();
-        } catch (IOException e) {
+        if (this.socket != null) {
+            try {
+                this.socket.close();
+            } catch (IOException e) {
+            }
         }
     }
 
@@ -886,24 +889,24 @@ public class MonoProtocolHandler {
     private void handleNodeTradeEstate(XmlNodeType nodeType,
             HashMap<String, String> data, MonoProtocolGameListener glistener,
             SharedList list) {
-        int playerIdTo = this.getAttributeAsInt(data, "playerto");
+        int playerIdTo = this.getAttributeAsInt(data, "targetplayer");
         int estateId = this.getAttributeAsInt(data, "estateid");
 
         EstateTradeOffer offer = new EstateTradeOffer(glistener.getEstateOwner(estateId), playerIdTo, estateId);
         list.add(offer);
-        data.remove("playerto");
+        data.remove("targetplayer");
         data.remove("estateid");
     }
 
     private void handleNodeTradeCard(XmlNodeType nodeType,
             HashMap<String, String> data, MonoProtocolGameListener glistener,
             SharedList list) {
-        int playerIdTo = this.getAttributeAsInt(data, "playerto");
+        int playerIdTo = this.getAttributeAsInt(data, "targetplayer");
         int cardId = this.getAttributeAsInt(data, "cardid");
 
         EstateTradeOffer offer = new EstateTradeOffer(glistener.getCardOwner(cardId), playerIdTo, cardId);
         list.add(offer);
-        data.remove("playerto");
+        data.remove("targetplayer");
         data.remove("cardid");
     }
     
@@ -961,6 +964,11 @@ public class MonoProtocolHandler {
                 false);
     }
     
+    /**
+     * Change the nick. If sent during login, will set our nick for the first time.
+     * @param nick The nickname.
+     * @param doFlush Whether to flush the buffer.
+     */
     public void sendChangeNick(String nick, boolean doFlush) {
         this.sendCommand(".n" + nick, doFlush);
     }
@@ -1053,12 +1061,12 @@ public class MonoProtocolHandler {
         this.sendCommand(".Tm" + tradeId + ":" + playerIdFrom + ":" + playerIdTo + ":" + amount);
     }
 
-    public void sendTradeEstate(int tradeId, int playerIdTo, int estateId) {
-        this.sendCommand(".Te" + tradeId + ":" + playerIdTo + ":" + estateId);
+    public void sendTradeEstate(int tradeId, int estateId, int playerIdTo) {
+        this.sendCommand(".Te" + tradeId + ":" + estateId + ":" + playerIdTo);
     }
 
-    public void sendTradeCard(int tradeId, int playerIdTo, int cardId) {
-        this.sendCommand(".Tc" + tradeId + ":" + playerIdTo + ":" + cardId);
+    public void sendTradeCard(int tradeId, int cardId, int playerIdTo) {
+        this.sendCommand(".Tc" + tradeId + ":" + cardId + ":" + playerIdTo);
     }
 
     public void sendForceRefresh() {

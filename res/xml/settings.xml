@@ -23,6 +23,6 @@
         <CheckBoxPreference
             android:key="gamelist_auto"
             android:title="@string/pref_gamelist_auto_title"
-            android:defaultValue="false" android:summary="@string/pref_gamelist_auto_summary"/>
+            android:defaultValue="true" android:summary="@string/pref_gamelist_auto_summary"/>
     </PreferenceCategory>
 </PreferenceScreen>

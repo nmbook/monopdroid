@@ -83,7 +83,7 @@ public class BoardActivityNetworkThread implements Runnable {
             public void handleMessage(Message msg) {
                 Bundle rState = msg.getData();
                 BoardNetworkAction action = BoardNetworkAction.fromWhat(msg.what);
-                //Log.v("monopd", "net: Received message " + action.toString());
+                //Log.v("monopd", "net: Current msg = " + action.toString() + " Current thread = " + Thread.currentThread().getName());
                 switch (action) {
                 // error
                 case MSG_UNKNOWN:
@@ -154,7 +154,7 @@ public class BoardActivityNetworkThread implements Runnable {
                 // request to change nick
                 case MSG_NICK:
                     monopd.sendChangeNick(
-                            rState.getString("nick"));
+                            rState.getString("name"));
                     break;
                 case MSG_CONFIG:
                     monopd.sendChangeConfiguration(
@@ -184,8 +184,11 @@ public class BoardActivityNetworkThread implements Runnable {
                 case MSG_GAME_QUIT:
                     monopd.sendGameQuit();
                     break;
-                case MSG_KICK:
+                case MSG_GAME_KICK:
                     monopd.sendGameKick(rState.getInt("playerId"));
+                    break;
+                case MSG_GAME_DESCRIPTION:
+                    monopd.sendGameSetDescription(rState.getString("name"));
                     break;
                 case MSG_BUTTON_COMMAND:
                     monopd.sendButtonCommand(
@@ -235,14 +238,14 @@ public class BoardActivityNetworkThread implements Runnable {
                 case MSG_TRADE_ESTATE:
                     monopd.sendTradeEstate(
                             rState.getInt("tradeId"),
-                            rState.getInt("playerIdTo"),
-                            rState.getInt("estateId"));
+                            rState.getInt("estateId"),
+                            rState.getInt("playerIdTo"));
                     break;
                 case MSG_TRADE_CARD:
                     monopd.sendTradeEstate(
                             rState.getInt("tradeId"),
-                            rState.getInt("playerIdTo"),
-                            rState.getInt("cardId"));
+                            rState.getInt("cardId"),
+                            rState.getInt("playerIdTo"));
                     break;
                 }
                 msg.recycle();
@@ -284,6 +287,7 @@ public class BoardActivityNetworkThread implements Runnable {
         monopd.doReceive();
         Log.d("monopd", "postDelay result = " + netHandler.postDelayed(doDelayedReceive, 250));
         Log.d("monopd", "net: Completed thread set-up");
+        Log.v("monopd", "net: Current thread = " + Thread.currentThread().getName());
         // await messages on network thread
         Looper.loop();
     }

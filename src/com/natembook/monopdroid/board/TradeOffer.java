@@ -13,6 +13,7 @@ public abstract class TradeOffer implements TradeUpdateSubject {
     protected int playerIdFrom;
     protected int playerIdTo;
     protected int offerValue;
+    private TradeOfferKey offerKey = null;
     
     protected TradeOffer(TradeOfferType type, int playerIdFrom, int playerIdTo, int offerValue) {
         this.type = type;
@@ -27,10 +28,11 @@ public abstract class TradeOffer implements TradeUpdateSubject {
      * @return A trade offer to add to the final list. If this returns {@code null}, no new offer should be added (this trade offer was a removal).
      */
     public TradeOffer merge(HashMap<TradeOfferKey, TradeOffer> currentOffers) {
+        TradeOfferKey key = this.generateKey();
         Set<TradeOfferKey> set = currentOffers.keySet();
         TradeOfferKey[] keys = set.toArray(new TradeOfferKey[set.size()]);
         for (int i = 0; i < keys.length; i++) {
-            if (currentOffers.containsKey(keys[i])) {
+            if (currentOffers.containsKey(key)) {
                 currentOffers.remove(keys[i]);
             }
         }
@@ -42,7 +44,10 @@ public abstract class TradeOffer implements TradeUpdateSubject {
      * @return A key to represent a unique trade offer type.
      */
     public TradeOfferKey generateKey() {
-        return new TradeOfferKey(type, playerIdFrom, playerIdTo, offerValue);
+        if (offerKey == null) {
+            offerKey = new TradeOfferKey(type, playerIdFrom, playerIdTo, offerValue);
+        }
+        return offerKey;
     }
     
     public final TradeOfferType getType() {

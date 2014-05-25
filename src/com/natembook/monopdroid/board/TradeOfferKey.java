@@ -35,13 +35,13 @@ public class TradeOfferKey {
         // Return true if the objects are identical.
         // (This is just an optimization, not required for correctness.)
         if (this == o) {
-          return true;
+            return true;
         }
 
         // Return false if the other object has the wrong type.
         // This type may be an interface depending on the interface's specification.
         if (!(o instanceof TradeOfferKey)) {
-          return false;
+            return false;
         }
 
         // Cast to the appropriate type.

@@ -5,82 +5,45 @@ import java.util.ArrayList;
 import com.natembook.monopdroid.R;
 import com.natembook.monopdroid.SettingsActivity;
 import com.natembook.monopdroid.board.BoardActivity;
+import com.natembook.monopdroid.dialogs.MonopolyDialog;
+import com.natembook.monopdroid.dialogs.MonopolyDialogHost;
 
-import android.app.AlertDialog;
-import android.app.Dialog;
-import android.app.ListActivity;
-import android.content.DialogInterface;
-import android.content.DialogInterface.OnClickListener;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
+import android.support.v4.app.FragmentActivity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemClickListener;
 import android.widget.AdapterView.OnItemLongClickListener;
 import android.widget.ListView;
-import android.widget.TextView;
 
-public class GameListActivity extends ListActivity {
+public class GameListActivity extends FragmentActivity implements
+        OnItemClickListener, OnItemLongClickListener, GameListFetcherListener,
+        MonopolyDialogHost {
     private GameListAdapter adapter = null;
     private boolean gettingGameList = false;
     private GameListFetcher fetcher = null;
+    private MonopolyDialog dialog = null;
+    private boolean running = false;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         ArrayList<GameItem> gameList = new ArrayList<GameItem>();
-        this.adapter = new GameListAdapter(this, R.layout.game_item, gameList);
+        adapter = new GameListAdapter(this, R.layout.game_item, gameList);
         addSavedGame();
         adapter.add(new GameItem(GameItemType.READY));
-        this.setListAdapter(this.adapter);
-        ListView lv = (ListView) this.findViewById(android.R.id.list);
-        lv.setOnItemLongClickListener(new OnItemLongClickListener() {
-
-            @Override
-            public boolean onItemLongClick(AdapterView<?> listView, View item, int position, long id) {
-                Bundle state = new Bundle();
-                GameItem o = GameListActivity.this.adapter.getItem(position);
-                switch (o.getItemType()) {
-                case CREATE:
-                case JOIN:
-                case RECONNECT:
-                    state.putString("name", o.getDescription());
-                    String hostLine = null;
-                    if (o.getServers().size() == 1) {
-                        hostLine = "Host: " + o.getServer().getHost() + ":" + o.getServer().getPort();
-                    } else {
-                        hostLine = "Hosts: ";
-                        for (ServerItem server : o.getServers()) {
-                            hostLine += server.getHost() + ":" + server.getPort() + ", ";
-                        }
-                        hostLine = hostLine.substring(0, hostLine.length() - 2);
-                    }
-                    state.putString(
-                            "info",
-                            hostLine
-                                    + "\n"
-                                    + "Server Version: "
-                                    + o.getServer().getVersion()
-                                    + "\n"
-                                    + "Type: "
-                                    + o.getTypeName()
-                                    + " ("
-                                    + o.getType()
-                                    + ")\n"
-                                    + "Description: "
-                                    + o.getDescription()
-                                    + (o.getItemType() == GameItemType.CREATE ? "" : "\n" + "Players: " + o.getPlayers() + "\n"
-                                            + "Allowed to Join: " + o.canJoin()));
-                    GameListActivity.this.showDialog(R.id.dialog_server_info, state);
-                    return true;
-                default:
-                    return false;
-                }
-            }
-        });
+        
+        ListView lv = new ListView(this);
+        lv.setAdapter(adapter);
+        lv.setOnItemClickListener(this);
+        lv.setOnItemLongClickListener(this);
+        
+        this.setContentView(lv);
     }
 
     private void addSavedGame() {
@@ -107,9 +70,9 @@ public class GameListActivity extends ListActivity {
             fetcher.cancel(true);
             this.gettingGameList = false;
         }
-        outState.putInt("count", this.adapter.getCount());
-        for (int i = 0; i < this.adapter.getCount(); i++) {
-            GameItem o = this.adapter.getItem(i);
+        outState.putInt("count", adapter.getCount());
+        for (int i = 0; i < adapter.getCount(); i++) {
+            GameItem o = adapter.getItem(i);
             outState.putInt("item_" + i + "_id", o.getGameId());
             outState.putInt("item_" + i + "_s_count", o.getServers().size());
             for (int j = 0; j < o.getServers().size(); j++) {
@@ -128,8 +91,15 @@ public class GameListActivity extends ListActivity {
     }
 
     @Override
-    protected void onResume() {
-        super.onResume();
+    protected void onStop() {
+        super.onStop();
+        running = false;
+    }
+    
+    @Override
+    protected void onStart() {
+        super.onStart();
+        running = true;
         if (!this.gettingGameList) {
             SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
             if (prefs.getBoolean("gamelist_auto", false)) {
@@ -141,7 +111,7 @@ public class GameListActivity extends ListActivity {
     @Override
     protected void onRestoreInstanceState(Bundle state) {
         super.onRestoreInstanceState(state);
-        this.adapter.clear();
+        adapter.clear();
         addSavedGame();
         int count = state.getInt("count");
         for (int i = 0; i < count; i++) {
@@ -161,14 +131,13 @@ public class GameListActivity extends ListActivity {
             int players = state.getInt("item_" + i + "_players");
             boolean can_join = state.getBoolean("item_" + i + "_can_join");
             GameItemType item_type = GameItemType.fromInt(state.getInt("item_" + i + "_item_type"));
-            this.adapter.add(new GameItem(item_type, id, servers, type, type_name, descr, players, can_join));
+            adapter.add(new GameItem(item_type, id, servers, type, type_name, descr, players, can_join));
         }
-        this.adapter.notifyDataSetChanged();
+        adapter.notifyDataSetChanged();
     }
 
     @Override
-    protected void onListItemClick(ListView l, View v, int position, long id) {
-        super.onListItemClick(l, v, position, id);
+    public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
         GameItem item = adapter.getItem(position);
         GameItemType type = item.getItemType();
         switch (type) {
@@ -184,6 +153,42 @@ public class GameListActivity extends ListActivity {
             break;
         case LOADING:
             break;
+        }
+    }
+    
+    @Override
+    public boolean onItemLongClick(AdapterView<?> listView, View item, int position, long id) {
+        GameItem o = adapter.getItem(position);
+        switch (o.getItemType()) {
+        case CREATE:
+        case JOIN:
+        case RECONNECT:
+            String hostLine = null;
+            if (o.getServers().size() == 1) {
+                hostLine = "Host: " + o.getServer().getHost() + ":" + o.getServer().getPort();
+            } else {
+                hostLine = "Hosts: ";
+                for (ServerItem server : o.getServers()) {
+                    hostLine += server.getHost() + ":" + server.getPort() + ", ";
+                }
+                hostLine = hostLine.substring(0, hostLine.length() - 2);
+            }
+            String info = hostLine + "\n" +
+                    "Server version: " + o.getServer().getVersion() + "\n" +
+                    "Type: " + o.getTypeName() + " (" + o.getType() + ")\n" +
+                    "Description: " + o.getDescription() +
+                    (o.getItemType() == GameItemType.CREATE ? "" : "\n" +
+                    "Players: " + o.getPlayers() + "\n" +
+                    "Allowed to Join: " + o.canJoin());
+            
+            Bundle args = new Bundle();
+            args.putInt("dialogType", R.id.dialog_type_info);
+            args.putString("title", String.format(getString(R.string.dialog_server_info), o.getDescription()));
+            args.putString("message", info);
+            dialog = MonopolyDialog.showNewDialog(this, args);
+            return true;
+        default:
+            return false;
         }
     }
 
@@ -207,51 +212,8 @@ public class GameListActivity extends ListActivity {
         return true;
     }
 
-    @Override
-    protected Dialog onCreateDialog(int id) {
-        AlertDialog.Builder bldr = new AlertDialog.Builder(this);
-        OnClickListener doClose = new OnClickListener() {
-
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                dialog.dismiss();
-            }
-        };
-        switch (id) {
-        case R.id.dialog_list_error:
-            bldr.setTitle(R.string.dialog_list_error);
-            bldr.setMessage(R.string.empty);
-            bldr.setPositiveButton(android.R.string.ok, doClose);
-            return bldr.create();
-        case R.id.dialog_server_info:
-            bldr.setTitle(R.string.dialog_server_info);
-            bldr.setMessage(R.string.empty);
-            bldr.setPositiveButton(android.R.string.ok, doClose);
-            return bldr.create();
-        }
-        return null;
-    }
-
-    @Override
-    protected void onPrepareDialog(int id, Dialog dialog, Bundle args) {
-        super.onPrepareDialog(id, dialog, args);
-        TextView message = (TextView) dialog.findViewById(android.R.id.message);
-        switch (id) {
-        case R.id.dialog_list_error:
-            String error = args.getString("error");
-            message.setText(error);
-            break;
-        case R.id.dialog_server_info:
-            String info = args.getString("info");
-            String name = args.getString("name");
-            message.setText(info);
-            dialog.setTitle(String.format(this.getString(R.string.dialog_server_info), name));
-            break;
-        }
-    }
-
     private void joinGame(int position) {
-        GameItem o = this.adapter.getItem(position);
+        GameItem o = adapter.getItem(position);
         if (!o.canJoin()) {
             // not joinable, perhaps because this isn't a real game item
             return;
@@ -259,16 +221,16 @@ public class GameListActivity extends ListActivity {
         // remove all servers but one
         o.chooseServer();
         Intent i = new Intent(this, BoardActivity.class);
-        i.putExtra("edu.rochester.nbook.game_id", o.getGameId());
-        i.putExtra("edu.rochester.nbook.host", o.getServer().getHost());
-        i.putExtra("edu.rochester.nbook.port", o.getServer().getPort());
-        i.putExtra("edu.rochester.nbook.version", o.getServer().getVersion());
-        i.putExtra("edu.rochester.nbook.type", o.getType());
-        i.putExtra("edu.rochester.nbook.type_name", o.getTypeName());
-        i.putExtra("edu.rochester.nbook.descr", o.getDescription());
-        i.putExtra("edu.rochester.nbook.players", o.getPlayers());
-        i.putExtra("edu.rochester.nbook.can_join", o.canJoin());
-        i.putExtra("edu.rochester.nbook.act_type", o.getItemType().getIndex());
+        i.putExtra("com.natembook.game_id", o.getGameId());
+        i.putExtra("com.natembook.host", o.getServer().getHost());
+        i.putExtra("com.natembook.port", o.getServer().getPort());
+        i.putExtra("com.natembook.version", o.getServer().getVersion());
+        i.putExtra("com.natembook.type", o.getType());
+        i.putExtra("com.natembook.type_name", o.getTypeName());
+        i.putExtra("com.natembook.descr", o.getDescription());
+        i.putExtra("com.natembook.players", o.getPlayers());
+        i.putExtra("com.natembook.can_join", o.canJoin());
+        i.putExtra("com.natembook.act_type", o.getItemType().getIndex());
         this.startActivity(i);
     }
 
@@ -277,48 +239,60 @@ public class GameListActivity extends ListActivity {
             return;
         }
         this.gettingGameList = true;
-        this.fetcher = new GameListFetcher(this, new GameListFetcherListener() {
+        this.fetcher = new GameListFetcher(this, this);
+        this.fetcher.execute();
+    }
+    
 
+    @Override
+    public void onGameListFetching() {
+        adapter.clear();
+        addSavedGame();
+        adapter.add(new GameItem(GameItemType.LOADING));
+        adapter.notifyDataSetChanged();
+    }
+
+    @Override
+    public void onGameListFetched(ArrayList<GameItem> result) {
+        adapter.clear();
+        addSavedGame();
+        for (GameItem item : result) {
+            adapter.add(item);
+        }
+        if (result.size() == 0) {
+            adapter.add(new GameItem(GameItemType.EMPTY));
+        }
+        adapter.notifyDataSetChanged();
+        gettingGameList = false;
+    }
+
+    @Override
+    public void onException(final String description, final Exception ex) {
+        runOnUiThread(new Runnable() {
             @Override
-            public void onGameListFetching() {
-                GameListActivity.this.adapter.clear();
+            public void run() {
+                gettingGameList = false;
+                adapter.clear();
                 addSavedGame();
-                GameListActivity.this.adapter.add(new GameItem(GameItemType.LOADING));
-                GameListActivity.this.adapter.notifyDataSetChanged();
-            }
+                adapter.add(new GameItem(GameItemType.ERROR));
+                adapter.notifyDataSetChanged();
 
-            @Override
-            public void onGameListFetched(ArrayList<GameItem> result) {
-                GameListActivity.this.adapter.clear();
-                addSavedGame();
-                for (GameItem item : result) {
-                    GameListActivity.this.adapter.add(item);
-                }
-                if (result.size() == 0) {
-                    GameListActivity.this.adapter.add(new GameItem(GameItemType.EMPTY));
-                }
-                GameListActivity.this.adapter.notifyDataSetChanged();
-                GameListActivity.this.gettingGameList = false;
-            }
-
-            @Override
-            public void onException(final String description, final Exception ex) {
-                GameListActivity.this.runOnUiThread(new Runnable() {
-
-                    @Override
-                    public void run() {
-                        Bundle state = new Bundle();
-                        GameListActivity.this.gettingGameList = false;
-                        GameListActivity.this.adapter.clear();
-                        addSavedGame();
-                        GameListActivity.this.adapter.add(new GameItem(GameItemType.ERROR));
-                        GameListActivity.this.adapter.notifyDataSetChanged();
-                        state.putString("error", description + ": " + ex.getMessage());
-                        GameListActivity.this.showDialog(R.id.dialog_list_error, state);
-                    }
-                });
+                Bundle args = new Bundle();
+                args.putInt("dialogType", R.id.dialog_type_error);
+                args.putString("title", getString(R.string.dialog_list_error));
+                args.putString("message", description + ": " + ex.getMessage());
+                dialog = MonopolyDialog.showNewDialog(GameListActivity.this, args);
             }
         });
-        this.fetcher.execute();
+    }
+
+    @Override
+    public boolean isRunning() {
+        return running;
+    }
+
+    @Override
+    public MonopolyDialog getCurrentDialog() {
+        return dialog;
     }
 }

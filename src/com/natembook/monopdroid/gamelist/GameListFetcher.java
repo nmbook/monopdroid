@@ -50,7 +50,7 @@ public final class GameListFetcher extends AsyncTask<Void, Void, ArrayList<GameI
 
             @Override
             public void onException(String description, Exception ex) {
-                GameListFetcher.this.callback.onException("Unable to get list: " + description, ex);
+                callback.onException("Unable to get list: " + description, ex);
             }
 
             @Override
@@ -59,13 +59,13 @@ public final class GameListFetcher extends AsyncTask<Void, Void, ArrayList<GameI
 
             @Override
             public void onServerGameListEnd() {
-                GameListFetcher.this.continueReading = false;
+                continueReading = false;
             }
 
             @Override
             public void onServerGameList(String host, int port, String version, ArrayList<GameItem> games) {
                 for (GameItem game : games) {
-                    GameListFetcher.this.list.add(game);
+                    list.add(game);
                 }
             }
 
@@ -80,7 +80,9 @@ public final class GameListFetcher extends AsyncTask<Void, Void, ArrayList<GameI
 
         monopd.sendMetaListGames();
         while (this.continueReading && !isCancelled()) {
-            monopd.doReceive();
+            if (!monopd.doReceive()) {
+                return null;
+            }
         }
 
         this.combineList(this.list);

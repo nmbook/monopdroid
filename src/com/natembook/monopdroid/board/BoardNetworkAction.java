@@ -37,18 +37,18 @@ public enum BoardNetworkAction {
      */
     MSG_SOCKET_RECONNECT(5),
     /**
-     * Send a command/chat message unmodified to the server.
+     * Send a command/chat message unmodified to the server.<br>
      * Argument String "text": The text to send.
      */
     MSG_COMMAND(10),
     /**
-     * Send a new nick to change to.
-     * Argument String "nick": The nick to use.
+     * Send a new nick to change to.<br>
+     * Argument String "name": The new nick to use.
      */
     MSG_NICK(11),
     /**
-     * Send to change a configuration option.
-     * Argument String "command": The command to change the option.
+     * Send to change a configuration option.<br>
+     * Argument String "command": The command to change the option.<br>
      * Argument String "value": The new value.
      */
     MSG_CONFIG(12),
@@ -57,13 +57,13 @@ public enum BoardNetworkAction {
      */
     MSG_ROLL(13),
     /**
-     * Send when the animation of a piece has reached the given estate ID.
-     * Must be sent to avoid "lag".
+     * Send when the animation of a piece has reached the given estate ID.<br>
+     * Must be sent to avoid "lag".<br>
      * Argument int "estateId": The estate reached by the piece. 
      */
     MSG_TURN(14),
     /**
-     * Send to reconnect to the game.
+     * Send to reconnect to the game.<br>
      * Argument String "cookie": Your connection cookie.
      */
     MSG_RECONNECT(15),
@@ -84,76 +84,81 @@ public enum BoardNetworkAction {
      */
     MSG_GAME_QUIT(21),
     /**
-     * Send to kick a player from the game.
+     * Send to kick a player from the game.<br>
      * Argument int "playerId": The player to kick. 
      */
-    MSG_KICK(22),
+    MSG_GAME_KICK(22),
     /**
-     * Send when the user presses a server-sent button.
+     * Send to set the game description.<br>
+     * Argument String "name": The new description. 
+     */
+    MSG_GAME_DESCRIPTION(23),
+    /**
+     * Send when the user presses a server-sent button.<br>
      * Argument String "command": The command to send.
      */
     MSG_BUTTON_COMMAND(30),
     /**
-     * Send to toggle mortgage on the specified estate.
+     * Send to toggle mortgage on the specified estate.<br>
      * Argument int "estateId": The estate.
      */
     MSG_ESTATE_MORTGAGE(40),
     /**
-     * Send to buy a house on the specified estate.
+     * Send to buy a house on the specified estate.<br>
      * Argument int "estateId": The estate.
      */
     MSG_ESTATE_BUYHOUSE(41),
     /**
-     * Send to sell a house on the specified estate.
+     * Send to sell a house on the specified estate.<br>
      * Argument int "estateId": The estate.
      */
     MSG_ESTATE_SELLHOUSE(42),
     /**
-     * Send to sell an estate back to the bank.
+     * Send to sell an estate back to the bank.<br>
      * Argument int "estateId": The estate.
      */
     MSG_ESTATE_SELL(43),
     /**
-     * Send to bid in the auction of an estate.
-     * Argument int "auctionId": The auction (always 0).
+     * Send to bid in the auction of an estate.<br>
+     * Argument int "auctionId": The auction (always 0).<br>
      * Argument int "bid": The amount to bid.
      */
     MSG_AUCTION_BID(50),
     /**
-     * Send to begin a trade with a player.
+     * Send to begin a trade with a player.<br>
      * Argument int "playerId": The other player in the trade.
      */
     MSG_TRADE_NEW(60),
     /**
-     * Send to reject a trade with a player.
+     * Send to reject a trade with a player.<br>
      * Argument int "tradeId": The trade ID.
      */
     MSG_TRADE_REJECT(61),
     /**
-     * Send to accept a trade with a player.
-     * Argument int "tradeId": The trade ID.
+     * Send to accept a trade with a player.<br>
+     * Argument int "tradeId": The trade ID.<br>
      * Argument int "revision": The current revision, as seen by this client.
      */
     MSG_TRADE_ACCEPT(62),
     /**
-     * Send to suggest a money amount to trade.
-     * Argument int "tradeId": The trade ID.
-     * Argument int "playerIdFrom": The player to send the money.
-     * Argument int "playerIdTo": The player to receive the money.
+     * Send to suggest a money amount to trade.<br>
+     * Argument int "tradeId": The trade ID.<br>
+     * Argument int "playerIdFrom": The player to send the money.<br>
+     * Argument int "playerIdTo": The player to receive the money.<br>
      * Argument int "amount": The amount of money to offer (set to 0 to cancel).
      */
     MSG_TRADE_MONEY(63),
     /**
-     * Send to suggest an estate to trade.
-     * Argument int "tradeId": The trade ID.
-     * Argument int "playerIdTo": The player to receive the estate (set to current owner to cancel).
+     * Send to suggest an estate to trade.<br.
+     * Argument int "tradeId": The trade ID.<br>
+     * Argument int "playerIdTo": The player to receive the estate (set to current owner to cancel).<br>
      * Argument int "estateId": The estate to send.
      */
     MSG_TRADE_ESTATE(64),
     /**
-     * Send to suggest a card to trade.
-     * Argument int "tradeId": The trade ID.
-     * Argument int "playerIdTo": The player to receive the card (set to current owner to cancel).
+     * Send to suggest a card to trade.<br>
+     * Argument int "tradeId": The trade ID.<br>
+     * Argument int "playerIdTo": The player to receive the card (set to current owner to cancel).<br>
      * Argument int "cardId": The card to send.
      */
     MSG_TRADE_CARD(65);

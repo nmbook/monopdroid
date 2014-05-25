@@ -1,5 +1,6 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android" >
     <item android:id="@+id/menu_bankrupt" android:title="@string/menu_bankrupt" />
+    <item android:id="@+id/menu_descr" android:title="@string/menu_descr" />
     <item android:id="@+id/menu_name" android:title="@string/menu_name" />
     <item android:id="@+id/menu_settings" android:title="@string/menu_settings" />
     <item android:id="@+id/menu_quit" android:title="@string/menu_quit" />
