@@ -107,7 +107,7 @@ public class GameListActivity extends FragmentActivity implements
         running = true;
         if (!this.gettingGameList) {
             SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
-            if (prefs.getBoolean("gamelist_auto", false)) {
+            if (prefs.getBoolean("gamelist_auto", true)) {
                 this.getGameList();
             }
         }

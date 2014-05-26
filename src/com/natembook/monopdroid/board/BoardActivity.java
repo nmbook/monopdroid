@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.text.DateFormat;
 
 import org.xml.sax.XMLReader;
@@ -187,9 +189,29 @@ public class BoardActivity extends FragmentActivity implements
     private MonopolyDialog dialog = null;
     
     /**
+     * A task to run to roll after two seconds.
+     */
+    private Timer rollTimeout = null;
+    
+    /**
+     * A task to run to turn after 300ms.
+     */
+    private Timer turnTimer = null;
+    
+    /**
      * Static handler for HTML tag parsing. TODO: use BoardTextFormatter
      */
     public static TagHandler tagHandler = null;
+    
+    /**
+     * Time from roll button appearance to auto-roll action.
+     */
+    private static final int autoRollTimeout = 2000;
+    
+    /**
+     * Time to wait per turn step.
+     */
+    private static final int turnTimeout = 300;
     
     public BoardActivity() {
         super();
@@ -497,59 +519,85 @@ public class BoardActivity extends FragmentActivity implements
         case RUN:
             boardView.calculateBoardRegions();
             boardView.drawBoardRegions(estates, players);
-            boardView.drawActionRegions(estates, playerIds, players, buttons, selfPlayerId);
+            for (int playerId : playerIds) {
+                if (playerId >= 0 && players.get(playerId).isTurn()) {
+                    boardView.drawActionRegions(playerId);
+                    break;
+                }
+            }
             boardView.drawPieces(estates, playerIds, players);
             break;
         case END:
             boardView.calculateBoardRegions();
             boardView.drawBoardRegions(estates, players);
-            boardView.drawActionRegions(estates, playerIds, players, buttons, selfPlayerId);
+            boardView.drawActionRegions(-1);
             boardView.drawPieces(estates, playerIds, players);
             break;
         }
         boardView.redrawOverlay();
     }
 
-    private void animateMove(Player player) {
-        int start = player.getLastLocation();
-        int end = player.getLocation();
+    private void animateMove(final int playerId) {
+        Player player = players.get(playerId);
+        final int start = player.getLastLocation();
+        final int end = player.getLocation() +
+                (player.getLocation() < start ? 40 : 0);
         boolean directMove = player.getDirectMove();
-        int playerIndex = 0;
-        for (int i = 0; i < BoardViewPiece.MAX_PLAYERS; i++) {
-            if (BoardViewPiece.pieces[i].getPlayerId() == player.getPlayerId()) {
-                playerIndex = i;
-                break;
-            }
-        }
-        BoardViewPiece.pieces[playerIndex].setCurrentEstate(end);
-        BoardViewPiece.pieces[playerIndex].setProgressEstate(start);
-        BoardViewPiece.pieces[playerIndex].setProgressEstateDelta(0);
-        boardView.drawPieces(estates, playerIds, players);
+        final int pieceIndex = BoardViewPiece.getIndexOf(playerId);
+        BoardViewPiece piece = BoardViewPiece.pieces[pieceIndex];
+        piece.setMoving(true);
+        piece.setCurrentEstate(end % 40);
+        piece.setProgressEstate(start);
+        piece.setProgressEstateDelta(0);
         if (directMove) {
             Bundle args = new Bundle();
-            args.putInt("estateId", end);
+            args.putInt("estateId", end % 40);
             sendToNetThread(BoardNetworkAction.MSG_TURN, args);
-            BoardViewPiece.pieces[playerIndex].setProgressEstate(end);
+            piece.setProgressEstate(end % 40);
+            piece.setMoving(false);
+            boardView.drawActionRegions(playerId);
             boardView.drawPieces(estates, playerIds, players);
-            boardView.waitDraw();
+            boardView.redrawOverlay();
         } else {
-            if (start > end) {
-                end += 40;
+            if (turnTimer == null) {
+                turnTimer = new Timer();
             }
-            for (int i = start + 1; i <= end; i++) {
-                Bundle args = new Bundle();
-                args.putInt("estateId", (i % 40));
-                sendToNetThread(BoardNetworkAction.MSG_TURN, args);
-
-                BoardViewPiece.pieces[playerIndex].setProgressEstate((i - 1) % 40);
-                BoardViewPiece.pieces[playerIndex].setCurrentEstate(i % 40);
-                for (int j = 0; j <= BoardViewSurfaceThread.animationSteps; j++) {
-                    BoardViewPiece.pieces[playerIndex].setProgressEstateDelta(j);
-                    boardView.drawPieces(estates, playerIds, players);
-                    boardView.waitDraw();
-                    boardView.redrawOverlay();
+            turnTimer.schedule(new TimerTask() {
+                @Override
+                public void run() {
+                    animateMoveStep(playerId, pieceIndex, start, end, start + 1);
                 }
-            }
+            }, turnTimeout);
+        }
+    }
+    
+    private void animateMoveStep(final int playerId, final int pieceIndex, final int start, final int end, final int index) {
+        Bundle args = new Bundle();
+        args.putInt("estateId", (index % 40));
+        sendToNetThread(BoardNetworkAction.MSG_TURN, args);
+
+        BoardViewPiece piece = BoardViewPiece.pieces[pieceIndex];
+        piece.setProgressEstate((index - 1) % 40);
+        piece.setCurrentEstate(index % 40);
+        /*for (int j = 0; j <= BoardViewSurfaceThread.animationSteps; j++) {
+            piece.setProgressEstateDelta(j);
+            boardView.drawPieces(estates, playerIds, players);
+            boardView.redrawOverlay();
+            boardView.waitDraw();
+        }*/
+        boardView.drawActionRegions(playerId);
+        boardView.drawPieces(estates, playerIds, players);
+        boardView.redrawOverlay();
+        
+        if (index < end) {
+            turnTimer.schedule(new TimerTask() {
+                @Override
+                public void run() {
+                    animateMoveStep(playerId, pieceIndex, start, end, index + 1);
+                }
+            }, turnTimeout);
+        } else {
+            piece.setMoving(false);
         }
     }
 
@@ -957,11 +1005,6 @@ public class BoardActivity extends FragmentActivity implements
     }
 
     @Override
-    public void onRoll() {
-        sendToNetThread(BoardNetworkAction.MSG_ROLL, null);
-    }
-
-    @Override
     public void onResize(int width, int height) {
         Log.d("monopd", "BoardView resized to " + width + "," + height);
         if (firstInit) {
@@ -1009,9 +1052,114 @@ public class BoardActivity extends FragmentActivity implements
 
     @Override
     public void onButtonCommand(String command) {
+        buttons.clear();
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (rollTimeout != null) {
+                    rollTimeout.cancel();
+                    rollTimeout = null;
+                }
+            }
+        });
         Bundle args = new Bundle();
         args.putString("command", command);
         sendToNetThread(BoardNetworkAction.MSG_BUTTON_COMMAND, args);
+    }
+
+    @Override
+    public String getActionText(int playerId) {
+        if (status == GameStatus.RUN) {
+            Player player = players.get(playerId);
+            Estate estate = estates.get(player.getLocation());
+            String location = "On " + BoardActivity.makeEstateName(estate);
+            if (player.isJailed()) {
+                location = "In <b><font color=\"red\">Jail</font></b>";
+            }
+            BoardViewPiece piece = BoardViewPiece.getPiece(playerId);
+            if (piece != null) {
+                Estate pieceEstate = estates.get(piece.getCurrentEstate());
+                if (piece.isMoving() && pieceEstate != null) {
+                    location = "Moving over " + makeEstateName(pieceEstate);
+                }
+            }
+            
+            String actionText = "Current turn is " + BoardActivity.makePlayerName(player) + "<br>" + location + "<br>";
+            if (player.canRoll()) {
+                if (player.getPlayerId() == selfPlayerId) {
+                    actionText += "Roll the dice:";
+                } else {
+                    actionText += "Player may roll the dice.";
+                }
+            } else if (player.canBuyEstate()) {
+                if (player.getPlayerId() == selfPlayerId) {
+                    actionText += "Buy estate for $" + estates.get(player.getLocation()).getPrice() + "?:";
+                } else {
+                    actionText += "Player may buy the estate.";
+                }
+            } else if (buttons.size() > 0) {
+                if (player.getPlayerId() == selfPlayerId) {
+                    actionText += "Choose an action:";
+                } else {
+                    actionText += "Player may choose an action.";
+                }
+            } else if (player.isInDebt()) {
+                if (player.getPlayerId() == selfPlayerId) {
+                    actionText += "You are in debt. You must pay it off by mortgaging properties or selling assets.";
+                } else {
+                    actionText += "Player is in debt.";
+                }
+            }
+            
+            return actionText;
+        } else if (status == GameStatus.END) {
+            return "The game has ended.";
+        } else {
+            return "<font color=\"red\">An error occurred.</font>";
+        }
+    }
+
+    @Override
+    public ArrayList<Button> getActionButtons(final int turnPlayerId) {
+        if (status == GameStatus.RUN) {
+            Player player = players.get(turnPlayerId);
+            
+            if (player.canRoll() && turnPlayerId == selfPlayerId) {
+                buttons.clear();
+                buttons.add(new Button("Roll", true, ".r"));
+                SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+                if (prefs.getBoolean("gameboard_autoroll", false)) {
+                    if (rollTimeout == null) {
+                        rollTimeout = new Timer();
+                        rollTimeout.schedule(new TimerTask() {
+                            @Override
+                            public void run() {
+                                buttons.clear();
+                                rollTimeout = null;
+                                runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        writeMessage("Automatically rolling the dice...", Color.YELLOW);
+                                    }
+                                });
+                                sendToNetThread(BoardNetworkAction.MSG_ROLL, null);
+                            }
+                        }, autoRollTimeout);
+                    }
+                }
+            } else {
+                if (rollTimeout != null) {
+                    rollTimeout.cancel();
+                    rollTimeout = null;
+                }
+            }
+            
+            return buttons;
+        } else {
+            ArrayList<Button> buttons = new ArrayList<Button>(1);
+            buttons.add(new Button("New game", true, null));
+            return buttons;
+        }
     }
 
     @Override
@@ -1904,7 +2052,12 @@ public class BoardActivity extends FragmentActivity implements
                 // update player view
                 updatePlayerView();
                 // redraw for possible new colors
-                boardView.drawActionRegions(estates, playerIds, players, buttons, selfPlayerId);
+                for (int playerId : playerIds) {
+                    if (playerId >= 0 && players.get(playerId).isTurn()) {
+                        boardView.drawActionRegions(playerId);
+                        break;
+                    }
+                }
                 // redraw overlay for possible new data
                 boardView.redrawOverlay();
                 // join message
@@ -1920,7 +2073,7 @@ public class BoardActivity extends FragmentActivity implements
                     writeMessage(oldNick + " is now known as " + makePlayerName(player) + ".", Color.GRAY, BoardViewOverlay.PLAYER, updatePlayerId);
                 }
                 if (changingLocation) {
-                    animateMove(player);
+                    animateMove(updatePlayerId);
                 }
                 if (changingMaster) {
                     if (player.getPlayerId() == selfPlayerId && player.isMaster() != isMaster) {
@@ -2020,7 +2173,12 @@ public class BoardActivity extends FragmentActivity implements
                     estates.set(estateId, estate);
                 }
                 boardView.drawBoardRegions(estates, players);
-                boardView.drawActionRegions(estates, playerIds, players, buttons, selfPlayerId);
+                for (int playerId : playerIds) {
+                    if (playerId >= 0 && players.get(playerId).isTurn()) {
+                        boardView.drawActionRegions(playerId);
+                        break;
+                    }
+                }
                 boardView.drawPieces(estates, playerIds, players);
                 boardView.redrawOverlay();
             }
@@ -2285,6 +2443,10 @@ public class BoardActivity extends FragmentActivity implements
                 boolean redrawButtons = false;
                 if (clearButtons) {
                     buttons.clear();
+                    if (rollTimeout != null) {
+                        rollTimeout.cancel();
+                        rollTimeout = null;
+                    }
                     redrawButtons = true;
                 }
                 if (newButtons.size() > 0) {
@@ -2292,7 +2454,12 @@ public class BoardActivity extends FragmentActivity implements
                     redrawButtons = true;
                 }
                 if (redrawButtons) {
-                    boardView.drawActionRegions(estates, playerIds, players, buttons, selfPlayerId);
+                    for (int playerId : playerIds ) {
+                        if (playerId >= 0 && players.get(playerId).isTurn()) {
+                            boardView.drawActionRegions(playerId);
+                            break;
+                        }
+                    }
                 }
                 if (text == null || text.length() == 0) {
                     return;

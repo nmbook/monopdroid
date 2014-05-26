@@ -76,6 +76,11 @@ public class BoardViewPiece {
     private int progressEstateDelta = 0;
     
     /**
+     * Whether this piece is in motion.
+     */
+    private boolean moving = false;
+    
+    /**
      * Create a Piece with the given index.
      * @param index 1-based player number
      */
@@ -218,6 +223,14 @@ public class BoardViewPiece {
     public void setProgressEstateDelta(int progressEstateDelta) {
         this.progressEstateDelta = progressEstateDelta;
     }
+    
+    public void setMoving(boolean moving) {
+        this.moving = moving;
+    }
+
+    public boolean isMoving() {
+        return moving;
+    }
 
     /**
      * Get a piece by player ID
@@ -236,5 +249,14 @@ public class BoardViewPiece {
     @Override
     public String toString() {
         return getColorName() + " piece for player id " + playerId + " (index: " + pieceIndex + ")";
+    }
+
+    public static int getIndexOf(int playerId) {
+        for (int i = 0; i < BoardViewPiece.MAX_PLAYERS; i++) {
+            if (BoardViewPiece.pieces[i].getPlayerId() == playerId) {
+                return i;
+            }
+        }
+        return 0;
     }
 }

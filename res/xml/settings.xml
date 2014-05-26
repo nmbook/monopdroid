@@ -25,4 +25,16 @@
             android:title="@string/pref_gamelist_auto_title"
             android:defaultValue="true" android:summary="@string/pref_gamelist_auto_summary"/>
     </PreferenceCategory>
+    <PreferenceCategory
+        android:title="Game play settings"
+        android:key="gameboard">
+        <CheckBoxPreference
+            android:key="gameboard_autoroll"
+            android:title="@string/pref_gameboard_autoroll_title"
+            android:defaultValue="false" android:summary="@string/pref_gameboard_autoroll_summary"/>
+        <CheckBoxPreference
+            android:key="gameboard_timestamps"
+            android:title="@string/pref_gameboard_timestamps_title"
+            android:defaultValue="false" android:summary="@string/pref_gameboard_timestamps_summary"/>
+    </PreferenceCategory>
 </PreferenceScreen>

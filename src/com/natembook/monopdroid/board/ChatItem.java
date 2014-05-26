@@ -14,6 +14,7 @@ import android.text.style.LeadingMarginSpan;
  */
 public class ChatItem {
     private CharSequence text;
+    private String realText = null;
     private int color;
     private BoardViewOverlay overlayType;
     private int objectId;
@@ -24,16 +25,19 @@ public class ChatItem {
     }
 
     public ChatItem(String text, int color, BoardViewOverlay overlayType, int objectId) {
-        SpannableStringBuilder formattedText = (SpannableStringBuilder) Html.fromHtml(text, null, BoardActivity.tagHandler);
-        formattedText.setSpan(new LeadingMarginSpan.Standard(0, 30), 0, formattedText.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-        this.text = formattedText;
+        this.realText = text;
         this.color = color;
         this.overlayType = overlayType;
         this.objectId = objectId;
         this.clickable = overlayType != BoardViewOverlay.NONE;
     }
 
-    public CharSequence getText() {
+    public CharSequence getText(String timestamp) {
+        if (this.text == null) {
+            SpannableStringBuilder formattedText = (SpannableStringBuilder) Html.fromHtml(timestamp + realText, null, BoardActivity.tagHandler);
+            formattedText.setSpan(new LeadingMarginSpan.Standard(0, 30), 0, formattedText.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            this.text = formattedText; 
+        }   
         return this.text;
     }
 

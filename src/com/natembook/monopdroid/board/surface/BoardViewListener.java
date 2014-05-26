@@ -2,6 +2,7 @@ package com.natembook.monopdroid.board.surface;
 
 import java.util.ArrayList;
 
+import com.natembook.monopdroid.board.Button;
 import com.natembook.monopdroid.board.Estate;
 import com.natembook.monopdroid.board.OverlayButton;
 
@@ -37,15 +38,14 @@ public interface BoardViewListener {
     public void onCloseOverlay();
 
     /**
-     * Sent from the BoardView when the user clicks "roll".
-     */
-    public void onRoll();
-
-    /**
      * Sent from the BoardView when the user clicks a custom command button
      * @param command The command to send to the monopoly server
      */
     public void onButtonCommand(String command);
+
+    public String getActionText(int playerId);
+
+    public ArrayList<Button> getActionButtons(int turnPlayerId);
 
     /**
      * Generate the rich text to display in the Player overlay.
@@ -113,5 +113,6 @@ public interface BoardViewListener {
      * Get the current player ID of this client.
      * @return The current player ID
      */
+
     public int getSelfPlayerId();
 }

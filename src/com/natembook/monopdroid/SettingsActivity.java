@@ -4,6 +4,7 @@ import android.os.Bundle;
 import android.preference.PreferenceActivity;
 import com.natembook.monopdroid.R;
 
+// TODO upgrade settings system
 public class SettingsActivity extends PreferenceActivity {
 
     @Override

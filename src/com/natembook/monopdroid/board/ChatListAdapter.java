@@ -1,10 +1,14 @@
 package com.natembook.monopdroid.board;
 
+import java.text.DateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 
 import com.natembook.monopdroid.R;
 
 import android.content.Context;
+import android.content.SharedPreferences;
+import android.preference.PreferenceManager;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -36,7 +40,7 @@ public class ChatListAdapter extends ArrayAdapter<ChatItem> {
         ChatItem o = super.getItem(position);
         if (o != null) {
             TextView chat = (TextView) v.findViewById(R.id.chat);
-            chat.setText(o.getText());
+            chat.setText(o.getText(getTimestamp()));
             chat.setTextColor(o.getColor());
             chat.setClickable(!o.isClickable());
             chat.setFocusable(!o.isClickable());
@@ -45,6 +49,16 @@ public class ChatListAdapter extends ArrayAdapter<ChatItem> {
         return v;
     }
     
+    private String getTimestamp() {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getContext());
+        if (prefs.getBoolean("gameboard_timestamps", false)) {
+            Date d = new Date();
+            return "<small><font color=\"#ffffff\">(" + DateFormat.getTimeInstance().format(d) + ")</font></small> ";
+        } else {
+            return "";
+        }
+    }
+
     public ArrayList<ChatItem> saveState() {
         ArrayList<ChatItem> items = new ArrayList<ChatItem>();
         for (int i = 0; i < this.getCount(); i++) {

@@ -2,7 +2,6 @@ package com.natembook.monopdroid.board.surface;
 
 import java.util.ArrayList;
 
-import com.natembook.monopdroid.board.Button;
 import com.natembook.monopdroid.board.Configurable;
 import com.natembook.monopdroid.board.Estate;
 import com.natembook.monopdroid.board.GameStatus;
@@ -228,10 +227,10 @@ public class BoardView extends SurfaceView {
         }
     }
     
-    public void drawActionRegions(ArrayList<Estate> estates, int[] playerIds, SparseArray<Player> players, ArrayList<Button> buttons, int selfPlayerId) {
+    public void drawActionRegions(int turnPlayerId) {
         if (surfaceRunner.getStatus() == GameStatus.RUN) {
             surfaceRunner.beginRegions(BoardViewSurfaceThread.LAYER_TURN);
-            surfaceRunner.addTurnRegions(estates, playerIds, players, buttons, selfPlayerId);
+            surfaceRunner.addTurnRegions(turnPlayerId);
             surfaceRunner.commitRegions(BoardViewSurfaceThread.LAYER_TURN);
         }
     }

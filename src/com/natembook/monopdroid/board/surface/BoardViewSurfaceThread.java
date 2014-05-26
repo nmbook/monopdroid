@@ -2,7 +2,6 @@ package com.natembook.monopdroid.board.surface;
 
 import java.util.ArrayList;
 
-import com.natembook.monopdroid.board.BoardActivity;
 import com.natembook.monopdroid.board.Button;
 import com.natembook.monopdroid.board.Configurable;
 import com.natembook.monopdroid.board.Estate;
@@ -1294,159 +1293,67 @@ public class BoardViewSurfaceThread implements Runnable {
         return true;
     }
 
-    public void addTurnRegions(ArrayList<Estate> estates, int[] playerIds, SparseArray<Player> players, ArrayList<Button> buttons, int selfPlayerId) {
+    public void addTurnRegions(int turnPlayerId) {
         if (drawState == DrawState.NOTREADY) {
             return;
         }
-        for (int playerId : playerIds) {
-            if (playerId > 0) {
-                final Player player = players.get(playerId); 
-                if (player.isTurn()) {
-                    Rect bounds = new Rect(drawRegions[DRAW_REGION_CENTER_BOUNDS]);
-                    bounds.inset(width / 16 + 6, height / 16 + 6);
-                    int lineHeight = (int) getPixelSize(DPI_LINE_HEIGHT);
-                    int buttonHeight = (int) getPixelSize(DPI_BUTTON_HEIGHT);
-                    Rect textBounds = new Rect(bounds.left, bounds.top, bounds.right, bounds.top + lineHeight * 3);
-                    Rect btn1Bounds = new Rect(bounds.left, bounds.top + lineHeight * 3, bounds.right, bounds.top + lineHeight * 3 + buttonHeight);
-                    Rect btn2Bounds = new Rect(bounds.left, bounds.top + lineHeight * 3 + buttonHeight, bounds.right, bounds.top + lineHeight * 3 + buttonHeight * 2);
-                    Rect btn3Bounds = new Rect(bounds.left, bounds.top + lineHeight * 3 + buttonHeight * 2, bounds.right, bounds.top + lineHeight * 3 + buttonHeight * 3);
-                    Estate estate = estates.get(player.getLocation());
-                    String location = "On " + BoardActivity.makeEstateName(estate);
-                    if (player.isJailed()) {
-                        location = "In <b><font color=\"red\">Jail</font></b>";
-                    }
-                    
-                    String actionText = "Current turn is " + BoardActivity.makePlayerName(player) + "<br>" + location + "<br>";
-                    if (player.canRoll()) {
-                        if (player.getPlayerId() == selfPlayerId) {
-                            actionText += "Roll the dice:";
-                        } else {
-                            actionText += "Player may roll the dice.";
-                        }
-                    } else if (player.canBuyEstate()) {
-                        if (player.getPlayerId() == selfPlayerId) {
-                            actionText += "Buy estate for $" + estates.get(player.getLocation()).getPrice() + "?:";
-                        } else {
-                            actionText += "Player may buy the estate.";
-                        }
-                    } else if (buttons.size() > 0) {
-                        if (player.getPlayerId() == selfPlayerId) {
-                            actionText += "Choose an action:";
-                        } else {
-                            actionText += "Player may choose an action.";
-                        }
-                    } else if (player.isInDebt()) {
-                        if (player.getPlayerId() == selfPlayerId) {
-                            actionText += "You are in debt. You must pay it off by mortgaging properties or selling assets.";
-                        } else {
-                            actionText += "Player is in debt.";
-                        }
-                    }
-                    TextDrawable turnHeader = new TextDrawable(
-                            actionText,
-                            getPixelSize(DPI_SIZE_TEXT),
-                            Color.WHITE, Color.WHITE,
-                            Alignment.ALIGN_NORMAL,
-                            VerticalAlignment.VALIGN_TOP);
-                    turnHeader.setBounds(textBounds);
-                    layers.get(LAYER_TURN).addDrawable(turnHeader);
+        
+        Rect bounds = new Rect(drawRegions[DRAW_REGION_CENTER_BOUNDS]);
+        bounds.inset(width / 16 + 6, height / 16 + 6);
+        int lineHeight = (int) getPixelSize(DPI_LINE_HEIGHT);
+        int buttonHeight = (int) getPixelSize(DPI_BUTTON_HEIGHT);
+        Rect textBounds = new Rect(bounds.left, bounds.top, bounds.right, bounds.top + lineHeight * 3);
+        Rect btn1Bounds = new Rect(bounds.left, bounds.top + lineHeight * 3, bounds.right, bounds.top + lineHeight * 3 + buttonHeight);
+        Rect btn2Bounds = new Rect(bounds.left, bounds.top + lineHeight * 3 + buttonHeight, bounds.right, bounds.top + lineHeight * 3 + buttonHeight * 2);
+        Rect btn3Bounds = new Rect(bounds.left, bounds.top + lineHeight * 3 + buttonHeight * 2, bounds.right, bounds.top + lineHeight * 3 + buttonHeight * 3);
+        
+        String actionText = listener.getActionText(turnPlayerId);
+        TextDrawable turnHeader = new TextDrawable(
+                actionText,
+                getPixelSize(DPI_SIZE_TEXT),
+                Color.WHITE, Color.WHITE,
+                Alignment.ALIGN_NORMAL,
+                VerticalAlignment.VALIGN_TOP);
+        turnHeader.setBounds(textBounds);
+        layers.get(LAYER_TURN).addDrawable(turnHeader);
+        
+        ArrayList<Button> buttons = listener.getActionButtons(turnPlayerId);
 
-                    int index = 0;
-                    for (final Button btn : buttons) {
-                        Rect btnBounds = null;
-                        int tag = 0;
-                        switch (index) {
-                        case 0:
-                            btnBounds = btn1Bounds;
-                            tag = TAG_TURN_BUTTON_1;
-                            break;
-                        case 1:
-                            btnBounds = btn2Bounds;
-                            tag = TAG_TURN_BUTTON_2;
-                            break;
-                        case 2:
-                            btnBounds = btn3Bounds;
-                            tag = TAG_TURN_BUTTON_3;
-                            break;
-                        default:
-                            return;
-                        }
-
-                        addButton(
-                                LAYER_TURN,
-                                btnBounds,
-                                btn.getCaption(),
-                                btn.isEnabled(),
-                                tag,
-                                new GestureRegionListener() {
-                                    @Override
-                                    public void onGestureRegionClick(GestureRegion gestureRegion) {
-                                        listener.onButtonCommand(btn.getCommand());
-                                    }
-                                });
-                        
-                        index++;
-                    }
-                    if (player.canRoll() && playerId == selfPlayerId) {
-                        addButton(
-                                LAYER_TURN,
-                                btn1Bounds,
-                                "Roll",
-                                true,
-                                TAG_TURN_BUTTON_1,
-                                new GestureRegionListener() {
-                                    @Override
-                                    public void onGestureRegionClick(GestureRegion gestureRegion) {
-                                        listener.onRoll();
-                                    }
-                                });
-                    }
-                    
-                    /*else if (player.canBuyEstate()) {
-                        boolean auctionButtonEnabled = player.canAuction();
-                        
-                        addButton(
-                                LAYER_TURN,
-                                btn1Bounds,
-                                "Buy Estate",
-                                true,
-                                TAG_TURN_BUTTON_1,
-                                new GestureRegionListener() {
-                                    @Override
-                                    public void onGestureRegionClick(GestureRegion gestureRegion) {
-                                        thisListener.onBuyEstate();
-                                    }
-                                });
-                        
-                        addButton(
-                                LAYER_TURN,
-                                btn2Bounds,
-                                "Auction Estate",
-                                auctionButtonEnabled,
-                                TAG_TURN_BUTTON_2,
-                                new GestureRegionListener() {
-                                    @Override
-                                    public void onGestureRegionClick(GestureRegion gestureRegion) {
-                                        thisListener.onAuctionEstate();
-                                    }
-                                });
-                        
-                        addButton(
-                                LAYER_TURN,
-                                btn3Bounds,
-                                "End Turn",
-                                !auctionButtonEnabled,
-                                TAG_TURN_BUTTON_3,
-                                new GestureRegionListener() {
-                                    @Override
-                                    public void onGestureRegionClick(GestureRegion gestureRegion) {
-                                        thisListener.onEndTurn();
-                                    }
-                                });
-                    }*/
-                    break;
-                }
+        int index = 0;
+        for (final Button btn : buttons) {
+            Rect btnBounds = null;
+            int tag = 0;
+            switch (index) {
+            case 0:
+                btnBounds = btn1Bounds;
+                tag = TAG_TURN_BUTTON_1;
+                break;
+            case 1:
+                btnBounds = btn2Bounds;
+                tag = TAG_TURN_BUTTON_2;
+                break;
+            case 2:
+                btnBounds = btn3Bounds;
+                tag = TAG_TURN_BUTTON_3;
+                break;
+            default:
+                return;
             }
+
+            addButton(
+                    LAYER_TURN,
+                    btnBounds,
+                    btn.getCaption(),
+                    btn.isEnabled(),
+                    tag,
+                    new GestureRegionListener() {
+                        @Override
+                        public void onGestureRegionClick(GestureRegion gestureRegion) {
+                            listener.onButtonCommand(btn.getCommand());
+                        }
+                    });
+            
+            index++;
         }
     }
 
