@@ -60,6 +60,7 @@ import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 /**
  * The primary game Activity, for a game lobby and game.
@@ -183,6 +184,11 @@ public class BoardActivity extends FragmentActivity implements
     private boolean firstInit = false;
     
     /**
+     * Currently saved configuration.
+     */
+    private HashMap<String, String> savedConfig = null;
+    
+    /**
      * Used to make sure a dialog may open at this time.
      */
     private boolean running = false;
@@ -296,6 +302,15 @@ public class BoardActivity extends FragmentActivity implements
                 this.clientVersion = "0.0.0";
             }
             this.nickname = prefs.getString("player_nick", "anonymous");
+            
+            int savedConfigEntries = prefs.getInt("scfgCount", 0);
+            if (savedConfigEntries > 0) {
+                savedConfig = new HashMap<String, String>();
+                for (int k = 0; k < savedConfigEntries; k++) {
+                    savedConfig.put(prefs.getString("scfgCmd" + k, ""),
+                            prefs.getString("scfgVal" + k, ""));
+                }
+            }
             
             this.netRunnable = new BoardActivityNetworkThread();
         } else {
@@ -646,6 +661,7 @@ public class BoardActivity extends FragmentActivity implements
         this.sendToNetThread(BoardNetworkAction.MSG_COMMAND, state);
     }
 
+
     /**
      * Sends a message to the network thread. Use this and not
      * nethandler.dispatchMessage()
@@ -656,17 +672,42 @@ public class BoardActivity extends FragmentActivity implements
      *            Named arguments of the message. Can be null to specify zero arguments.
      */
     public void sendToNetThread(BoardNetworkAction action, Bundle arguments) {
+        sendToNetThread(action, arguments, 0);
+    }
+
+
+    /**
+     * Sends a message to the network thread. Use this and not
+     * nethandler.dispatchMessage()
+     * 
+     * @param action
+     *            The message ID.
+     * @param arguments
+     *            Named arguments of the message. Can be null to specify zero arguments.
+     * @param msDelay
+     *            Delay for some posts.
+     */
+    private void sendToNetThread(BoardNetworkAction action, Bundle arguments, int msDelay) {
         if (netHandler == null) {
             return;
         }
         final Message msg = Message.obtain(netHandler, action.getWhat());
         msg.setData(arguments);
-        netHandler.post(new Runnable() {
-            @Override
-            public void run() {
-                netHandler.dispatchMessage(msg);                
-            } 
-        });
+        if (msDelay > 0) {
+            netHandler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    netHandler.dispatchMessage(msg);                
+                } 
+            }, msDelay);
+        } else {
+            netHandler.post(new Runnable() {
+                @Override
+                public void run() {
+                    netHandler.dispatchMessage(msg);                
+                } 
+            });
+        }
     }
 
     /**
@@ -858,7 +899,23 @@ public class BoardActivity extends FragmentActivity implements
         } else {
             setDescription.setVisible(false);
         }
+
+        // only show save config if mode is CONFIG
+        MenuItem saveCfg = (MenuItem) menu.findItem(R.id.menu_save_cfg);
+        saveCfg.setVisible(status == GameStatus.CONFIG);
+        
+        // only show load config if mode is CONFIG; only allow if we are game master & a config exists
+        MenuItem loadCfg = (MenuItem) menu.findItem(R.id.menu_load_cfg);
+        if (status == GameStatus.CONFIG) {
+            loadCfg.setVisible(true);
+            loadCfg.setEnabled(isMaster && savedConfig != null);
+        } else {
+            loadCfg.setVisible(false);
+        }
+        
         return shown;
+        
+        
     }
 
     @Override
@@ -874,6 +931,16 @@ public class BoardActivity extends FragmentActivity implements
                 args.putInt("minLength", 1);
                 args.putInt("action", BoardNetworkAction.MSG_GAME_DESCRIPTION.getWhat());
                 dialog = MonopolyDialog.showNewDialog(this, args);
+            }
+            break;
+        case R.id.menu_save_cfg:
+            if (status == GameStatus.CONFIG) {
+                saveCurrentConfiguration();
+            }
+            break;
+        case R.id.menu_load_cfg:
+            if (status == GameStatus.CONFIG && savedConfig != null && isMaster) {
+                loadConfiguration();
             }
             break;
         case R.id.menu_bankrupt:
@@ -908,12 +975,56 @@ public class BoardActivity extends FragmentActivity implements
         return true;
     }
 
+    private void saveCurrentConfiguration() {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+        Editor editor = prefs.edit();
+        
+        editor.putInt("scfgCount", configurables.size());
+        savedConfig = new HashMap<String, String>();
+        for (int i = 0; i < configurables.size(); i++) {
+            int index = configurables.keyAt(i);
+            Configurable config = configurables.get(index);
+            editor.putString("scfgCmd" + i, config.getCommand());
+            editor.putString("scfgVal" + i, config.getValue());
+            savedConfig.put(config.getCommand(), config.getValue());
+        }
+        
+        editor.commit();
+        Toast.makeText(this, "Saved current configuration.", Toast.LENGTH_SHORT).show();
+    }
+
     private String getFullTitle() {
         String gameNumber = "";
         if (gameItem.getGameId() >= 0) {
             gameNumber = "#" + gameItem.getGameId() + ": ";
         }
         return gameItem.getDescription() + " / " + gameNumber + gameItem.getTypeName() + " (" + gameItem.getType() + ")";
+    }
+
+    private void loadConfiguration() {
+        Bundle args = new Bundle();
+        int updatedCount = 0;
+        for (String key : savedConfig.keySet()) {
+            boolean needsUpdating = false;
+            for (int i = 0; i < configurables.size(); i++) {
+                int index = configurables.keyAt(i);
+                Configurable config = configurables.get(index);
+                if (config.getCommand().equals(key)) {
+                    if (!config.getValue().equals(savedConfig.get(key))) {
+                        needsUpdating = true;
+                    }
+                    break;
+                }
+            }
+            if (needsUpdating) {
+                Log.v("monopd", "scfg: " + key + " = " + savedConfig.get(key));
+                args.putString("command", key);
+                args.putString("value", savedConfig.get(key));
+                sendToNetThread(BoardNetworkAction.MSG_CONFIG, args, 200 * updatedCount);
+                updatedCount++;
+            }
+        }
+        Toast.makeText(this, "Loaded configuration.", Toast.LENGTH_SHORT).show();
     }
 
     /**
