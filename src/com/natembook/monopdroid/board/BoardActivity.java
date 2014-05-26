@@ -35,6 +35,7 @@ import android.content.pm.PackageManager.NameNotFoundException;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -162,6 +163,10 @@ public class BoardActivity extends FragmentActivity implements
      * Client version. Save on restart.
      */
     private String clientVersion;
+    /**
+     * Device name. Save on restart.
+     */
+    private String deviceName;
     /**
      * Current nick name. Save on restart.
      */
@@ -301,6 +306,7 @@ public class BoardActivity extends FragmentActivity implements
             } catch (NameNotFoundException e) {
                 this.clientVersion = "0.0.0";
             }
+            this.deviceName = Build.MODEL + " (Android " + Build.VERSION.RELEASE + ")";
             this.nickname = prefs.getString("player_nick", "anonymous");
             
             int savedConfigEntries = prefs.getInt("scfgCount", 0);
@@ -357,6 +363,7 @@ public class BoardActivity extends FragmentActivity implements
         private GameStatus status;
         private String clientName;
         private String clientVersion;
+        private String deviceName;
         private String nickname;
         private boolean isMaster;
         private int master;
@@ -380,6 +387,7 @@ public class BoardActivity extends FragmentActivity implements
             this.status = activity.status;
             this.clientName = activity.clientName;
             this.clientVersion = activity.clientVersion;
+            this.deviceName = activity.deviceName;
             this.nickname = activity.nickname;
             this.isMaster = activity.isMaster;
             this.master = activity.master;
@@ -403,6 +411,7 @@ public class BoardActivity extends FragmentActivity implements
             activity.status = this.status;
             activity.clientName = this.clientName;
             activity.clientVersion = this.clientVersion;
+            activity.deviceName = this.deviceName;
             activity.nickname = this.nickname;
             activity.isMaster = this.isMaster;
             activity.master = this.master;
@@ -2563,7 +2572,7 @@ public class BoardActivity extends FragmentActivity implements
                             if (command.equals("ping")) {
                                 sendCommand("pong");
                             } else if (command.equals("version")) {
-                                sendCommand(clientName + " " + clientVersion);
+                                sendCommand(clientName + " " + clientVersion + " on " + deviceName);
                             } else if (command.equals("date")) {
                                 sendCommand(DateFormat.getDateTimeInstance().format(new Date()));
                             }
