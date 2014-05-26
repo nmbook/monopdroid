@@ -9,7 +9,7 @@ import android.util.SparseArray;
 public class DrawLayer {
     private ArrayList<Drawable> regions = new ArrayList<Drawable>();
     private ArrayList<Drawable> newRegions = null;
-    private SparseArray<GestureRegion> gestureRegion = new SparseArray<GestureRegion>();
+    private SparseArray<GestureRegion> gestureRegions = new SparseArray<GestureRegion>();
     private int index = 0;
     private boolean visible = true;
     private boolean fixed = true;
@@ -20,7 +20,7 @@ public class DrawLayer {
         this.visible = visible;
     }
 
-    public void setVisible(boolean visible) {
+    public synchronized void setVisible(boolean visible) {
         this.visible = visible;
     }
     
@@ -30,51 +30,46 @@ public class DrawLayer {
     
     public void beginRegions() {
         newRegions = new ArrayList<Drawable>();
-        gestureRegion = new SparseArray<GestureRegion>();
+        gestureRegions = new SparseArray<GestureRegion>();
     }
     
-    public void commitRegions() {
-        synchronized (regions) {
-            regions = newRegions;
-        }
+    public synchronized void commitRegions() {
+        regions.addAll(newRegions);
+        newRegions = null;
     }
 
-    public void clearRegions() {
-        synchronized (regions) {
-            regions = new ArrayList<Drawable>();
-        }
+    public synchronized void clearRegions() {
+        regions.clear();
     }
     
     public void addDrawable(Drawable region) {
         newRegions.add(region);
     }
     
-    public void addGestureRegion(GestureRegion region) {
-        gestureRegion.put(region.getTag(), region);
+    public synchronized void addGestureRegion(GestureRegion region) {
+        gestureRegions.put(region.getTag(), region);
     }
     
     public GestureRegion getGestureRegion(int tag) {
-        return gestureRegion.get(tag);
+        return gestureRegions.get(tag);
     }
 
-    public void clearGestureRegions() {
-        gestureRegion.clear();
+    public synchronized void clearGestureRegions() {
+        gestureRegions.clear();
     }
     
-    public void drawRegions(Canvas canvas) {
+    public synchronized void drawRegions(Canvas canvas) {
         if (visible) {
             //Paint p = new Paint();
             //p.setColor(Color.YELLOW);
             //p.setStyle(Paint.Style.STROKE);
             //p.setStrokeWidth(2);
-            synchronized (regions) {
-                for (Drawable d : regions) {
-                    d.draw(canvas);
-                }
-                //for (Drawable d : regions) {
-                //    canvas.drawRect(d.getBounds(), p);
-                //}
+            for (Drawable d : regions) {
+                d.draw(canvas);
             }
+            //for (Drawable d : regions) {
+            //    canvas.drawRect(d.getBounds(), p);
+            //}
         }
     }
 
@@ -91,6 +86,6 @@ public class DrawLayer {
     }
     
     public SparseArray<GestureRegion> getGestureRegions() {
-        return gestureRegion;
+        return gestureRegions;
     }
 }
