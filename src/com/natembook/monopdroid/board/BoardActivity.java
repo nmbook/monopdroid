@@ -130,6 +130,10 @@ public class BoardActivity extends FragmentActivity implements
      */
     private SparseArray<Trade> trades = new SparseArray<Trade>();
     /**
+     * List of cards. Save on restart.
+     */
+    private SparseArray<Card> cards = new SparseArray<Card>();
+    /**
      * List of options. Save on restart.
      */
     private SparseArray<Configurable> configurables = new SparseArray<Configurable>();
@@ -331,6 +335,7 @@ public class BoardActivity extends FragmentActivity implements
         private ArrayList<Estate> estates;
         private SparseArray<Auction> auctions;
         private SparseArray<Trade> trades;
+        private SparseArray<Card> cards;
         private SparseArray<Configurable> configurables;
         private int selfPlayerId;
         private String cookie;
@@ -353,6 +358,7 @@ public class BoardActivity extends FragmentActivity implements
             this.estates = activity.estates;
             this.auctions = activity.auctions;
             this.trades = activity.trades;
+            this.cards = activity.cards;
             this.configurables = activity.configurables;
             this.selfPlayerId = activity.selfPlayerId;
             this.cookie = activity.cookie;
@@ -1831,14 +1837,14 @@ public class BoardActivity extends FragmentActivity implements
                 args.putString("message", getString(R.string.empty_dialog_prompt_objectlist_card));
                 args.putInt("itemCount", 0);
                 args.putString("itemType", "CARD");
-                //serializeOwnedCards(args); TODO: implement cards
+                serializeOwnedCards(args);
                 if (args.getInt("itemCount") == 1) {
                     // only one card, use it now and skip dialog!
                     int cardId = args.getInt("itemId_0");
-                    //Card card = cards.get(cardId);
-                    //if (card != null) {
-                    //    finalTrade.putInt("playerIdFrom", card.getOwner());
-                    //}
+                    Card card = cards.get(cardId);
+                    if (card != null) {
+                        finalTrade.putInt("playerIdFrom", card.getOwner());
+                    }
                     finalTrade.putInt("cardId", cardId);
                     tradeAddOfferPrompt(TradeOfferStep.TO, finalTrade);
                 } else {
@@ -1890,24 +1896,6 @@ public class BoardActivity extends FragmentActivity implements
         }
     }
 
-    private void serializeOwnedEstates(Bundle args) {
-        int count = 0;
-        for (int i = 0; i < estates.size(); i++) {
-            Estate estate = estates.get(i);
-            if (estate.getOwner() >= 0) {
-                args.putInt("itemId_" + count, estate.getEstateId());
-                args.putString("itemName_" + count, makeEstateName(estate));
-                Player owner = players.get(estate.getOwner());
-                if (owner != null) {
-                    args.putString("itemSubtext_" + count, "Owned by " + makePlayerName(owner));
-                }
-                count++;
-            }
-        }
-        args.putInt("itemCount", count);
-        args.putString("itemType", "ESTATE");
-    }
-
     private void serializePlayers(Bundle args, int playerIdExclude, TradeOfferType type) {
         int count = 0;
         for (int i = 0; i < players.size(); i++) {
@@ -1939,6 +1927,42 @@ public class BoardActivity extends FragmentActivity implements
         }
         args.putInt("itemCount", count);
         args.putString("itemType", "PLAYER");
+    }
+
+    private void serializeOwnedEstates(Bundle args) {
+        int count = 0;
+        for (int i = 0; i < estates.size(); i++) {
+            Estate estate = estates.get(i);
+            if (estate.getOwner() >= 0) {
+                args.putInt("itemId_" + count, estate.getEstateId());
+                args.putString("itemName_" + count, makeEstateName(estate));
+                Player owner = players.get(estate.getOwner());
+                if (owner != null) {
+                    args.putString("itemSubtext_" + count, "Owned by " + makePlayerName(owner));
+                }
+                count++;
+            }
+        }
+        args.putInt("itemCount", count);
+        args.putString("itemType", "ESTATE");
+    }
+
+    private void serializeOwnedCards(Bundle args) {
+        int count = 0;
+        for (int i = 0; i < cards.size(); i++) {
+            Card card = cards.get(i);
+            if (card.getOwner() >= 0) {
+                args.putInt("itemId_" + count, card.getCardId());
+                args.putString("itemName_" + count, "<b>" + card.getTitle() + "</b>");
+                Player owner = players.get(card.getOwner());
+                if (owner != null) {
+                    args.putString("itemSubtext_" + count, "Owned by " + makePlayerName(owner));
+                }
+                count++;
+            }
+        }
+        args.putInt("itemCount", count);
+        args.putString("itemType", "CARD");
     }
 
     @Override
@@ -2368,6 +2392,31 @@ public class BoardActivity extends FragmentActivity implements
             }
         });
     }
+    
+    @Override
+    public void onCardUpdate(final int cardId, final HashMap<String, String> data) {
+        Log.v("monopd", "net: Received onCardUpdate() from MonoProtocolHandler");
+        runOnUiThread(new Runnable() {
+
+            @Override
+            public void run() {
+                Card card = cards.get(cardId);
+                if (card == null) {
+                    card = new Card(cardId);
+                }
+                for (String key : data.keySet()) {
+                    String value = data.get(key);
+                    XmlAttribute attr = Card.cardAttributes.get(key);
+                    if (attr == null) {
+                        Log.w("monopd", "card." + key + " was unknown. Value = " + value);
+                    } else {
+                        attr.set(card, value);
+                    }
+                }
+                cards.put(cardId, card);
+            }
+        });
+    }
 
     @Override
     public void onChatMessage(final int playerId, final String author, final String text) {
@@ -2759,9 +2808,7 @@ public class BoardActivity extends FragmentActivity implements
 
     @Override
     public int getCardOwner(int cardId) {
-        // TODO: Card Object NYI.
-        // return cards.get(cardId).getOwner();
-        return -1;
+        return cards.get(cardId).getOwner();
     }
 
     @Override
@@ -2880,10 +2927,10 @@ public class BoardActivity extends FragmentActivity implements
                 Bundle finalTrade = new Bundle();
                 finalTrade.putInt("tradeId", dialogArgs.getInt("tradeId"));
                 finalTrade.putInt("offerType", type.getIndex());
-                //Card card = cards.get(objectId);
-                //if (card != null) {
-                //    finalTrade.putInt("playerIdFrom", card.getOwner());
-                //}
+                Card card = cards.get(objectId);
+                if (card != null) {
+                    finalTrade.putInt("playerIdFrom", card.getOwner());
+                }
                 finalTrade.putInt("cardId", objectId);
                 tradeAddOfferPrompt(TradeOfferStep.TO, finalTrade);
             }

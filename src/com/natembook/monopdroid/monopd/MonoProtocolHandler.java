@@ -58,6 +58,7 @@ public class MonoProtocolHandler {
             this.put("deleteplayer", XmlNodeType.DELETEPLAYER);
             this.put("button", XmlNodeType.BUTTON);
             this.put("auctionupdate", XmlNodeType.AUCTIONUPDATE);
+            this.put("cardupdate", XmlNodeType.CARDUPDATE);
             this.put("tradeupdate", XmlNodeType.TRADEUPDATE);
             this.put("tradeplayer", XmlNodeType.TRADEPLAYER);
             this.put("trademoney", XmlNodeType.TRADEMONEY);
@@ -477,6 +478,9 @@ public class MonoProtocolHandler {
         case AUCTIONUPDATE:
             this.handleNodeAuctionUpdate(nodeType, data, glistener);
             break;
+        case CARDUPDATE:
+            this.handleNodeCardUpdate(nodeType, data, glistener);
+            break;
         case TRADEUPDATE:
             this.handleNodeTradeUpdate(nodeType, data, glistener, list);
             break;
@@ -829,6 +833,15 @@ public class MonoProtocolHandler {
         data.remove("auctionid");
         HashMap<String, String> dataCopy = new HashMap<String, String>(data);
         glistener.onAuctionUpdate(auctionId, dataCopy);
+        data.clear();
+    }
+
+    private void handleNodeCardUpdate(XmlNodeType nodeType, HashMap<String, String> data,
+            MonoProtocolGameListener glistener) {
+        int auctionId = this.getAttributeAsInt(data, "cardid");
+        data.remove("cardid");
+        HashMap<String, String> dataCopy = new HashMap<String, String>(data);
+        glistener.onCardUpdate(auctionId, dataCopy);
         data.clear();
     }
 

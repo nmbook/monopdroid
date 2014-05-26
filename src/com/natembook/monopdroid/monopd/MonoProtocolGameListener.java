@@ -130,6 +130,13 @@ public interface MonoProtocolGameListener extends MonoProtocolListener {
      * @param data Key-Value set of object data.
      */
     public void onAuctionUpdate(int auctionId, HashMap<String, String> data);
+    
+    /**
+     * Sent by the server to update a Card object. 
+     * @param cardId Card ID.
+     * @param dataKey-Value set of object data.
+     */
+    public void onCardUpdate(int cardId, HashMap<String, String> data);
 
     /**
      * Sent by the server to update a Trade object.
