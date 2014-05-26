@@ -489,7 +489,12 @@ public class BoardActivity extends FragmentActivity implements
         int count = 0;
         for (int playerId : playerIds) {
             if (playerId >= 0) {
-                BoardViewPiece.pieces[count].setPlayerId(playerId);
+                BoardViewPiece piece = BoardViewPiece.pieces[count];
+                piece.setPlayerId(playerId);
+                piece.setMoving(false);
+                piece.setCurrentEstate(0);
+                piece.setProgressEstate(0);
+                piece.setProgressEstateDelta(0);
                 count++;
             }
         }
