@@ -2223,6 +2223,7 @@ public class BoardActivity extends FragmentActivity implements
             public void run() {
                 if (gameId > 0) {
                     gameItem.setGameId(gameId);
+                    setTitle(getFullTitle());
                 }
                 
                 GameStatus oldStatus = status;
