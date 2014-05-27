@@ -405,6 +405,7 @@ public class BoardActivity extends FragmentActivity implements
             activity.estates = this.estates;
             activity.auctions = this.auctions;
             activity.trades = this.trades;
+            activity.cards = this.cards;
             activity.configurables = this.configurables;
             activity.selfPlayerId = this.selfPlayerId;
             activity.cookie = this.cookie;
