@@ -598,12 +598,7 @@ public class BoardActivity extends FragmentActivity implements
             if (turnTimer == null) {
                 turnTimer = new Timer();
             }
-            turnTimer.schedule(new TimerTask() {
-                @Override
-                public void run() {
-                    animateMoveStep(playerId, pieceIndex, start, end, start + 1);
-                }
-            }, turnTimeout);
+            animateMoveStep(playerId, pieceIndex, start, end, start + 1);
         }
     }
     
