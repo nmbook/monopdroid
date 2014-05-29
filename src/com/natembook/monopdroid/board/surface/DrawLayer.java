@@ -34,6 +34,7 @@ public class DrawLayer {
     }
     
     public synchronized void commitRegions() {
+        regions.clear();
         regions.addAll(newRegions);
         newRegions = null;
     }
