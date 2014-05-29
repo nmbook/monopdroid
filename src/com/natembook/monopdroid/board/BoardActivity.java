@@ -3098,6 +3098,7 @@ public class BoardActivity extends FragmentActivity implements
 
     @Override
     public void onDialogDismiss() {
+        Log.v("monopd", "dismissing DialogFragment");
         dialog = null;
     }
 }

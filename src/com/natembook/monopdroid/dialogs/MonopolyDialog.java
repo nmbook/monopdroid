@@ -8,10 +8,11 @@ import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
-import android.content.DialogInterface.OnCancelListener;
 import android.content.DialogInterface.OnClickListener;
 import android.os.Bundle;
 import android.support.v4.app.DialogFragment;
+import android.support.v4.app.FragmentActivity;
+import android.text.InputFilter;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -21,6 +22,7 @@ import android.widget.EditText;
 
 public class MonopolyDialog extends DialogFragment {
     private MonopolyDialogListener listener = null;
+    private EditText editText = null;
     
     private void setMonopolyDialogListener(MonopolyDialogListener listener) {
         this.listener = listener;
@@ -36,7 +38,6 @@ public class MonopolyDialog extends DialogFragment {
         String message = arguments.getString("message");
         boolean allowBack = arguments.getBoolean("allowBack");
         Log.v("monopd", "dialog create: " + arguments.toString());
-        CallDismissListener callDismiss = new CallDismissListener();
         
         if (getActivity() instanceof BoardActivity) {
             // if this is a BoardActivity, it can listen to callbacks
@@ -76,13 +77,15 @@ public class MonopolyDialog extends DialogFragment {
         }
         
         final View view = v;
-        final EditText editText;
         
         switch (dialogType) {
         case R.id.dialog_type_prompt_name:
             editText = (EditText) view.findViewById(R.id.dialog_edit_field);
-            // final int minLength = arguments.getInt("minLength");
-            // TODO validate
+            final int maxLength = arguments.getInt("maxLength");
+            if (maxLength > 0) {
+                editText.setFilters(new InputFilter[] { new InputFilter.LengthFilter(maxLength) });
+            }
+            // TODO something something empty text box
             String defaultName = arguments.getString("default");
             if (defaultName != null) {
                 editText.setText(defaultName);
@@ -92,13 +95,13 @@ public class MonopolyDialog extends DialogFragment {
             b.setPositiveButton(android.R.string.ok, new OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialog, int which) {
-                    listener.onDialogEnterName(editText.getText().toString(), arguments);
-                    hideKeyboard(editText);
+                    if (editText.length() > 0) {
+                        listener.onDialogEnterName(editText.getText().toString(), arguments);
+                    }
                     dismiss();
                 }
             });
-            b.setNegativeButton(android.R.string.cancel, callDismiss);
-            b.setOnCancelListener(callDismiss);
+            b.setNegativeButton(android.R.string.cancel, new DismissingOnClickListener());
             b.setIcon(android.R.drawable.ic_dialog_info);
             break;
         case R.id.dialog_type_prompt_money:
@@ -116,15 +119,11 @@ public class MonopolyDialog extends DialogFragment {
                     try {
                         int intValue = Integer.parseInt(editText.getText().toString());
                         listener.onDialogEnterMoney(intValue, arguments);
-                    } catch (NumberFormatException nfex) {
-                        
-                    }
-                    hideKeyboard(editText);
+                    } catch (NumberFormatException nfex) { }
                     dismiss();
                 }
             });
-            b.setNegativeButton(android.R.string.cancel, callDismiss);
-            b.setOnCancelListener(callDismiss);
+            b.setNegativeButton(android.R.string.cancel, new DismissingOnClickListener());
             b.setIcon(android.R.drawable.ic_dialog_info);
             break;
         case R.id.dialog_type_prompt_tradetype:
@@ -140,8 +139,7 @@ public class MonopolyDialog extends DialogFragment {
                     dismiss();
                 }
             });
-            b.setNegativeButton(android.R.string.cancel, callDismiss);
-            b.setOnCancelListener(callDismiss);
+            b.setNegativeButton(android.R.string.cancel, new DismissingOnClickListener());
             b.setIcon(android.R.drawable.ic_dialog_info);
             break;
         case R.id.dialog_type_prompt_objectlist:
@@ -165,20 +163,17 @@ public class MonopolyDialog extends DialogFragment {
                     }
                 });
             }
-            b.setNegativeButton(android.R.string.cancel, callDismiss);
-            b.setOnCancelListener(callDismiss);
+            b.setNegativeButton(android.R.string.cancel, new DismissingOnClickListener());
             b.setIcon(android.R.drawable.ic_dialog_info);
             break;
         case R.id.dialog_type_info:
             b.setMessage(message);
-            b.setPositiveButton(android.R.string.ok, callDismiss);
-            b.setOnCancelListener(callDismiss);
+            b.setPositiveButton(android.R.string.ok, new DismissingOnClickListener());
             b.setIcon(android.R.drawable.ic_dialog_info);
             break;
         case R.id.dialog_type_error:
             b.setMessage(message);
-            b.setNegativeButton(android.R.string.ok, callDismiss);
-            b.setOnCancelListener(callDismiss);
+            b.setNegativeButton(android.R.string.ok, new DismissingOnClickListener());
             b.setIcon(android.R.drawable.ic_dialog_alert);
             break;
         case R.id.dialog_type_reconnect:
@@ -209,8 +204,7 @@ public class MonopolyDialog extends DialogFragment {
                     dismiss();
                 }
             });
-            b.setNegativeButton(android.R.string.no, callDismiss);
-            b.setOnCancelListener(callDismiss);
+            b.setNegativeButton(android.R.string.no, new DismissingOnClickListener());
             b.setIcon(android.R.drawable.ic_dialog_alert);
             break;
         }
@@ -219,9 +213,17 @@ public class MonopolyDialog extends DialogFragment {
     
     @Override
     public void onDismiss(DialogInterface dialog) {
+        if (editText != null) {
+            hideKeyboard(editText);
+        }
         if (listener != null) {
             listener.onDialogDismiss();
         }
+    }
+    
+    @Override
+    public void onCancel(DialogInterface dialog) {
+        dismiss();
     }
 
     /**
@@ -229,9 +231,11 @@ public class MonopolyDialog extends DialogFragment {
      * @param editText The text field.
      */
     private void hideKeyboard(EditText editText) {
-        InputMethodManager imm = (InputMethodManager)getActivity()
-                .getSystemService(Context.INPUT_METHOD_SERVICE);
-        imm.hideSoftInputFromWindow(editText.getWindowToken(), 0);
+        FragmentActivity activity = getActivity();
+        if (activity != null) {
+            InputMethodManager imm = (InputMethodManager)activity.getSystemService(Context.INPUT_METHOD_SERVICE);
+            imm.hideSoftInputFromWindow(editText.getWindowToken(), 0);
+        }
     }
     
     /**
@@ -263,14 +267,9 @@ public class MonopolyDialog extends DialogFragment {
         return dialog;
     }
     
-    private class CallDismissListener implements OnClickListener, OnCancelListener {
+    private class DismissingOnClickListener implements OnClickListener {
         @Override
         public void onClick(DialogInterface dialog, int which) {
-            dismiss();
-        }
-
-        @Override
-        public void onCancel(DialogInterface dialog) {
             dismiss();
         }
     }
