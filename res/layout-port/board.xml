@@ -20,6 +20,7 @@
         android:layout_height="0dip"
         android:layout_weight="1"
         android:fadingEdge="vertical"
+        android:requiresFadingEdge="vertical"
         android:stackFromBottom="true"
         android:transcriptMode="normal"
  		android:divider="@null"
