@@ -8,6 +8,7 @@ import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.DialogInterface.OnCancelListener;
 import android.content.DialogInterface.OnClickListener;
 import android.os.Bundle;
 import android.support.v4.app.DialogFragment;
@@ -34,6 +35,7 @@ public class MonopolyDialog extends DialogFragment {
         String title = arguments.getString("title");
         String message = arguments.getString("message");
         Log.v("monopd", "dialog create: " + arguments.toString());
+        CallDismissListener callDismiss = new CallDismissListener();
         
         if (getActivity() instanceof BoardActivity) {
             // if this is a BoardActivity, it can listen to callbacks
@@ -84,12 +86,8 @@ public class MonopolyDialog extends DialogFragment {
                     dismiss();
                 }
             });
-            b.setNegativeButton(android.R.string.cancel, new OnClickListener() {
-                @Override
-                public void onClick(DialogInterface dialog, int which) {
-                    dismiss();
-                }
-            });
+            b.setNegativeButton(android.R.string.cancel, callDismiss);
+            b.setOnCancelListener(callDismiss);
             b.setIcon(android.R.drawable.ic_dialog_info);
             break;
         case R.id.dialog_type_prompt_money:
@@ -114,12 +112,8 @@ public class MonopolyDialog extends DialogFragment {
                     dismiss();
                 }
             });
-            b.setNegativeButton(android.R.string.cancel, new OnClickListener() {
-                @Override
-                public void onClick(DialogInterface dialog, int which) {
-                    dismiss();
-                }
-            });
+            b.setNegativeButton(android.R.string.cancel, callDismiss);
+            b.setOnCancelListener(callDismiss);
             b.setIcon(android.R.drawable.ic_dialog_info);
             break;
         case R.id.dialog_type_prompt_tradetype:
@@ -135,12 +129,8 @@ public class MonopolyDialog extends DialogFragment {
                     dismiss();
                 }
             });
-            b.setNegativeButton(android.R.string.cancel, new OnClickListener() {
-                @Override
-                public void onClick(DialogInterface dialog, int which) {
-                    dismiss();
-                }
-            });
+            b.setNegativeButton(android.R.string.cancel, callDismiss);
+            b.setOnCancelListener(callDismiss);
             b.setIcon(android.R.drawable.ic_dialog_info);
             break;
         case R.id.dialog_type_prompt_objectlist:
@@ -164,32 +154,20 @@ public class MonopolyDialog extends DialogFragment {
                     }
                 });
             }
-            b.setNegativeButton(android.R.string.cancel, new OnClickListener() {
-                @Override
-                public void onClick(DialogInterface dialog, int which) {
-                    dismiss();
-                }
-            });
+            b.setNegativeButton(android.R.string.cancel, callDismiss);
+            b.setOnCancelListener(callDismiss);
             b.setIcon(android.R.drawable.ic_dialog_info);
             break;
         case R.id.dialog_type_info:
             b.setMessage(message);
-            b.setNeutralButton(android.R.string.ok, new OnClickListener() {
-                @Override
-                public void onClick(DialogInterface dialog, int which) {
-                    dismiss();
-                }
-            });
+            b.setPositiveButton(android.R.string.ok, callDismiss);
+            b.setOnCancelListener(callDismiss);
             b.setIcon(android.R.drawable.ic_dialog_info);
             break;
         case R.id.dialog_type_error:
             b.setMessage(message);
-            b.setNeutralButton(android.R.string.ok, new OnClickListener() {
-                @Override
-                public void onClick(DialogInterface dialog, int which) {
-                    dismiss();
-                }
-            });
+            b.setNegativeButton(android.R.string.ok, callDismiss);
+            b.setOnCancelListener(callDismiss);
             b.setIcon(android.R.drawable.ic_dialog_alert);
             break;
         case R.id.dialog_type_reconnect:
@@ -220,12 +198,8 @@ public class MonopolyDialog extends DialogFragment {
                     dismiss();
                 }
             });
-            b.setNegativeButton(android.R.string.no, new OnClickListener() {
-                @Override
-                public void onClick(DialogInterface dialog, int which) {
-                    dismiss();
-                }
-            });
+            b.setNegativeButton(android.R.string.no, callDismiss);
+            b.setOnCancelListener(callDismiss);
             b.setIcon(android.R.drawable.ic_dialog_alert);
             break;
         }
@@ -276,5 +250,17 @@ public class MonopolyDialog extends DialogFragment {
             dialog.show(dialogHost.getSupportFragmentManager(), null);
         }
         return dialog;
+    }
+    
+    private class CallDismissListener implements OnClickListener, OnCancelListener {
+        @Override
+        public void onClick(DialogInterface dialog, int which) {
+            dismiss();
+        }
+
+        @Override
+        public void onCancel(DialogInterface dialog) {
+            dismiss();
+        }
     }
 }
