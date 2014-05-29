@@ -40,6 +40,7 @@
     <string name="empty_dialog_prompt_objectlist_card"><i>Nobody owns any cards at this time.</i></string>
     <string name="reconnect">Reconnect</string>
     <string name="quit">Quit</string>
+    <string name="previous_step">Previous step</string>
     <string name="pref_player_nick_title">Nickname</string>
     <string name="pref_player_nick_summary">Change the nickname that other users will see you as.</string>
     <string name="pref_player_nick_dialog_title">Change nickname</string>

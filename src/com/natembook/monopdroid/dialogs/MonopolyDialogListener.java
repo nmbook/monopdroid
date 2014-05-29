@@ -16,6 +16,8 @@ public interface MonopolyDialogListener {
     public void onDialogChooseTradeType(TradeOfferType tradeOfferType, Bundle dialogArgs);
     
     public void onDialogChooseItem(int playerId, Bundle dialogArgs);
+
+    public void onDialogPreviousStep(Bundle dialogArgs);
     
     public void onDialogQuit(Bundle dialogArgs);
 

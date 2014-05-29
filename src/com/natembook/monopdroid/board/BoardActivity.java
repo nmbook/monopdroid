@@ -1894,6 +1894,7 @@ public class BoardActivity extends FragmentActivity implements
             args.putString("title", getString(R.string.dialog_choose_tradetype));
             args.putString("message", getString(R.string.choose_tradetype));
             args.putBoolean("isTrade", true);
+            args.putBoolean("allowBack", false);
             args.putInt("offerStep", step.getIndex());
             args.putInt("tradeId", finalTrade.getInt("tradeId"));
             dialog = MonopolyDialog.showNewDialog(this, args);
@@ -1904,6 +1905,7 @@ public class BoardActivity extends FragmentActivity implements
                 args.putString("title", getString(R.string.dialog_choose_tradeplayerfrom));
                 args.putString("message", getString(R.string.empty_dialog_prompt_objectlist_player));
                 args.putBoolean("isTrade", true);
+                args.putBoolean("allowBack", true);
                 args.putInt("offerType", type.getIndex());
                 args.putInt("offerStep", step.getIndex());
                 args.putInt("tradeId", finalTrade.getInt("tradeId"));
@@ -1924,6 +1926,7 @@ public class BoardActivity extends FragmentActivity implements
                 args.putInt("min", 1);
                 args.putInt("max", players.get(finalTrade.getInt("playerIdFrom")).getMoney());
                 args.putBoolean("isTrade", true);
+                args.putBoolean("allowBack", true);
                 args.putInt("offerType", type.getIndex());
                 args.putInt("offerStep", step.getIndex());
                 args.putInt("tradeId", finalTrade.getInt("tradeId"));
@@ -1946,6 +1949,7 @@ public class BoardActivity extends FragmentActivity implements
                     tradeAddOfferPrompt(TradeOfferStep.TO, finalTrade);
                 } else {
                     args.putBoolean("isTrade", true);
+                    args.putBoolean("allowBack", true);
                     args.putInt("offerType", type.getIndex());
                     args.putInt("offerStep", step.getIndex());
                     args.putInt("tradeId", finalTrade.getInt("tradeId"));
@@ -1970,6 +1974,7 @@ public class BoardActivity extends FragmentActivity implements
                     tradeAddOfferPrompt(TradeOfferStep.TO, finalTrade);
                 } else {
                     args.putBoolean("isTrade", true);
+                    args.putBoolean("allowBack", true);
                     args.putInt("offerType", type.getIndex());
                     args.putInt("offerStep", step.getIndex());
                     args.putInt("tradeId", finalTrade.getInt("tradeId"));
@@ -1990,6 +1995,7 @@ public class BoardActivity extends FragmentActivity implements
                 tradeAddOfferPrompt(TradeOfferStep.COMPLETE, finalTrade);
             } else {
                 args.putBoolean("isTrade", true);
+                args.putBoolean("allowBack", true);
                 args.putInt("offerType", type.getIndex());
                 args.putInt("offerStep", step.getIndex());
                 args.putInt("tradeId", finalTrade.getInt("tradeId"));
@@ -3066,6 +3072,27 @@ public class BoardActivity extends FragmentActivity implements
             finalTrade.putInt("cardId", dialogArgs.getInt("cardId"));
             finalTrade.putInt("playerIdTo", objectId);
             tradeAddOfferPrompt(TradeOfferStep.COMPLETE, finalTrade);
+        }
+    }
+
+    @Override
+    public void onDialogPreviousStep(Bundle dialogArgs) {
+        TradeOfferType type = TradeOfferType.fromIndex(dialogArgs.getInt("offerType"));
+        TradeOfferStep step = TradeOfferStep.fromIndex(dialogArgs.getInt("offerStep"));
+        if (step == TradeOfferStep.FROM) { // TradeOfferType.MONEY
+            Bundle finalTrade = new Bundle();
+            finalTrade.putInt("tradeId", dialogArgs.getInt("tradeId"));
+            tradeAddOfferPrompt(TradeOfferStep.TYPE, finalTrade);
+        } else if (step == TradeOfferStep.VALUE) {
+            Bundle finalTrade = new Bundle();
+            finalTrade.putInt("tradeId", dialogArgs.getInt("tradeId"));
+            tradeAddOfferPrompt(TradeOfferStep.TYPE, finalTrade);
+        } else if (step == TradeOfferStep.TO) { // any TradeOfferType
+            Bundle finalTrade = new Bundle();
+            finalTrade.putInt("tradeId", dialogArgs.getInt("tradeId"));
+            finalTrade.putInt("offerType", type.getIndex());
+            finalTrade.putInt("playerIdFrom", dialogArgs.getInt("playerIdFrom"));
+            tradeAddOfferPrompt(TradeOfferStep.VALUE, finalTrade);
         }
     }
 

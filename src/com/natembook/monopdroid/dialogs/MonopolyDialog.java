@@ -34,6 +34,7 @@ public class MonopolyDialog extends DialogFragment {
         int dialogType = arguments.getInt("dialogType");
         String title = arguments.getString("title");
         String message = arguments.getString("message");
+        boolean allowBack = arguments.getBoolean("allowBack");
         Log.v("monopd", "dialog create: " + arguments.toString());
         CallDismissListener callDismiss = new CallDismissListener();
         
@@ -63,6 +64,16 @@ public class MonopolyDialog extends DialogFragment {
         }
         
         b.setTitle(title);
+        
+        if (allowBack) {
+            b.setNeutralButton(R.string.previous_step, new OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    listener.onDialogPreviousStep(arguments);
+                    dismiss();
+                }
+            });
+        }
         
         final View view = v;
         final EditText editText;
