@@ -517,6 +517,7 @@ public class BoardActivity extends FragmentActivity implements
             args.putString("message", getString(R.string.confirm_quit));
             MonopolyDialog.showNewDialog(this, args);
         } else {
+            sendToNetThread(BoardNetworkAction.MSG_GAME_QUIT, null);
             finish();
         }
     }
@@ -713,14 +714,14 @@ public class BoardActivity extends FragmentActivity implements
             netHandler.postDelayed(new Runnable() {
                 @Override
                 public void run() {
-                    netHandler.dispatchMessage(msg);                
+                    netHandler.dispatchMessage(msg);
                 } 
             }, msDelay);
         } else {
             netHandler.post(new Runnable() {
                 @Override
                 public void run() {
-                    netHandler.dispatchMessage(msg);                
+                    netHandler.dispatchMessage(msg);
                 } 
             });
         }
