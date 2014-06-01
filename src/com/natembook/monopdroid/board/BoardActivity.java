@@ -2576,7 +2576,9 @@ public class BoardActivity extends FragmentActivity implements
                             } else if (command.equals("version")) {
                                 sendCommand(clientName + " " + clientVersion + " on " + deviceName);
                             } else if (command.equals("date")) {
-                                sendCommand(DateFormat.getDateTimeInstance().format(new Date()));
+                                sendCommand(DateFormat
+                                        .getDateTimeInstance(DateFormat.FULL, DateFormat.LONG)
+                                        .format(new Date()));
                             }
                         }
                     }
