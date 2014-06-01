@@ -47,10 +47,11 @@ public class BoardViewSurfaceThread implements Runnable {
     private static final int DRAW_REGION_CENTER_BOUNDS = 0x00; // unique
     
     private static final int DRAW_REGION_TEXT_BOUNDS = 0x01; // unique
-    
-    private static final int DRAW_REGION_CONFIG_BUTTON_BOUNDS = 0x01; // unique
+
+    private static final int DRAW_REGION_CONFIG_MESSAGE_BOUNDS = 0x01; // unique
     private static final int DRAW_REGION_CONFIG_CHECK_BOX_BOUNDS = 0x02; // unique
     private static final int DRAW_REGION_CONFIG_CHECK_TEXT_BOUNDS = 0x03; // unique
+    private static final int DRAW_REGION_CONFIG_BUTTON_BOUNDS = 0x04; // unique
     
     private static final int DRAW_REGION_BOARD_ESTATE_BOUNDS = 0x01; // many
     private static final int DRAW_REGION_BOARD_ESTATE_GRAD_BOUNDS = 0x100; // many
@@ -604,12 +605,14 @@ public class BoardViewSurfaceThread implements Runnable {
         int lineHeight = (int) getPixelSize(DPI_LINE_HEIGHT);
         int btnHeight = (int) getPixelSize(DPI_BUTTON_HEIGHT);
         
+        drawRegions.put(DRAW_REGION_CONFIG_MESSAGE_BOUNDS,
+                new Rect(5, 10, width, 10 + lineHeight));
+        drawRegions.put(DRAW_REGION_CONFIG_CHECK_BOX_BOUNDS,
+                new Rect(5, 10 + lineHeight, 40, 45 + lineHeight));
+        drawRegions.put(DRAW_REGION_CONFIG_CHECK_TEXT_BOUNDS,
+                new Rect(45, 10 + lineHeight, width, 10 + lineHeight + (int)(lineHeight * 1.5)));
         drawRegions.put(DRAW_REGION_CONFIG_BUTTON_BOUNDS,
                 new Rect(60, height - 5 - btnHeight, width - 60, height - 5));
-        drawRegions.put(DRAW_REGION_CONFIG_CHECK_BOX_BOUNDS,
-                new Rect(5, 10, 40, 45));
-        drawRegions.put(DRAW_REGION_CONFIG_CHECK_TEXT_BOUNDS,
-                new Rect(45, 10, width, 10 + (int)(lineHeight * 1.5)));
         drawPoints.put(DRAW_POINT_CONFIG_CHECK_BOX_OFFSET,
                 new Point(0, (int)(lineHeight * 1.5)));
         drawPoints.put(DRAW_POINT_CONFIG_CHECK_TEXT_OFFSET,
@@ -739,7 +742,7 @@ public class BoardViewSurfaceThread implements Runnable {
             return;
         }
         TextDrawable text = new TextDrawable(
-                string,
+                "<b>" + string + "</b>",
                 getPixelSize(DPI_SIZE_TEXT),
                 Color.WHITE,
                 Color.RED,
@@ -760,6 +763,17 @@ public class BoardViewSurfaceThread implements Runnable {
         }
         int index = 0;
         configIndexMap = new ArrayList<Integer>();
+
+        Rect configHeaderBounds = drawRegions.get(DRAW_REGION_CONFIG_MESSAGE_BOUNDS);
+        TextDrawable headerText = new TextDrawable(
+                "<b>Game lobby and configuration</b>",
+                getPixelSize(DPI_SIZE_TEXT),
+                Color.WHITE,
+                Color.GRAY,
+                Alignment.ALIGN_NORMAL,
+                VerticalAlignment.VALIGN_TOP);
+        headerText.setBounds(configHeaderBounds);
+        layers.get(LAYER_BACKGROUND).addDrawable(headerText);
         
         Rect configBoxBounds = drawRegions.get(DRAW_REGION_CONFIG_CHECK_BOX_BOUNDS);
         Rect configTextBounds = drawRegions.get(DRAW_REGION_CONFIG_CHECK_TEXT_BOUNDS);
