@@ -1,8 +1,6 @@
 package com.natembook.monopdroid.board;
 
-import java.text.DateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 
 import com.natembook.monopdroid.R;
 
@@ -37,10 +35,13 @@ public class ChatListAdapter extends ArrayAdapter<ChatItem> {
             LayoutInflater vi = (LayoutInflater) this.context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
             v = vi.inflate(this.layout, null);
         }
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this.context);
+        boolean showTimestamps = prefs.getBoolean("gameboard_timestamps", false);
         ChatItem o = super.getItem(position);
+        boolean firstTimestamp = position == 0 || o.isFirstOfDay();
         if (o != null) {
             TextView chat = (TextView) v.findViewById(R.id.chat);
-            chat.setText(o.getText(getTimestamp()));
+            chat.setText(o.getText(showTimestamps, firstTimestamp, this.context));
             chat.setTextColor(o.getColor());
             chat.setClickable(!o.isClickable());
             chat.setFocusable(!o.isClickable());
@@ -49,16 +50,6 @@ public class ChatListAdapter extends ArrayAdapter<ChatItem> {
         return v;
     }
     
-    private String getTimestamp() {
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getContext());
-        if (prefs.getBoolean("gameboard_timestamps", false)) {
-            Date d = new Date();
-            return "<small><font color=\"#ffffff\">(" + DateFormat.getTimeInstance().format(d) + ")</font></small> ";
-        } else {
-            return "";
-        }
-    }
-
     public ArrayList<ChatItem> saveState() {
         ArrayList<ChatItem> items = new ArrayList<ChatItem>();
         for (int i = 0; i < this.getCount(); i++) {

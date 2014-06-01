@@ -1,12 +1,12 @@
 package com.natembook.monopdroid.board;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.text.DateFormat;
 
 import org.xml.sax.XMLReader;
 
@@ -45,6 +45,7 @@ import android.text.Editable;
 import android.text.SpannableString;
 import android.text.SpannedString;
 import android.text.Html.TagHandler;
+import android.text.format.DateFormat;
 import android.text.style.StyleSpan;
 import android.util.Log;
 import android.util.SparseArray;
@@ -741,7 +742,7 @@ public class BoardActivity extends FragmentActivity implements
      *            Whether the buttons should be cleared, if any.
      */
     private void writeMessage(String msgText, int color, BoardViewOverlay overlayType, int objectId) {
-        chatListAdapter.add(new ChatItem(msgText, color, overlayType, objectId));
+        chatListAdapter.add(new ChatItem(msgText, color, Calendar.getInstance(), overlayType, objectId));
         chatListAdapter.notifyDataSetChanged();
     }
     
@@ -2586,9 +2587,8 @@ public class BoardActivity extends FragmentActivity implements
                             } else if (command.equals("version")) {
                                 sendCommand(clientName + " " + clientVersion + " on " + deviceName);
                             } else if (command.equals("date")) {
-                                sendCommand(DateFormat
-                                        .getDateTimeInstance(DateFormat.FULL, DateFormat.LONG)
-                                        .format(new Date()));
+                                sendCommand(DateFormat.getTimeFormat(BoardActivity.this).format(new Date()) + " on " +
+                                            DateFormat.getLongDateFormat(BoardActivity.this).format(new Date()));
                             }
                         }
                     }
