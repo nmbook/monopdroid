@@ -54,6 +54,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnKeyListener;
+import android.view.ViewTreeObserver.OnGlobalLayoutListener;
 import android.view.WindowManager;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
@@ -323,11 +324,20 @@ public class BoardActivity extends FragmentActivity implements
             state.restoreState(this);
         }
         
+        findViewById(R.id.board).getViewTreeObserver().addOnGlobalLayoutListener(new OnGlobalLayoutListener() {
+            @Override
+            public void onGlobalLayout() {
+                updatePlayerView();
+             }
+        });
+        
         this.boardView.setBoardViewListener(this);
         this.chatSendBox.setOnKeyListener(this);
         this.chatList.setOnItemClickListener(this);
         this.netRunnable.setActivity(this, this);
         this.setTitle(getFullTitle());
+
+        updatePlayerView();
 
         Log.d("monopd", "board: Completed activity set-up");
     }
@@ -1162,8 +1172,8 @@ public class BoardActivity extends FragmentActivity implements
         } else {
             // re-init
             sendToNetThread(BoardNetworkAction.MSG_RESUME, null);
-            updatePlayerView();
         }
+        updatePlayerView();
         redrawRegions();
     }
 

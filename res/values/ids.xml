@@ -10,6 +10,7 @@
     <item name="board_player_item_6" type="id" />
     <item name="board_player_item_7" type="id" />
     <item name="board_player_item_8" type="id" />
+    <item name="board" type="id" />
     <item name="board_ui" type="id" />
     <item name="board_chat_list" type="id" />
     <item name="board_chat_box" type="id" />
