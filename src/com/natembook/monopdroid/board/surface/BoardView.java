@@ -81,6 +81,7 @@ public class BoardView extends SurfaceView {
                         //if (surfaceRunner.isFixed()) {
                         int x = (int) e.getX();
                         int y = (int) e.getY();
+                        surfaceRunner.onShowPressUp(x, y);
                         return surfaceRunner.onSingleTapUp(x, y);
                         //} else {
                         //    return false;
@@ -120,13 +121,17 @@ public class BoardView extends SurfaceView {
                     public void onLongPress(MotionEvent e) {
                         int x = (int) e.getX();
                         int y = (int) e.getY();
+                        surfaceRunner.onShowPressUp(x, y);
                         surfaceRunner.onLongPress(x, y);
                     }
                     
                     @Override
                     public boolean onDoubleTap(MotionEvent e) {
                         if (!surfaceRunner.isFixed()) {
-                            surfaceRunner.onDoubleTap(e.getX(), e.getY());
+                            int x = (int) e.getX();
+                            int y = (int) e.getY();
+                            surfaceRunner.onShowPressUp(x, y);
+                            surfaceRunner.onDoubleTap(x, y);
                             return true;
                         }
                         return false;
