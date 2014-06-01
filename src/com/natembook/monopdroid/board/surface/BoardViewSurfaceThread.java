@@ -29,15 +29,13 @@ import android.view.SurfaceHolder;
 
 public class BoardViewSurfaceThread implements Runnable {
     // tags for GestureRegions, all visible regions must have a unique tag
-    //private static final int TAG_LOADING_TEXT = 0; // unique
-    private static final int TAG_GAME_START_BUTTON = 1; // unique
-    private static final int TAG_CONFIG_ITEM_CHECK = 2; // up to 16
-    private static final int TAG_ESTATE = 18; // up to 40
-    private static final int TAG_TURN_BUTTON_1 = 58; // unique
-    private static final int TAG_TURN_BUTTON_2 = 59; // unique
-    private static final int TAG_TURN_BUTTON_3 = 60; // unique
-    private static final int TAG_OVERLAY = 61; // unique
-    private static final int TAG_OVERLAY_BUTTON = 62; // up to 6
+    //private static final int TAG_LOADING_TEXT = 0x00; // unique
+    private static final int TAG_GAME_START_BUTTON = 0x01; // unique
+    private static final int TAG_CONFIG_ITEM_CHECK = 0x02; // many
+    private static final int TAG_ESTATE = 0x100; // many
+    private static final int TAG_TURN_BUTTON = 0x200; // many
+    private static final int TAG_OVERLAY = 0x300; // unique
+    private static final int TAG_OVERLAY_BUTTON = 0x301; // many
     
     // IDs for layers
     public static final int LAYER_BACKGROUND = 0;
@@ -46,27 +44,27 @@ public class BoardViewSurfaceThread implements Runnable {
     public static final int LAYER_OVERLAY = 3;
 
     // indices in the rect/point calculation storage arrays
-    private static final int DRAW_REGION_CENTER_BOUNDS = 0;
-    private static final int DRAW_REGION_TEXT_BOUNDS = 1;
-    private static final int DRAW_REGION_TEXT_COUNT = 2;
-    private static final int DRAW_REGION_CONFIG_BUTTON_BOUNDS = 1;
-    private static final int DRAW_REGION_CONFIG_CHECK_BOX_BOUNDS = 2;
-    private static final int DRAW_REGION_CONFIG_CHECK_TEXT_BOUNDS = 18;
-    private static final int DRAW_REGION_CONFIG_COUNT = 34;
-    private static final int DRAW_REGION_BOARD_ESTATE_BOUNDS = 1;
-    private static final int DRAW_REGION_BOARD_ESTATE_GRAD_BOUNDS = 41;
-    private static final int DRAW_REGION_BOARD_COUNT = 81;
+    private static final int DRAW_REGION_CENTER_BOUNDS = 0x00; // unique
     
-    private static final int DRAW_POINT_TEXT_COUNT = 0;
-    private static final int DRAW_POINT_CONFIG_COUNT = 0;
-    private static final int DRAW_POINT_BOARD_ESTATE_DIRECTION_OFFSET = 0;
-    private static final int DRAW_POINT_BOARD_ESTATE_PIECE_POSITION = 40;
-    private static final int DRAW_POINT_BOARD_ESTATE_ICON_POSITION = 80;
-    private static final int DRAW_POINT_BOARD_ESTATE_HOUSE_POSITION = 120;
-    private static final int DRAW_POINT_BOARD_ESTATE_PIECE_RADIUS = 160;
-    private static final int DRAW_POINT_BOARD_ESTATE_ICON_RADIUS = 161;
-    private static final int DRAW_POINT_BOARD_ESTATE_HOUSE_RADIUS = 162;
-    private static final int DRAW_POINT_BOARD_COUNT = 163;
+    private static final int DRAW_REGION_TEXT_BOUNDS = 0x01; // unique
+    
+    private static final int DRAW_REGION_CONFIG_BUTTON_BOUNDS = 0x01; // unique
+    private static final int DRAW_REGION_CONFIG_CHECK_BOX_BOUNDS = 0x02; // unique
+    private static final int DRAW_REGION_CONFIG_CHECK_TEXT_BOUNDS = 0x03; // unique
+    
+    private static final int DRAW_REGION_BOARD_ESTATE_BOUNDS = 0x01; // many
+    private static final int DRAW_REGION_BOARD_ESTATE_GRAD_BOUNDS = 0x100; // many
+
+    private static final int DRAW_POINT_CONFIG_CHECK_BOX_OFFSET = 0x00; // unique
+    private static final int DRAW_POINT_CONFIG_CHECK_TEXT_OFFSET = 0x01; // unique
+    
+    private static final int DRAW_POINT_BOARD_ESTATE_DIRECTION_OFFSET = 0x00; // many
+    private static final int DRAW_POINT_BOARD_ESTATE_PIECE_POSITION = 0x100; // many
+    private static final int DRAW_POINT_BOARD_ESTATE_ICON_POSITION = 0x200; // many
+    private static final int DRAW_POINT_BOARD_ESTATE_HOUSE_POSITION = 0x300; // many
+    private static final int DRAW_POINT_BOARD_ESTATE_PIECE_RADIUS = 0x400; // unique
+    private static final int DRAW_POINT_BOARD_ESTATE_ICON_RADIUS = 0x401; // unique
+    private static final int DRAW_POINT_BOARD_ESTATE_HOUSE_RADIUS = 0x402; // unique
     
     private static final int DPI_SIZE_TEXT = 18;
     private static final int DPI_LINE_HEIGHT = 24;
@@ -80,9 +78,9 @@ public class BoardViewSurfaceThread implements Runnable {
     // current draw state
     private DrawState drawState = DrawState.NOTREADY;
     // calculated drawing rectangles for the current canvas size
-    private Rect[] drawRegions;
+    private SparseArray<Rect> drawRegions;
     // calculated drawing points for the current canvas size
-    private Point[] drawPoints;
+    private SparseArray<Point> drawPoints;
     
     private volatile boolean hasChanges = false;
     private volatile boolean waitDraw = false;
@@ -246,7 +244,7 @@ public class BoardViewSurfaceThread implements Runnable {
         this.status = status;
         resetPZState();
         configIndexMap = null;
-        this.pzFixed = status != GameStatus.RUN;
+        this.pzFixed = true; //status != GameStatus.RUN;
     }
 
     public boolean isFixed() {
@@ -587,14 +585,12 @@ public class BoardViewSurfaceThread implements Runnable {
             return;
         }
         drawState = DrawState.TEXT;
-        drawRegions = new Rect[DRAW_REGION_TEXT_COUNT];
-        drawPoints = new Point[DRAW_POINT_TEXT_COUNT];
+        drawRegions = new SparseArray<Rect>();
+        drawPoints = new SparseArray<Point>();
         
-        drawRegions[DRAW_REGION_TEXT_BOUNDS] = new Rect(0, 0, width, height);
-        //float part = ((float)width / ((4f * phi) + 18f));
-        drawRegions[DRAW_REGION_CENTER_BOUNDS] =
-                new Rect(width / 16 + 6, height / 16 + 6, width * 15 / 16 - 6, height * 15 / 16 - 6);
-                //new Rect((int)(2f * phi * part), (int)(2f * phi * part), (int)(width - 2f * phi * part), (int)(height - 2f * phi * part));
+        drawRegions.put(DRAW_REGION_TEXT_BOUNDS, new Rect(0, 0, width, height));
+        drawRegions.put(DRAW_REGION_CENTER_BOUNDS,
+                new Rect(width / 16 + 6, height / 16 + 6, width * 15 / 16 - 6, height * 15 / 16 - 6));
     }
     
     public void calculateConfigRegions() {
@@ -602,26 +598,24 @@ public class BoardViewSurfaceThread implements Runnable {
             return;
         }
         drawState = DrawState.CONFIG;
-        drawRegions = new Rect[DRAW_REGION_CONFIG_COUNT];
-        drawPoints = new Point[DRAW_POINT_CONFIG_COUNT];
+        drawRegions = new SparseArray<Rect>();
+        drawPoints = new SparseArray<Point>();
 
         int lineHeight = (int) getPixelSize(DPI_LINE_HEIGHT);
         int btnHeight = (int) getPixelSize(DPI_BUTTON_HEIGHT);
         
-        drawRegions[DRAW_REGION_CONFIG_BUTTON_BOUNDS] =
-                new Rect(60, height - 5 - btnHeight, width - 60, height - 5);
-                //new Rect(60, height - 38, width - 60, height - 5);
-        for (int index = 0; index < 16; index++) {
-            drawRegions[DRAW_REGION_CONFIG_CHECK_BOX_BOUNDS + index] =
-                    new Rect(5, 10 + (index * lineHeight), 40, lineHeight + (index * lineHeight));
-            drawRegions[DRAW_REGION_CONFIG_CHECK_TEXT_BOUNDS + index] =
-                    new Rect(45, 10 + (index * lineHeight), width, lineHeight + (index * lineHeight));
-                    //new Rect(45, 32 + (index * 55), width, 55 + (index * 55));
-        }
-        //float part = ((float)width / ((4f * phi) + 18f));
-        drawRegions[DRAW_REGION_CENTER_BOUNDS] =
-                new Rect(width / 16 + 6, height / 16 + 6, width * 15 / 16 - 6, height * 15 / 16 - 6);
-                //new Rect((int)(2f * phi * part), (int)(2f * phi * part), (int)(width - 2f * phi * part), (int)(height - 2f * phi * part));
+        drawRegions.put(DRAW_REGION_CONFIG_BUTTON_BOUNDS,
+                new Rect(60, height - 5 - btnHeight, width - 60, height - 5));
+        drawRegions.put(DRAW_REGION_CONFIG_CHECK_BOX_BOUNDS,
+                new Rect(5, 10, 40, 45));
+        drawRegions.put(DRAW_REGION_CONFIG_CHECK_TEXT_BOUNDS,
+                new Rect(45, 10, width, 10 + (int)(lineHeight * 1.5)));
+        drawPoints.put(DRAW_POINT_CONFIG_CHECK_BOX_OFFSET,
+                new Point(0, (int)(lineHeight * 1.5)));
+        drawPoints.put(DRAW_POINT_CONFIG_CHECK_TEXT_OFFSET,
+                new Point(0, (int)(lineHeight * 1.5)));
+        drawRegions.put(DRAW_REGION_CENTER_BOUNDS,
+                new Rect(width / 16 + 6, height / 16 + 6, width * 15 / 16 - 6, height * 15 / 16 - 6));
     }
 
     private static boolean range(int value, int min, int max) {
@@ -633,8 +627,8 @@ public class BoardViewSurfaceThread implements Runnable {
             return;
         }
         drawState = DrawState.BOARD;
-        drawRegions = new Rect[DRAW_REGION_BOARD_COUNT];
-        drawPoints = new Point[DRAW_POINT_BOARD_COUNT];
+        drawRegions = new SparseArray<Rect>();
+        drawPoints = new SparseArray<Point>();
         
         float part = ((float)width / ((4f * phi) + 18f));
         float radius = 0;
@@ -717,28 +711,27 @@ public class BoardViewSurfaceThread implements Runnable {
             pieceDeltaX *= part;
             pieceDeltaY *= part;
             radius = part * 0.6f;
-            drawRegions[DRAW_REGION_BOARD_ESTATE_BOUNDS + index] =
-                    new Rect((int)estateX, (int)estateY, (int)(estateX + estateW), (int)(estateY + estateH));
-            drawRegions[DRAW_REGION_BOARD_ESTATE_GRAD_BOUNDS + index] =
-                    new Rect((int)gradX, (int)gradY, (int)(gradX + gradW), (int)(gradY + gradH));
-            drawPoints[DRAW_POINT_BOARD_ESTATE_DIRECTION_OFFSET + index] =
-                    new Point((int)pieceDeltaX, (int)pieceDeltaY);
-            drawPoints[DRAW_POINT_BOARD_ESTATE_PIECE_POSITION + index] =
-                    new Point((int)pieceX, (int)pieceY);
-            drawPoints[DRAW_POINT_BOARD_ESTATE_HOUSE_POSITION + index] =
-                    new Point((int)pieceX, (int)pieceY);
-            drawPoints[DRAW_POINT_BOARD_ESTATE_ICON_POSITION + index] =
-                    new Point((int)iconX, (int)iconY);
+            drawRegions.put(DRAW_REGION_BOARD_ESTATE_BOUNDS + index,
+                    new Rect((int)estateX, (int)estateY, (int)(estateX + estateW), (int)(estateY + estateH)));
+            drawRegions.put(DRAW_REGION_BOARD_ESTATE_GRAD_BOUNDS + index,
+                    new Rect((int)gradX, (int)gradY, (int)(gradX + gradW), (int)(gradY + gradH)));
+            drawPoints.put(DRAW_POINT_BOARD_ESTATE_DIRECTION_OFFSET + index,
+                    new Point((int)pieceDeltaX, (int)pieceDeltaY));
+            drawPoints.put(DRAW_POINT_BOARD_ESTATE_PIECE_POSITION + index,
+                    new Point((int)pieceX, (int)pieceY));
+            drawPoints.put(DRAW_POINT_BOARD_ESTATE_HOUSE_POSITION + index,
+                    new Point((int)pieceX, (int)pieceY));
+            drawPoints.put(DRAW_POINT_BOARD_ESTATE_ICON_POSITION + index,
+                    new Point((int)iconX, (int)iconY));
         }
-        drawPoints[DRAW_POINT_BOARD_ESTATE_HOUSE_RADIUS] =
-                new Point((int)radius, (int)radius);
-        drawPoints[DRAW_POINT_BOARD_ESTATE_ICON_RADIUS] =
-                new Point((int)radius, (int)radius);
-        drawPoints[DRAW_POINT_BOARD_ESTATE_PIECE_RADIUS] =
-                new Point((int)radius, (int)radius);
-        drawRegions[DRAW_REGION_CENTER_BOUNDS] =
-                new Rect(width / 16 + 6, height / 16 + 6, width * 15 / 16 - 6, height * 15 / 16 - 6);
-                //new Rect((int)(2f * phi * part), (int)(2f * phi * part), (int)(width - 2f * phi * part), (int)(height - 2f * phi * part));
+        drawPoints.put(DRAW_POINT_BOARD_ESTATE_HOUSE_RADIUS,
+                new Point((int)radius, (int)radius));
+        drawPoints.put(DRAW_POINT_BOARD_ESTATE_ICON_RADIUS,
+                new Point((int)radius, (int)radius));
+        drawPoints.put(DRAW_POINT_BOARD_ESTATE_PIECE_RADIUS,
+                new Point((int)radius, (int)radius));
+        drawRegions.put(DRAW_REGION_CENTER_BOUNDS,
+                new Rect(width / 16 + 6, height / 16 + 6, width * 15 / 16 - 6, height * 15 / 16 - 6));
     }
 
     public void createTextRegion(String string, boolean isError) {
@@ -752,7 +745,7 @@ public class BoardViewSurfaceThread implements Runnable {
                 Color.RED,
                 Alignment.ALIGN_NORMAL,
                 VerticalAlignment.VALIGN_TOP);
-        text.setBounds(drawRegions[DRAW_REGION_TEXT_BOUNDS]);
+        text.setBounds(drawRegions.get(DRAW_REGION_TEXT_BOUNDS));
         if (isError) {
             text.onStateChanged(ButtonState.DISABLED);
         } else {
@@ -767,25 +760,35 @@ public class BoardViewSurfaceThread implements Runnable {
         }
         int index = 0;
         configIndexMap = new ArrayList<Integer>();
+        
+        Rect configBoxBounds = drawRegions.get(DRAW_REGION_CONFIG_CHECK_BOX_BOUNDS);
+        Rect configTextBounds = drawRegions.get(DRAW_REGION_CONFIG_CHECK_TEXT_BOUNDS);
+        Point configBoxOffset = drawPoints.get(DRAW_POINT_CONFIG_CHECK_BOX_OFFSET);
+        Point configTextOffset = drawPoints.get(DRAW_POINT_CONFIG_CHECK_TEXT_OFFSET);
+        
         for (int i = 0; i < configurables.size(); i++) {
             final int configId = configurables.keyAt(i);
             Configurable config = configurables.valueAt(i);
             index = configIndexMap.size();
             configIndexMap.add(configId);
-            Rect encl = new Rect(drawRegions[DRAW_REGION_CONFIG_CHECK_BOX_BOUNDS + index]);
-            encl.union(drawRegions[DRAW_REGION_CONFIG_CHECK_TEXT_BOUNDS + index]);
+            
+            Rect configItemBounds = new Rect(configBoxBounds);
+            configItemBounds.union(configTextBounds);
+            
             CheckboxDrawable checkbox = new CheckboxDrawable(context);
-            checkbox.setBounds(drawRegions[DRAW_REGION_CONFIG_CHECK_BOX_BOUNDS + index]);
+            checkbox.setBounds(configBoxBounds);
             TextDrawable text = new TextDrawable(
                     config.getDescription(),
                     getPixelSize(DPI_SIZE_TEXT),
                     Color.WHITE,
                     Color.GRAY,
                     Alignment.ALIGN_NORMAL,
-                    VerticalAlignment.VALIGN_MIDDLE);
-            text.setBounds(drawRegions[DRAW_REGION_CONFIG_CHECK_TEXT_BOUNDS + index]);
+                    VerticalAlignment.VALIGN_TOP);
+            text.setBounds(configTextBounds);
+            int actualHeight = text.getLayout().getHeight();
+            
             GestureRegion item = new GestureRegion(
-                    encl,
+                    configItemBounds,
                     TAG_CONFIG_ITEM_CHECK + index,
                     new GestureRegionListener() {
                         @Override
@@ -818,6 +821,11 @@ public class BoardViewSurfaceThread implements Runnable {
             layers.get(LAYER_BACKGROUND).addDrawable(text);
             layers.get(LAYER_BACKGROUND).addGestureRegion(item);
             index++;
+
+            configBoxBounds = new Rect(configBoxBounds);
+            configTextBounds = new Rect(configTextBounds);
+            configBoxBounds.offset(0, Math.max(actualHeight, configBoxOffset.y));
+            configTextBounds.offset(0, Math.max(actualHeight, configTextOffset.y));
         }
     }
 
@@ -848,7 +856,7 @@ public class BoardViewSurfaceThread implements Runnable {
             return;
         }
         addButton(LAYER_BACKGROUND,
-                drawRegions[DRAW_REGION_CONFIG_BUTTON_BOUNDS],
+                drawRegions.get(DRAW_REGION_CONFIG_BUTTON_BOUNDS),
                 "Start Game",
                 isMaster,
                 TAG_GAME_START_BUTTON, 
@@ -940,9 +948,9 @@ public class BoardViewSurfaceThread implements Runnable {
             
             final int estateId = index;
             Estate estate = estates.get(index);
-            Rect bounds = new Rect(drawRegions[DRAW_REGION_BOARD_ESTATE_BOUNDS + index]);
+            Rect bounds = new Rect(drawRegions.get(DRAW_REGION_BOARD_ESTATE_BOUNDS + index));
             GestureRegion region = new GestureRegion(
-                    drawRegions[DRAW_REGION_BOARD_ESTATE_BOUNDS + index],
+                    drawRegions.get(DRAW_REGION_BOARD_ESTATE_BOUNDS + index),
                     TAG_ESTATE + index,
                     new GestureRegionListener() {
                         @Override
@@ -980,7 +988,7 @@ public class BoardViewSurfaceThread implements Runnable {
                 Orientation gradOrient = direction.getGradientOrientation();
                 GradientDrawable grad = createEstateGradient(estate.getColor(), gradOrient);
                 RectDrawable estateGradientDraw = new RectDrawable(grad, Color.BLACK, 2);
-                estateGradientDraw.setBounds(drawRegions[DRAW_REGION_BOARD_ESTATE_GRAD_BOUNDS + index]);
+                estateGradientDraw.setBounds(drawRegions.get(DRAW_REGION_BOARD_ESTATE_GRAD_BOUNDS + index));
                 layers.get(LAYER_BACKGROUND).addDrawable(estateGradientDraw);
                 /*int color = Color.GREEN;
                 int houseCount = estate.getHouses();
@@ -1059,10 +1067,10 @@ public class BoardViewSurfaceThread implements Runnable {
                 iconResource = 0; //R.drawable.water_wks;
             }
             if (iconResource != 0) {
-                Point iconCenter = drawPoints[DRAW_POINT_BOARD_ESTATE_ICON_POSITION + index];
+                Point iconCenter = drawPoints.get(DRAW_POINT_BOARD_ESTATE_ICON_POSITION + index);
                 Drawable iconBitmap = context.getResources().getDrawable(iconResource).mutate();
                 RotateDrawable iconBitmapRotator = new RotateDrawable(iconBitmap, direction.getRotateDegrees());
-                float radius = drawPoints[DRAW_POINT_BOARD_ESTATE_ICON_RADIUS].x;
+                float radius = drawPoints.get(DRAW_POINT_BOARD_ESTATE_ICON_RADIUS).x;
                 Rect iconBounds = new Rect((int)iconCenter.x - (int)radius, (int)iconCenter.y - (int)radius, (int)iconCenter.x + (int)radius, (int)iconCenter.y + (int)radius);
                 iconBitmapRotator.setBounds(iconBounds);
                 layers.get(LAYER_BACKGROUND).addDrawable(iconBitmapRotator);
@@ -1130,15 +1138,15 @@ public class BoardViewSurfaceThread implements Runnable {
                     }
                 }
                 // store values: amount and direction to move when overlapping other pieces
-                Point offsetMultiplier = drawPoints[DRAW_POINT_BOARD_ESTATE_DIRECTION_OFFSET + progressEstate];
+                Point offsetMultiplier = drawPoints.get(DRAW_POINT_BOARD_ESTATE_DIRECTION_OFFSET + progressEstate);
                 // store values: piece radius
-                float radius = drawPoints[DRAW_POINT_BOARD_ESTATE_PIECE_RADIUS].x;
+                float radius = drawPoints.get(DRAW_POINT_BOARD_ESTATE_PIECE_RADIUS).x;
                 // store values: scale of overlapping-piece offset (based on how many pieces are overlapping us)
                 float offsetScale = sameEstateIndex - (sameEstate) / 2f;
                 // store values: point of Estate we are coming from (this is the last place we were)
-                Point estatePointProgress = new Point(drawPoints[DRAW_POINT_BOARD_ESTATE_PIECE_POSITION + progressEstate]);
+                Point estatePointProgress = new Point(drawPoints.get(DRAW_POINT_BOARD_ESTATE_PIECE_POSITION + progressEstate));
                 // store values: point of Estate we are going to (we are currently here)
-                Point estatePointCurrent = new Point(drawPoints[DRAW_POINT_BOARD_ESTATE_PIECE_POSITION + currentEstate]);
+                Point estatePointCurrent = new Point(drawPoints.get(DRAW_POINT_BOARD_ESTATE_PIECE_POSITION + currentEstate));
                 /*if (estatePointProgress.equals(estatePointCurrent)) {
                     // if current == progress, then we are stationary on this estate
                     estatePointProgress.offset((int)(offsetMultiplier.x * offsetScale), (int)(offsetMultiplier.y * offsetScale));
@@ -1199,7 +1207,7 @@ public class BoardViewSurfaceThread implements Runnable {
                 Color.WHITE, Color.WHITE,
                 Alignment.ALIGN_OPPOSITE,
                 VerticalAlignment.VALIGN_TOP);
-        Rect ctBounds = new Rect(drawRegions[DRAW_REGION_CENTER_BOUNDS]);
+        Rect ctBounds = new Rect(drawRegions.get(DRAW_REGION_CENTER_BOUNDS));
         ctBounds = new Rect(ctBounds.left, ctBounds.bottom, ctBounds.right, height);
         closeText.setBounds(ctBounds);
         GestureRegion region = new GestureRegion(
@@ -1212,7 +1220,7 @@ public class BoardViewSurfaceThread implements Runnable {
                     }
                 });
        RectDrawable windowPane = new RectDrawable(Color.argb(128, 32, 32, 32), Color.argb(192, 64, 64, 64), 2);
-       windowPane.setBounds(drawRegions[DRAW_REGION_CENTER_BOUNDS]);
+       windowPane.setBounds(drawRegions.get(DRAW_REGION_CENTER_BOUNDS));
        layers.get(LAYER_OVERLAY).addDrawable(grOverlay);
        layers.get(LAYER_OVERLAY).addDrawable(closeText);
        layers.get(LAYER_OVERLAY).addGestureRegion(region);
@@ -1255,7 +1263,7 @@ public class BoardViewSurfaceThread implements Runnable {
                 Color.LTGRAY, Color.LTGRAY,
                 Alignment.ALIGN_NORMAL,
                 VerticalAlignment.VALIGN_TOP);
-        Rect bounds = new Rect(drawRegions[DRAW_REGION_CENTER_BOUNDS]);
+        Rect bounds = new Rect(drawRegions.get(DRAW_REGION_CENTER_BOUNDS));
         bounds.inset(12, 12);
         overlayBody.setBounds(new Rect(bounds.left, bounds.top, bounds.right, bounds.bottom));
         overlayBody.invalidateSelf();
@@ -1298,7 +1306,7 @@ public class BoardViewSurfaceThread implements Runnable {
             return;
         }
         
-        Rect bounds = new Rect(drawRegions[DRAW_REGION_CENTER_BOUNDS]);
+        Rect bounds = new Rect(drawRegions.get(DRAW_REGION_CENTER_BOUNDS));
         bounds.inset(width / 16 + 6, height / 16 + 6);
         int lineHeight = (int) getPixelSize(DPI_LINE_HEIGHT);
         int buttonHeight = (int) getPixelSize(DPI_BUTTON_HEIGHT);
@@ -1326,15 +1334,15 @@ public class BoardViewSurfaceThread implements Runnable {
             switch (index) {
             case 0:
                 btnBounds = btn1Bounds;
-                tag = TAG_TURN_BUTTON_1;
+                tag = TAG_TURN_BUTTON;
                 break;
             case 1:
                 btnBounds = btn2Bounds;
-                tag = TAG_TURN_BUTTON_2;
+                tag = TAG_TURN_BUTTON + 1;
                 break;
             case 2:
                 btnBounds = btn3Bounds;
-                tag = TAG_TURN_BUTTON_3;
+                tag = TAG_TURN_BUTTON + 2;
                 break;
             default:
                 return;

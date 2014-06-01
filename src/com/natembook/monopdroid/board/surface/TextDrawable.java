@@ -80,6 +80,10 @@ public class TextDrawable extends Drawable implements OnButtonStateChangedHandle
         this.layout = new StaticLayout(text, 0, text.length(), paint, getBounds().width(), alignment, 1f, 0f, false, TruncateAt.END, getBounds().width());
     }
     
+    public StaticLayout getLayout() {
+        return layout;
+    }
+    
     @Override
     public void onStateChanged(ButtonState state) {
         switch (state) {
