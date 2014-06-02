@@ -18,8 +18,9 @@
             android:layout_weight="1"
             android:text="@string/game_list_ready"
             android:textAppearance="?android:attr/textAppearanceMedium"
-            android:singleLine="true"
-            android:ellipsize="end" />
+            android:singleLine="false"
+            android:ellipsize="end"
+            android:maxLines="2" />
 
         <TextView
             android:id="@+id/game_item_players"
@@ -29,7 +30,8 @@
             android:text="@string/empty"
             android:textAppearance="?android:attr/textAppearanceLarge"
             android:singleLine="true"
-            android:ellipsize="none" />
+            android:ellipsize="end"
+            android:maxLines="2" />
     </LinearLayout>
     <TextView
         android:id="@+id/game_item_name"
