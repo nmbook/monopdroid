@@ -242,7 +242,7 @@ public class BoardActivityNetworkThread implements Runnable {
                             rState.getInt("playerIdTo"));
                     break;
                 case MSG_TRADE_CARD:
-                    monopd.sendTradeEstate(
+                    monopd.sendTradeCard(
                             rState.getInt("tradeId"),
                             rState.getInt("cardId"),
                             rState.getInt("playerIdTo"));

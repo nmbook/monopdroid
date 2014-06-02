@@ -1092,6 +1092,20 @@ public class BoardActivity extends FragmentActivity implements
     }
 
     /**
+     * Make a universal string used for representing a Card by title.
+     * @param card The card.
+     * @return An HTML formatted string.
+     */
+    public static String makeCardName(Card card) {
+        if (card == null) return "";
+        String cardName = card.getTitle();
+        if (cardName == null) {
+            cardName = "#" + card.getCardId();
+        }
+        return "<b><font color=\"#ffffff\">" + escapeHtml(cardName) + "</font></b>";
+    }
+
+    /**
      * Make a key-value pair line used universally.
      * @param key The bolded part before the colon.
      * @param value Any text to put after the colon.
@@ -1642,8 +1656,8 @@ public class BoardActivity extends FragmentActivity implements
                 .append(" gives ");
                 switch (offer.getType()) {
                 case CARD:
-                    sb.append(" card #")
-                    .append(offer.getOfferValue());
+                    sb.append(" ")
+                    .append(makeCardName(cards.get(offer.getOfferValue())));
                     break;
                 case ESTATE:
                     sb.append(" ")
@@ -1950,7 +1964,7 @@ public class BoardActivity extends FragmentActivity implements
                 args.putString("title", getString(R.string.dialog_choose_tradeestate));
                 args.putString("message", getString(R.string.empty_dialog_prompt_objectlist_estate));
                 serializeOwnedEstates(args);
-                if (args.getInt("itemCount") == 1) {
+                /*if (args.getInt("itemCount") == 1) {
                     // only one estate, use it now and skip dialog!
                     int estateId = args.getInt("itemId_0");
                     Estate estate = estates.get(estateId);
@@ -1959,14 +1973,14 @@ public class BoardActivity extends FragmentActivity implements
                     }
                     finalTrade.putInt("estateId", estateId);
                     tradeAddOfferPrompt(TradeOfferStep.TO, finalTrade);
-                } else {
+                } else {*/
                     args.putBoolean("isTrade", true);
                     args.putBoolean("allowBack", true);
                     args.putInt("offerType", type.getIndex());
                     args.putInt("offerStep", step.getIndex());
                     args.putInt("tradeId", finalTrade.getInt("tradeId"));
                     dialog = MonopolyDialog.showNewDialog(this, args);
-                }
+                //}
                 break;
             case CARD:
                 args.putInt("dialogType", R.id.dialog_type_prompt_objectlist);
@@ -1975,7 +1989,7 @@ public class BoardActivity extends FragmentActivity implements
                 args.putInt("itemCount", 0);
                 args.putString("itemType", "CARD");
                 serializeOwnedCards(args);
-                if (args.getInt("itemCount") == 1) {
+                /*if (args.getInt("itemCount") == 1) {
                     // only one card, use it now and skip dialog!
                     int cardId = args.getInt("itemId_0");
                     Card card = cards.get(cardId);
@@ -1984,14 +1998,14 @@ public class BoardActivity extends FragmentActivity implements
                     }
                     finalTrade.putInt("cardId", cardId);
                     tradeAddOfferPrompt(TradeOfferStep.TO, finalTrade);
-                } else {
+                } else {*/
                     args.putBoolean("isTrade", true);
                     args.putBoolean("allowBack", true);
                     args.putInt("offerType", type.getIndex());
                     args.putInt("offerStep", step.getIndex());
                     args.putInt("tradeId", finalTrade.getInt("tradeId"));
                     dialog = MonopolyDialog.showNewDialog(this, args);
-                }
+                //}
                 break;
             }
             break;
@@ -2000,12 +2014,12 @@ public class BoardActivity extends FragmentActivity implements
             args.putString("title", getString(R.string.dialog_choose_tradeplayerto));
             args.putString("message", getString(R.string.empty_dialog_prompt_objectlist_player));
             serializePlayers(args, finalTrade.getInt("playerIdFrom", -1), type);
-            if (args.getInt("itemCount") == 1) {
+            /*if (args.getInt("itemCount") == 1) {
                 // only one possible recipient, use it now and skip dialog!
                 int playerId = args.getInt("itemId_0");
                 finalTrade.putInt("playerIdTo", playerId);
                 tradeAddOfferPrompt(TradeOfferStep.COMPLETE, finalTrade);
-            } else {
+            } else {*/
                 args.putBoolean("isTrade", true);
                 args.putBoolean("allowBack", true);
                 args.putInt("offerType", type.getIndex());
@@ -2016,7 +2030,7 @@ public class BoardActivity extends FragmentActivity implements
                 args.putInt("estateId", finalTrade.getInt("estateId"));
                 args.putInt("cardId", finalTrade.getInt("cardId"));
                 dialog = MonopolyDialog.showNewDialog(this, args);
-            }
+            //}
             break;
         case COMPLETE:
             switch (type) {
@@ -2089,10 +2103,10 @@ public class BoardActivity extends FragmentActivity implements
     private void serializeOwnedCards(Bundle args) {
         int count = 0;
         for (int i = 0; i < cards.size(); i++) {
-            Card card = cards.get(i);
+            Card card = cards.get(cards.keyAt(i));
             if (card.getOwner() >= 0) {
                 args.putInt("itemId_" + count, card.getCardId());
-                args.putString("itemName_" + count, "<b>" + card.getTitle() + "</b>");
+                args.putString("itemName_" + count, makeCardName(card));
                 Player owner = players.get(card.getOwner());
                 if (owner != null) {
                     args.putString("itemSubtext_" + count, "Owned by " + makePlayerName(owner));
@@ -2928,12 +2942,12 @@ public class BoardActivity extends FragmentActivity implements
                 if (offer.getPlayerIdFrom() == offer.getPlayerIdTo()) {
                     writeMessage("TRADE: Proposal update: " +
                             makePlayerName(players.get(offer.getPlayerIdFrom())) +
-                            " no longer gives card #" + offer.getCardId() +
+                            " no longer gives card " + makeCardName(cards.get(offer.getCardId())) + 
                             " away.", Color.MAGENTA, BoardViewOverlay.TRADE, tradeId);
                 } else {
                     writeMessage("TRADE: Proposal update: " +
                             makePlayerName(players.get(offer.getPlayerIdFrom())) +
-                            " gives card #" + offer.getCardId() +
+                            " gives card " + makeCardName(cards.get(offer.getCardId())) +
                             " to " + makePlayerName(players.get(offer.getPlayerIdTo())) + ".", Color.MAGENTA, BoardViewOverlay.TRADE, tradeId);
                 }
                 trades.put(tradeId, trade);
@@ -3081,7 +3095,7 @@ public class BoardActivity extends FragmentActivity implements
             finalTrade.putInt("offerType", type.getIndex());
             finalTrade.putInt("playerIdFrom", dialogArgs.getInt("playerIdFrom"));
             finalTrade.putInt("amount", dialogArgs.getInt("amount"));
-            finalTrade.putInt("estateId", dialogArgs.getInt("esateId"));
+            finalTrade.putInt("estateId", dialogArgs.getInt("estateId"));
             finalTrade.putInt("cardId", dialogArgs.getInt("cardId"));
             finalTrade.putInt("playerIdTo", objectId);
             tradeAddOfferPrompt(TradeOfferStep.COMPLETE, finalTrade);
