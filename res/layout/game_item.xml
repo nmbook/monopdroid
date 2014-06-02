@@ -20,7 +20,7 @@
             android:textAppearance="?android:attr/textAppearanceMedium"
             android:singleLine="false"
             android:ellipsize="end"
-            android:maxLines="2" />
+            android:maxLines="3" />
 
         <TextView
             android:id="@+id/game_item_players"
@@ -30,8 +30,7 @@
             android:text="@string/empty"
             android:textAppearance="?android:attr/textAppearanceLarge"
             android:singleLine="true"
-            android:ellipsize="end"
-            android:maxLines="2" />
+            android:ellipsize="none" />
     </LinearLayout>
     <TextView
         android:id="@+id/game_item_name"
@@ -40,5 +39,6 @@
         android:text="@string/empty"
         android:textAppearance="?android:attr/textAppearanceSmall"
      	android:scrollHorizontally="false"
-	    android:maxLines="2"/>
+        android:singleLine="true"
+        android:ellipsize="end" />
 </LinearLayout>
