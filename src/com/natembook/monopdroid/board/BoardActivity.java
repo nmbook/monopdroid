@@ -542,23 +542,23 @@ public class BoardActivity extends FragmentActivity implements
         switch (this.boardView.getStatus()) {
         case ERROR:
             boardView.calculateTextRegions();
-            boardView.createTextRegion("An error occured.", true);
+            boardView.drawTextRegion("An error occured.", true);
             break;
         case CREATE:
             boardView.calculateTextRegions();
-            boardView.createTextRegion("Creating game...", false);
+            boardView.drawTextRegion("Creating game...", false);
             break;
         case JOIN:
             boardView.calculateTextRegions();
-            boardView.createTextRegion("Joining game...", false);
+            boardView.drawTextRegion("Joining game...", false);
             break;
         case RECONNECT:
             boardView.calculateTextRegions();
-            boardView.createTextRegion("Reconnecting to game...", false);
+            boardView.drawTextRegion("Reconnecting to game...", false);
             break;
         case INIT:
             boardView.calculateTextRegions();
-            boardView.createTextRegion("Starting game...", false);
+            boardView.drawTextRegion("Starting game...", false);
             break;
         case CONFIG:
             boardView.calculateConfigRegions();
@@ -1680,7 +1680,8 @@ public class BoardActivity extends FragmentActivity implements
     public ArrayList<OverlayButton> getPlayerOverlayButtons(final int overlayPlayerId) {
         ArrayList<OverlayButton> buttons = new ArrayList<OverlayButton>(4);
         boolean inGame = false;
-        if (overlayPlayerId < 0) {
+        final Player player = players.get(overlayPlayerId);
+        if (overlayPlayerId < 0 || player == null) {
             return buttons;
         } else {
             for (int playerId : playerIds) {
@@ -1694,7 +1695,7 @@ public class BoardActivity extends FragmentActivity implements
             boolean kickable = pingable && isMaster &&
                     overlayPlayerId != selfPlayerId;
             buttons.add(new OverlayButton(
-                    "Kick", kickable, 3,
+                    "Kick", "Kick " + player.getName() + " from the game", kickable, 3,
                     new GestureRegionListener() {
                         @Override
                         public void onGestureRegionClick(GestureRegion gestureRegion) {
@@ -1707,7 +1708,7 @@ public class BoardActivity extends FragmentActivity implements
             boolean tradable = pingable && status == GameStatus.RUN &&
                     overlayPlayerId != selfPlayerId;
             buttons.add(new OverlayButton(
-                    "Trade", tradable, 3,
+                    "Trade", "Trade with " + player.getName(), tradable, 3,
                     new GestureRegionListener() {
                         @Override
                         public void onGestureRegionClick(GestureRegion gestureRegion) {
@@ -1718,36 +1719,27 @@ public class BoardActivity extends FragmentActivity implements
                     }));
         }
         buttons.add(new OverlayButton(
-                "!ping", pingable, 1,
+                "!ping", "Send \"!ping " + player.getName() + "\" to chat", pingable, 1,
                 new GestureRegionListener() {
                     @Override
                     public void onGestureRegionClick(GestureRegion gestureRegion) {
-                        Player player = players.get(overlayPlayerId);
-                        if (player != null) {
-                            sendCommand("!ping " + player.getName());
-                        }
+                        sendCommand("!ping " + player.getName());
                     }
                 }));
         buttons.add(new OverlayButton(
-                "!date", pingable, 1,
+                "!date", "Send \"!date " + player.getName() + "\" to chat", pingable, 1,
                 new GestureRegionListener() {
                     @Override
                     public void onGestureRegionClick(GestureRegion gestureRegion) {
-                        Player player = players.get(overlayPlayerId);
-                        if (player != null) {
-                            sendCommand("!date " + player.getName());
-                        }
+                        sendCommand("!date " + player.getName());
                     }
                 }));
         buttons.add(new OverlayButton(
-                "!ver", pingable, 1,
+                "!ver", "Send \"!version " + player.getName() + "\" to chat", pingable, 1,
                 new GestureRegionListener() {
                     @Override
                     public void onGestureRegionClick(GestureRegion gestureRegion) {
-                        Player player = players.get(overlayPlayerId);
-                        if (player != null) {
-                            sendCommand("!version " + player.getName());
-                        }
+                        sendCommand("!version " + player.getName());
                     }
                 }));
         return buttons;
@@ -1765,7 +1757,8 @@ public class BoardActivity extends FragmentActivity implements
             boolean canBuyHouse = isOwner && estate.canBuyHouses();
             boolean canSellHouse = isOwner && estate.canSellHouses();
             buttons.add(new OverlayButton(
-                    mortgageText, canMortgage, 2,
+                    mortgageText, mortgageText + " " + estate.getName(),
+                    canMortgage, 3,
                     new GestureRegionListener() {
                         @Override
                         public void onGestureRegionClick(GestureRegion gestureRegion) {
@@ -1775,7 +1768,8 @@ public class BoardActivity extends FragmentActivity implements
                         }
                     }));
             buttons.add(new OverlayButton(
-                    "+ House", canBuyHouse, 1,
+                    "+H", "Buy a house on " + estate.getName(),
+                    canBuyHouse, 1,
                     new GestureRegionListener() {
                         @Override
                         public void onGestureRegionClick(GestureRegion gestureRegion) {
@@ -1785,7 +1779,8 @@ public class BoardActivity extends FragmentActivity implements
                         }
                     }));
             buttons.add(new OverlayButton(
-                    "- House", canSellHouse, 1,
+                    "-H", "Sell a house on " + estate.getName(),
+                    canSellHouse, 1,
                     new GestureRegionListener() {
                         @Override
                         public void onGestureRegionClick(GestureRegion gestureRegion) {
@@ -1795,7 +1790,8 @@ public class BoardActivity extends FragmentActivity implements
                         }
                     }));
             buttons.add(new OverlayButton(
-                    "Sell to bank", canSellEstate, 2,
+                    "Sell", "Sell " + estate.getName() + " back to the bank",
+                    canSellEstate, 1,
                     new GestureRegionListener() {
                         @Override
                         public void onGestureRegionClick(GestureRegion gestureRegion) {
@@ -1812,18 +1808,19 @@ public class BoardActivity extends FragmentActivity implements
     public ArrayList<OverlayButton> getAuctionOverlayButtons(final int auctionId) {
         final Auction auction = auctions.get(auctionId);
         ArrayList<OverlayButton> buttons = new ArrayList<OverlayButton>(5);
+        boolean canBid = auction.getStatus() < 3;
         final int[] bids = { 1, 10, 50, 100, -1 };
         for (int i = 0; i < bids.length; i++) {
             // A final copy of "i" to be used in the following code block.
             final int index = i;
             int length = 1;
-            String text = "+ $" + bids[index];
+            String text = "+$" + bids[index];
             if (bids[index] < 0) {
                 text = "Custom";
                 length = 2;
             }
             buttons.add(new OverlayButton(
-                    text, true, length,
+                    text, "Bid " + text + " in this auction", canBid, length,
                     new GestureRegionListener() {
                         @Override
                         public void onGestureRegionClick(GestureRegion gestureRegion) {
@@ -1862,7 +1859,8 @@ public class BoardActivity extends FragmentActivity implements
         boolean isActive = trade.getLastUpdateType() != TradeUpdateType.COMPLETED &&
                 trade.getLastUpdateType() != TradeUpdateType.REJECTED;
         buttons.add(new OverlayButton(
-                "Add proposal", isActive, 2,
+                "Propose", "Add a trade proposal to this trade",
+                isActive, 2,
                 new GestureRegionListener() {
                     @Override
                     public void onGestureRegionClick(GestureRegion gestureRegion) {
@@ -1872,7 +1870,8 @@ public class BoardActivity extends FragmentActivity implements
                     }
                 }));
         buttons.add(new OverlayButton(
-                "Reject", isActive, 2,
+                "Reject", "Reject and cancel this trade",
+                isActive, 2,
                 new GestureRegionListener() {
                     @Override
                     public void onGestureRegionClick(GestureRegion gestureRegion) {
@@ -1882,7 +1881,8 @@ public class BoardActivity extends FragmentActivity implements
                     }
                 }));
         buttons.add(new OverlayButton(
-                "Accept", isActive, 2,
+                "Accept", "Accept this revision of this trade",
+                isActive, 2,
                 new GestureRegionListener() {
                     @Override
                     public void onGestureRegionClick(GestureRegion gestureRegion) {
@@ -2514,7 +2514,7 @@ public class BoardActivity extends FragmentActivity implements
                     switch (auction.getStatus()) {
                     case 0: // new bid
                         auction.setNumberOfBids(auction.getNumberOfBids() + 1);
-                        writeMessage("AUCTION: " + makePlayerName(players.get(auction.getHighBidder())) + " bid $" + auction.getHighBid() + ".", orange, BoardViewOverlay.PLAYER, auction.getHighBidder());
+                        writeMessage("AUCTION: " + makePlayerName(players.get(auction.getHighBidder())) + " bid $" + auction.getHighBid() + ".", orange, BoardViewOverlay.AUCTION, auction.getAuctionId());
                         break;
                     case 1: // going once
                         writeMessage("AUCTION: Going once!", orange, BoardViewOverlay.AUCTION, auction.getAuctionId());

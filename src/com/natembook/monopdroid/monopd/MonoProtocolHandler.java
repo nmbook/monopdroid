@@ -917,7 +917,7 @@ public class MonoProtocolHandler {
         int playerIdTo = this.getAttributeAsInt(data, "targetplayer");
         int cardId = this.getAttributeAsInt(data, "cardid");
 
-        EstateTradeOffer offer = new EstateTradeOffer(glistener.getCardOwner(cardId), playerIdTo, cardId);
+        CardTradeOffer offer = new CardTradeOffer(glistener.getCardOwner(cardId), playerIdTo, cardId);
         list.add(offer);
         data.remove("targetplayer");
         data.remove("cardid");

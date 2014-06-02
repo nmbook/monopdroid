@@ -198,16 +198,7 @@ public class GestureRegion {
     }
 
     public void invokeLongPress() {
-        switch (state) {
-        case CHECKED_DISABLED:
-        case CHECKED_DISABLED_FOCUSED:
-        case DISABLED:
-        case DISABLED_FOCUSED:
-            break;
-        default:
-            this.listener.onGestureRegionLongPress(this);
-            break;
-        }
+        this.listener.onGestureRegionLongPress(this);
     }
 
     public boolean isEnabled() {

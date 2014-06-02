@@ -216,15 +216,15 @@ public class BoardView extends SurfaceView {
         return surfaceRunner.isRunning();
     }
 
-    public void createTextRegion(String string, boolean isError) {
+    public synchronized void drawTextRegion(String string, boolean isError) {
         if (this.getWidth() > 0 && this.getHeight() > 0) {
             surfaceRunner.beginRegions(BoardViewSurfaceThread.LAYER_BACKGROUND);
-            surfaceRunner.createTextRegion(string, isError);
+            surfaceRunner.addTextRegion(string, isError);
             surfaceRunner.commitRegions(BoardViewSurfaceThread.LAYER_BACKGROUND);
         }
     }
 
-    public void drawBoardRegions(ArrayList<Estate> estates, SparseArray<Player> players) {
+    public synchronized void drawBoardRegions(ArrayList<Estate> estates, SparseArray<Player> players) {
         if (surfaceRunner.getStatus() == GameStatus.RUN) {
             surfaceRunner.beginRegions(BoardViewSurfaceThread.LAYER_BACKGROUND);
             surfaceRunner.addEstateRegions(estates, players);
@@ -232,7 +232,7 @@ public class BoardView extends SurfaceView {
         }
     }
     
-    public void drawActionRegions(int turnPlayerId) {
+    public synchronized void drawActionRegions(int turnPlayerId) {
         if (surfaceRunner.getStatus() == GameStatus.RUN) {
             surfaceRunner.beginRegions(BoardViewSurfaceThread.LAYER_TURN);
             surfaceRunner.addTurnRegions(turnPlayerId);
@@ -240,7 +240,7 @@ public class BoardView extends SurfaceView {
         }
     }
     
-    public void drawPieces(ArrayList<Estate> estates, int[] playerIds, SparseArray<Player> players) {
+    public synchronized void drawPieces(ArrayList<Estate> estates, int[] playerIds, SparseArray<Player> players) {
         if (surfaceRunner.getStatus() == GameStatus.RUN) {
             surfaceRunner.beginRegions(BoardViewSurfaceThread.LAYER_PIECES);
             surfaceRunner.addPieceRegions(estates, playerIds, players);
@@ -248,7 +248,7 @@ public class BoardView extends SurfaceView {
         }
     }
 
-    public void drawConfigRegions(SparseArray<Configurable> configurables, boolean isMaster) {
+    public synchronized void drawConfigRegions(SparseArray<Configurable> configurables, boolean isMaster) {
         if (surfaceRunner.getStatus() == GameStatus.CONFIG) {
             surfaceRunner.beginRegions(BoardViewSurfaceThread.LAYER_BACKGROUND);
             surfaceRunner.addConfigurableRegions(configurables);
@@ -264,31 +264,31 @@ public class BoardView extends SurfaceView {
         }
     }*/
 
-    public void overlayPlayerInfo(int playerId) {
+    public synchronized void overlayPlayerInfo(int playerId) {
         surfaceRunner.beginRegions(BoardViewSurfaceThread.LAYER_OVERLAY);
         surfaceRunner.openOverlay(BoardViewOverlay.PLAYER, playerId);
         surfaceRunner.commitRegions(BoardViewSurfaceThread.LAYER_OVERLAY);
     }
 
-    public void overlayEstateInfo(int estateId) {
+    public synchronized void overlayEstateInfo(int estateId) {
         surfaceRunner.beginRegions(BoardViewSurfaceThread.LAYER_OVERLAY);
         surfaceRunner.openOverlay(BoardViewOverlay.ESTATE, estateId);
         surfaceRunner.commitRegions(BoardViewSurfaceThread.LAYER_OVERLAY);
     }
 
-    public void overlayAuctionInfo(int auctionId) {
+    public synchronized void overlayAuctionInfo(int auctionId) {
         surfaceRunner.beginRegions(BoardViewSurfaceThread.LAYER_OVERLAY);
         surfaceRunner.openOverlay(BoardViewOverlay.AUCTION, auctionId);
         surfaceRunner.commitRegions(BoardViewSurfaceThread.LAYER_OVERLAY);
     }
 
-    public void overlayTradeInfo(int tradeId) {
+    public synchronized void overlayTradeInfo(int tradeId) {
         surfaceRunner.beginRegions(BoardViewSurfaceThread.LAYER_OVERLAY);
         surfaceRunner.openOverlay(BoardViewOverlay.TRADE, tradeId);
         surfaceRunner.commitRegions(BoardViewSurfaceThread.LAYER_OVERLAY);
     }
 
-    public void redrawOverlay() {
+    public synchronized void redrawOverlay() {
         BoardViewOverlay overlay = surfaceRunner.getOverlay();
         int overlayObjectId = surfaceRunner.getOverlayObjectId();
         if (overlay == BoardViewOverlay.NONE) {
@@ -300,7 +300,7 @@ public class BoardView extends SurfaceView {
         }
     }
 
-    public void closeOverlay() {
+    public synchronized void closeOverlay() {
         surfaceRunner.closeOverlay();
     }
 

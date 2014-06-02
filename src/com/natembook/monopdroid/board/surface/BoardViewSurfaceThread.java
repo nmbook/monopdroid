@@ -26,6 +26,7 @@ import android.util.Log;
 import android.util.SparseArray;
 import android.util.TypedValue;
 import android.view.SurfaceHolder;
+import android.widget.Toast;
 
 public class BoardViewSurfaceThread implements Runnable {
     // tags for GestureRegions, all visible regions must have a unique tag
@@ -737,7 +738,7 @@ public class BoardViewSurfaceThread implements Runnable {
                 new Rect(width / 16 + 6, height / 16 + 6, width * 15 / 16 - 6, height * 15 / 16 - 6));
     }
 
-    public void createTextRegion(String string, boolean isError) {
+    public void addTextRegion(String string, boolean isError) {
         if (drawState == DrawState.NOTREADY) {
             return;
         }
@@ -871,7 +872,8 @@ public class BoardViewSurfaceThread implements Runnable {
         }
         addButton(LAYER_BACKGROUND,
                 drawRegions.get(DRAW_REGION_CONFIG_BUTTON_BOUNDS),
-                "Start Game",
+                "Start game",
+                "Start the game",
                 isMaster,
                 TAG_GAME_START_BUTTON, 
                 new GestureRegionListener() {
@@ -961,15 +963,21 @@ public class BoardViewSurfaceThread implements Runnable {
             EstateDirection direction = EstateDirection.fromIndex(index);
             
             final int estateId = index;
-            Estate estate = estates.get(index);
+            final Estate estate = estates.get(index);
             Rect bounds = new Rect(drawRegions.get(DRAW_REGION_BOARD_ESTATE_BOUNDS + index));
             GestureRegion region = new GestureRegion(
                     drawRegions.get(DRAW_REGION_BOARD_ESTATE_BOUNDS + index),
-                    TAG_ESTATE + index,
+                    TAG_ESTATE + index, true,
                     new GestureRegionListener() {
                         @Override
                         public void onGestureRegionClick(GestureRegion gestureRegion) {
                             listener.onEstateClick(estateId);
+                        }
+                        
+                        @Override
+                        public void onGestureRegionLongPress(
+                                GestureRegion region) {
+                            Toast.makeText(context, estate.getName(), Toast.LENGTH_SHORT).show();
                         }
                     });
             RectDrawable estateDraw = new RectDrawable(estate.getBgColor(), darken(estate.getBgColor()), Color.BLACK, 2);
@@ -1215,17 +1223,12 @@ public class BoardViewSurfaceThread implements Runnable {
         grOverlay.setSize(width, height);
         grOverlay.setGradientRadius(width / 2f);
         grOverlay.setBounds(0, 0, width, height);
-        TextDrawable closeText = new TextDrawable(
-                "<i>(tap anywhere to close overlay)</i>",
-                getPixelSize(DPI_SIZE_TEXT),
-                Color.WHITE, Color.WHITE,
-                Alignment.ALIGN_OPPOSITE,
-                VerticalAlignment.VALIGN_TOP);
+        layers.get(LAYER_OVERLAY).addDrawable(grOverlay);
+
         Rect ctBounds = new Rect(drawRegions.get(DRAW_REGION_CENTER_BOUNDS));
-        ctBounds = new Rect(ctBounds.left, ctBounds.bottom, ctBounds.right, height);
-        closeText.setBounds(ctBounds);
-        GestureRegion region = new GestureRegion(
-                new Rect(0, 0, width, height),
+        addButton(LAYER_OVERLAY,
+                new Rect(ctBounds.right, 0, width, ctBounds.top),
+                "X", "Close overlay", true,
                 TAG_OVERLAY,
                 new GestureRegionListener() {
                     @Override
@@ -1235,9 +1238,6 @@ public class BoardViewSurfaceThread implements Runnable {
                 });
        RectDrawable windowPane = new RectDrawable(Color.argb(128, 32, 32, 32), Color.argb(192, 64, 64, 64), 2);
        windowPane.setBounds(drawRegions.get(DRAW_REGION_CENTER_BOUNDS));
-       layers.get(LAYER_OVERLAY).addDrawable(grOverlay);
-       layers.get(LAYER_OVERLAY).addDrawable(closeText);
-       layers.get(LAYER_OVERLAY).addGestureRegion(region);
        layers.get(LAYER_OVERLAY).addDrawable(windowPane);
         //overlayPaint.setShader(
         //        new RadialGradient(width / 2, height / 2, width / 4, Color.argb(128, 0, 0, 0), Color.argb(0, 0, 0, 0), Shader.TileMode.CLAMP));
@@ -1308,7 +1308,9 @@ public class BoardViewSurfaceThread implements Runnable {
         for (OverlayButton button : buttons) {
             int width = button.getWidth() * w / 6;
             Rect btnBounds = new Rect(bounds.left + index, bounds.top, bounds.left + index + width, bounds.bottom);
-            addButton(LAYER_OVERLAY, btnBounds, button.getCaption(), button.isEnabled(), TAG_OVERLAY_BUTTON + index, button.getListener());
+            addButton(LAYER_OVERLAY, btnBounds, button.getCaption(), button.getTip(),
+                    button.isEnabled(), TAG_OVERLAY_BUTTON + index,
+                    button.getListener());
             index += width;
         }
         hasChanges = true;
@@ -1366,6 +1368,7 @@ public class BoardViewSurfaceThread implements Runnable {
                     LAYER_TURN,
                     btnBounds,
                     btn.getCaption(),
+                    "Game command button",
                     btn.isEnabled(),
                     tag,
                     new GestureRegionListener() {
@@ -1379,8 +1382,9 @@ public class BoardViewSurfaceThread implements Runnable {
         }
     }
 
-    private void addButton(int layerId, Rect bounds, String buttonText, boolean buttonEnabled, int gestureRegionTag,
-            GestureRegionListener gestureRegionListener) {
+    private void addButton(int layerId, Rect bounds, String buttonText,
+            final String buttonTipText, boolean buttonEnabled, int gestureRegionTag,
+            final GestureRegionListener gestureRegionListener) {
         ButtonDrawable button = new ButtonDrawable(context);
         TextDrawable text = new TextDrawable(
                 buttonText,
@@ -1388,7 +1392,19 @@ public class BoardViewSurfaceThread implements Runnable {
                 Color.WHITE, Color.DKGRAY,
                 Alignment.ALIGN_CENTER,
                 VerticalAlignment.VALIGN_MIDDLE);
-        GestureRegion region = new GestureRegion(bounds, gestureRegionTag, gestureRegionListener); 
+        
+        GestureRegion region = new GestureRegion(bounds, gestureRegionTag, true,
+                new GestureRegionListener() {
+                    @Override
+                    public void onGestureRegionClick(GestureRegion region) {
+                        gestureRegionListener.onGestureRegionClick(region);
+                    }
+                    
+                    @Override
+                    public void onGestureRegionLongPress(GestureRegion region) {
+                        Toast.makeText(context, buttonTipText, Toast.LENGTH_SHORT).show();
+                    }
+                });
         button.setBounds(bounds);
         text.setBounds(bounds);
         region.addStateHandler(button);

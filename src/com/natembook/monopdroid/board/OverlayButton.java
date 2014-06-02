@@ -8,12 +8,14 @@ import com.natembook.monopdroid.board.surface.GestureRegionListener;
  */
 public class OverlayButton {
     private String caption;
+    private String tip;
     private boolean enabled;
     private GestureRegionListener listener;
     private int width = 1;
     
-    public OverlayButton(String caption, boolean enabled, int width, GestureRegionListener listener) {
+    public OverlayButton(String caption, String tip, boolean enabled, int width, GestureRegionListener listener) {
         this.caption = caption;
+        this.tip = tip;
         this.enabled = enabled;
         this.listener = listener;
         this.width = width;
@@ -37,6 +39,10 @@ public class OverlayButton {
     
     public String getCaption() {
         return caption;
+    }
+    
+    public String getTip() {
+        return tip;
     }
     
     public boolean isEnabled() {
